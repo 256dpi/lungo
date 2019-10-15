@@ -34,7 +34,7 @@ func (c *AltClient) ListDatabases(context.Context, interface{}, ...*options.List
 }
 
 func (c *AltClient) Ping(context.Context, *readpref.ReadPref) error {
-	panic("not implemented")
+	return nil
 }
 
 func (c *AltClient) StartSession(...*options.SessionOptions) (mongo.Session, error) {

@@ -10,6 +10,7 @@ import (
 var _ Collection = &AltCollection{}
 
 type AltCollection struct {
+	db *AltDatabase
 }
 
 func (c *AltCollection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error) {
@@ -29,7 +30,7 @@ func (c *AltCollection) CountDocuments(context.Context, interface{}, ...*options
 }
 
 func (c *AltCollection) Database() Database {
-	panic("not implemented")
+	return c.db
 }
 
 func (c *AltCollection) DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {

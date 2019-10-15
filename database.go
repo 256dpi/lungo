@@ -13,6 +13,7 @@ import (
 var _ Database = &AltDatabase{}
 
 type AltDatabase struct {
+	client *AltClient
 }
 
 func (d *AltDatabase) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error) {
@@ -20,7 +21,7 @@ func (d *AltDatabase) Aggregate(context.Context, interface{}, ...*options.Aggreg
 }
 
 func (d *AltDatabase) Client() Client {
-	panic("not implemented")
+	return d.client
 }
 
 func (d *AltDatabase) Collection(string, ...*options.CollectionOptions) Collection {
