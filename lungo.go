@@ -42,7 +42,7 @@ type Database interface {
 type Collection interface {
 	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error)
 	BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error)
-	Clone(...*options.CollectionOptions) (*mongo.Collection, error)
+	Clone(...*options.CollectionOptions) (Collection, error)
 	CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error)
 	Database() Database
 	DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error)

@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var alternatives = map[string]string{
+var alternativeTypes = map[string]string{
 	"*mongo.Client":     "lungo.Client",
 	"*mongo.Database":   "lungo.Database",
 	"*mongo.Collection": "lungo.Collection",
@@ -40,13 +40,13 @@ func TestCursorInterface(t *testing.T) {
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 
-func listMethods(t reflect.Type, dropFirstParam bool) string {
+func listMethods(t reflect.Type, original bool) string {
 	var list []string
 	for i := 0; i < t.NumMethod(); i++ {
 		m := t.Method(i)
 		f := m.Type.String()[4:]
 
-		if dropFirstParam {
+		if original {
 			c := strings.Index(f, ",")
 			if c >= 0 {
 				f = "(" + f[c+2:]
@@ -54,10 +54,10 @@ func listMethods(t reflect.Type, dropFirstParam bool) string {
 				c = strings.Index(f, ")")
 				f = "(" + f[c:]
 			}
-		}
 
-		for a, b := range alternatives {
-			f = strings.ReplaceAll(f, a, b)
+			for a, b := range alternativeTypes {
+				f = strings.ReplaceAll(f, a, b)
+			}
 		}
 
 		list = append(list, m.Name+f)
