@@ -11,8 +11,8 @@ import (
 func TestCollectionFind(t *testing.T) {
 	/* missing database */
 
-	collectionTest(t, func(c ICollection) {
-		c = c.Database().Client().Database("not-existing").Collection("not-existing")
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
 		csr, err := c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.NotNil(t, csr)
@@ -21,8 +21,8 @@ func TestCollectionFind(t *testing.T) {
 
 	/* missing collection */
 
-	collectionTest(t, func(c ICollection) {
-		csr, err := c.Find(nil, bson.M{})
+	databaseTest(t, func(d IDatabase) {
+		csr, err := d.Collection("not-existing").Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.NotNil(t, csr)
 		assert.Equal(t, []bson.M{}, readAll(csr))

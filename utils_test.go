@@ -46,6 +46,12 @@ func clientTest(t *testing.T, fn func(*testing.T, IClient)) {
 	})
 }
 
+func databaseTest(t *testing.T, fn func(IDatabase)) {
+	clientTest(t, func(t *testing.T, client IClient) {
+		fn(client.Database("test-lungo"))
+	})
+}
+
 func collectionTest(t *testing.T, fn func(ICollection)) {
 	collCounter++
 	name := fmt.Sprintf("n-%d", collCounter)
