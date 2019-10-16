@@ -34,24 +34,24 @@ type NativeDatabase struct {
 	client *NativeClient
 }
 
-func (m *NativeDatabase) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (ICursor, error) {
-	return m.Database.Aggregate(ctx, pipeline, opts...)
+func (d *NativeDatabase) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) (ICursor, error) {
+	return d.Database.Aggregate(ctx, pipeline, opts...)
 }
 
-func (m *NativeDatabase) Client() IClient {
-	return m.client
+func (d *NativeDatabase) Client() IClient {
+	return d.client
 }
 
-func (m *NativeDatabase) Collection(name string, opts ...*options.CollectionOptions) ICollection {
-	return &NativeCollection{Collection: m.Database.Collection(name, opts...)}
+func (d *NativeDatabase) Collection(name string, opts ...*options.CollectionOptions) ICollection {
+	return &NativeCollection{Collection: d.Database.Collection(name, opts...), db: d}
 }
 
-func (m *NativeDatabase) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
-	return m.Database.ListCollections(ctx, filter, opts...)
+func (d *NativeDatabase) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
+	return d.Database.ListCollections(ctx, filter, opts...)
 }
 
-func (m *NativeDatabase) RunCommandCursor(ctx context.Context, filter interface{}, opts ...*options.RunCmdOptions) (ICursor, error) {
-	return m.Database.RunCommandCursor(ctx, filter, opts...)
+func (d *NativeDatabase) RunCommandCursor(ctx context.Context, filter interface{}, opts ...*options.RunCmdOptions) (ICursor, error) {
+	return d.Database.RunCommandCursor(ctx, filter, opts...)
 }
 
 var _ ICollection = &NativeCollection{}

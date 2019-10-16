@@ -55,17 +55,23 @@ func collectionTest(t *testing.T, fn func(ICollection)) {
 	})
 }
 
+func readAll(csr ICursor) []bson.M {
+	out := make([]bson.M, 0)
+	err := csr.All(nil, &out)
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
 func dumpCollection(c ICollection, clean bool) []bson.M {
 	csr, err := c.Find(nil, bson.M{})
 	if err != nil {
 		panic(err)
 	}
 
-	var out []bson.M
-	err = csr.All(nil, &out)
-	if err != nil {
-		panic(err)
-	}
+	out := readAll(csr)
 
 	if clean {
 		for _, item := range out {

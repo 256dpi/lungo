@@ -38,13 +38,11 @@ func (b *Backend) find(db, coll string, qry bson.M) (ICursor, error) {
 
 	// check database
 	if b.data.Databases[db] == nil {
-		// TODO: What does mongo do?
 		return &staticCursor{}, nil
 	}
 
 	// check collection
 	if b.data.Databases[db].Collections[coll] == nil {
-		// TODO: What does mongo do?
 		return &staticCursor{}, nil
 	}
 
