@@ -67,6 +67,8 @@ func (b *MemoryBackend) InsertOne(db, coll string, doc bson.M) error {
 		b.store[db][coll] = make([]bson.M, 0)
 	}
 
+	// TODO: Check indexes (unique id).
+
 	// add document
 	b.store[db][coll] = append(b.store[db][coll], doc)
 
