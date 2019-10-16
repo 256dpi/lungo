@@ -16,6 +16,18 @@ func NewData() *Data {
 	}
 }
 
+func (d *Data) Clone() *Data {
+	// create new data
+	data := NewData()
+
+	// clone databases
+	for name, db := range d.Databases {
+		data.Databases[name] = db.Clone()
+	}
+
+	return data
+}
+
 type DatabaseData struct {
 	Name        string
 	Collections map[string]*CollectionData
@@ -28,6 +40,18 @@ func NewDatabaseData(name string) *DatabaseData {
 	}
 }
 
+func (d *DatabaseData) Clone() *DatabaseData {
+	// create new data
+	data := NewDatabaseData(d.Name)
+
+	// clone collections
+	for name, coll := range d.Collections {
+		data.Collections[name] = coll.Clone()
+	}
+
+	return data
+}
+
 type CollectionData struct {
 	Name      string
 	Documents []bson.M
@@ -38,6 +62,19 @@ func NewCollectionData(name string) *CollectionData {
 	return &CollectionData{
 		Name: name,
 	}
+}
+
+func (d *CollectionData) Clone() *CollectionData {
+	// create new data
+	data := NewCollectionData(d.Name)
+
+	// clone documents
+	copy(data.Documents, d.Documents)
+
+	// clone indexes
+	copy(data.Indexes, d.Indexes)
+
+	return data
 }
 
 type IndexData struct {

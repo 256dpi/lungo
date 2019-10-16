@@ -73,14 +73,20 @@ func (b *Backend) insertOne(db, coll string, doc bson.M) error {
 
 	// TODO: Check indexes (unique id).
 
+	// clone data
+	temp := b.data.Clone()
+
 	// add document
-	b.data.Databases[db].Collections[coll].Documents = append(b.data.Databases[db].Collections[coll].Documents, doc)
+	temp.Databases[db].Collections[coll].Documents = append(b.data.Databases[db].Collections[coll].Documents, doc)
 
 	// write data
-	err := b.store.Store(b.data)
+	err := b.store.Store(temp)
 	if err != nil {
 		return err
 	}
+
+	// set new data
+	b.data = temp
 
 	return nil
 }
