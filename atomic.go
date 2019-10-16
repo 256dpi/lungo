@@ -9,15 +9,15 @@ import (
 // AtomicWriteFile reads from r and writes to the file named by path. To ensure
 // atomicity the contents are written to a temporary file that is linked to the
 // location after being successfully written.
-func AtomicWriteFile(path string, r io.Reader, perm os.FileMode) error {
+func AtomicWriteFile(path string, r io.Reader, mode os.FileMode) error {
 	// check path
 	if path == "" {
 		return fmt.Errorf("empty file path")
 	}
 
-	// set default permission
-	if perm == 0 {
-		perm = 0666
+	// set default mode
+	if mode == 0 {
+		mode = 0666
 	}
 
 	// calculate temporary file
@@ -30,7 +30,7 @@ func AtomicWriteFile(path string, r io.Reader, perm os.FileMode) error {
 	}
 
 	// open temporary file
-	tempFile, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm)
+	tempFile, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to create new temporary file %q: %v", tempPath, err)
 	}

@@ -1,6 +1,9 @@
 package lungo
 
 import (
+	"bytes"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -37,16 +40,46 @@ type Store interface {
 }
 
 type SingleFileStore struct {
+	path string
+	mode os.FileMode
 }
 
-func NewSingleFileStore() *SingleFileStore {
-	return &SingleFileStore{}
+func NewSingleFileStore(path string, mode os.FileMode) *SingleFileStore {
+	return &SingleFileStore{
+		path: path,
+		mode: mode,
+	}
 }
 
 func (s *SingleFileStore) Load() (*Data, error) {
-	panic("implement me")
+	// load file
+	buf, err := ioutil.ReadFile(s.path)
+	if err != nil {
+		return nil, err
+	}
+
+	// decode data
+	var data Data
+	err = bson.Unmarshal(buf, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &data, nil
 }
 
-func (s *SingleFileStore) Store(*Data) error {
-	panic("implement me")
+func (s *SingleFileStore) Store(data *Data) error {
+	// encode data
+	buf, err := bson.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// write file
+	err = AtomicWriteFile(s.path, bytes.NewReader(buf), s.mode)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
