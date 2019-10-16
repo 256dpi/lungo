@@ -13,6 +13,7 @@ import (
 var _ Database = &AltDatabase{}
 
 type AltDatabase struct {
+	name   string
 	client *AltClient
 }
 
@@ -24,8 +25,21 @@ func (d *AltDatabase) Client() Client {
 	return d.client
 }
 
-func (d *AltDatabase) Collection(string, ...*options.CollectionOptions) Collection {
-	panic("not implemented")
+func (d *AltDatabase) Collection(name string, opts ...*options.CollectionOptions) Collection {
+	// merge options
+	opt := options.MergeCollectionOptions(opts...)
+
+	// assert unsupported options
+	d.client.assertUnsupported(opt.ReadConcern == nil, "CollectionOptions.ReadConcern")
+	d.client.assertUnsupported(opt.WriteConcern == nil, "CollectionOptions.WriteConcern")
+	d.client.assertUnsupported(opt.ReadPreference == nil, "CollectionOptions.ReadPreference")
+	d.client.assertUnsupported(opt.Registry == nil, "CollectionOptions.Registry")
+
+	return &AltCollection{
+		name:   name,
+		db:     d,
+		client: d.client,
+	}
 }
 
 func (d *AltDatabase) Drop(context.Context) error {
