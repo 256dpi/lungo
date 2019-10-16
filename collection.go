@@ -12,6 +12,7 @@ import (
 var _ ICollection = &Collection{}
 
 type Collection struct {
+	ns     string
 	name   string
 	db     *Database
 	client *Client
@@ -91,7 +92,7 @@ func (c *Collection) Find(ctx context.Context, query interface{}, opts ...*optio
 	// TODO: Check supported operators.
 
 	// get cursor
-	csr, err := c.client.backend.find(c.db.name, c.name, qry)
+	csr, err := c.client.backend.find(c.ns, qry)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +147,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// write document
-	err = c.client.backend.insertOne(c.db.name, c.name, doc)
+	err = c.client.backend.insertOne(c.ns, doc)
 	if err != nil {
 		return nil, err
 	}

@@ -31,42 +31,32 @@ func (b *Backend) setup() error {
 	return nil
 }
 
-func (b *Backend) find(db, coll string, qry bson.M) (ICursor, error) {
+func (b *Backend) find(ns string, qry bson.M) (ICursor, error) {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	// check database
-	if b.data.Databases[db] == nil {
-		return &staticCursor{}, nil
-	}
-
-	// check collection
-	if b.data.Databases[db].Collections[coll] == nil {
+	// check namespace
+	if b.data.Namespaces[ns] == nil {
 		return &staticCursor{}, nil
 	}
 
 	// TODO: Apply query.
 
 	return &staticCursor{
-		list: b.data.Databases[db].Collections[coll].Documents,
+		list: b.data.Namespaces[ns].Documents,
 		pos:  0,
 	}, nil
 }
 
-func (b *Backend) insertOne(db, coll string, doc bson.M) error {
+func (b *Backend) insertOne(ns string, doc bson.M) error {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	// ensure database
-	if b.data.Databases[db] == nil {
-		b.data.Databases[db] = NewDatabaseData(db)
-	}
-
-	// ensure collection
-	if b.data.Databases[db].Collections[coll] == nil {
-		b.data.Databases[db].Collections[coll] = NewCollectionData(coll)
+	// ensure namespace
+	if b.data.Namespaces[ns] == nil {
+		b.data.Namespaces[ns] = NewNamespace(ns)
 	}
 
 	// TODO: Check indexes (unique id).
@@ -75,7 +65,7 @@ func (b *Backend) insertOne(db, coll string, doc bson.M) error {
 	temp := b.data.Clone()
 
 	// add document
-	temp.Databases[db].Collections[coll].Documents = append(b.data.Databases[db].Collections[coll].Documents, doc)
+	temp.Namespaces[ns].Documents = append(b.data.Namespaces[ns].Documents, doc)
 
 	// write data
 	err := b.store.Store(temp)

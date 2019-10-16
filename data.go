@@ -5,12 +5,12 @@ import (
 )
 
 type Data struct {
-	Databases map[string]*DatabaseData
+	Namespaces map[string]*Namespace
 }
 
 func NewData() *Data {
 	return &Data{
-		Databases: make(map[string]*DatabaseData),
+		Namespaces: make(map[string]*Namespace),
 	}
 }
 
@@ -18,53 +18,29 @@ func (d *Data) Clone() *Data {
 	// create new data
 	data := NewData()
 
-	// clone databases
-	for name, db := range d.Databases {
-		data.Databases[name] = db.Clone()
+	// clone namespaces
+	for name, namespace := range d.Namespaces {
+		data.Namespaces[name] = namespace.Clone()
 	}
 
 	return data
 }
 
-type DatabaseData struct {
-	Name        string
-	Collections map[string]*CollectionData
-}
-
-func NewDatabaseData(name string) *DatabaseData {
-	return &DatabaseData{
-		Name:        name,
-		Collections: make(map[string]*CollectionData),
-	}
-}
-
-func (d *DatabaseData) Clone() *DatabaseData {
-	// create new data
-	data := NewDatabaseData(d.Name)
-
-	// clone collections
-	for name, coll := range d.Collections {
-		data.Collections[name] = coll.Clone()
-	}
-
-	return data
-}
-
-type CollectionData struct {
+type Namespace struct {
 	Name      string
 	Documents []bson.M
-	Indexes   []IndexData
+	Indexes   []Index
 }
 
-func NewCollectionData(name string) *CollectionData {
-	return &CollectionData{
+func NewNamespace(name string) *Namespace {
+	return &Namespace{
 		Name: name,
 	}
 }
 
-func (d *CollectionData) Clone() *CollectionData {
+func (d *Namespace) Clone() *Namespace {
 	// create new data
-	data := NewCollectionData(d.Name)
+	data := NewNamespace(d.Name)
 
 	// clone documents
 	copy(data.Documents, d.Documents)
@@ -75,7 +51,7 @@ func (d *CollectionData) Clone() *CollectionData {
 	return data
 }
 
-type IndexData struct {
+type Index struct {
 	Name   string
 	Keys   bson.D
 	Unique bool

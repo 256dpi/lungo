@@ -36,6 +36,7 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	d.client.assertUnsupported(opt.Registry == nil, "CollectionOptions.Registry")
 
 	return &Collection{
+		ns: d.name + "." + name,
 		name:   name,
 		db:     d,
 		client: d.client,
