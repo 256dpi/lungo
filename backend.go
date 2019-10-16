@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"fmt"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -59,13 +60,17 @@ func (b *Backend) insertOne(ns string, doc bson.M) error {
 		b.data.Namespaces[ns] = NewNamespace(ns)
 	}
 
-	// TODO: Check indexes (unique id).
+	// check primary index
+	if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+		return fmt.Errorf("document with same _id exists already")
+	}
 
 	// clone data
 	temp := b.data.Clone()
 
 	// add document
 	temp.Namespaces[ns].Documents = append(b.data.Namespaces[ns].Documents, doc)
+	temp.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
 
 	// write data
 	err := b.store.Store(temp)

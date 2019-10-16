@@ -60,6 +60,9 @@ func (s *SingleFileStore) Load() (*Data, error) {
 		return nil, err
 	}
 
+	// prepare
+	data.Prepare()
+
 	return &data, nil
 }
 

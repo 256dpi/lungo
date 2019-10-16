@@ -7,6 +7,7 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/stretchr/testify v1.4.0
+	github.com/tidwall/btree v0.0.0-20170113224114-9876f1454cf0
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.1.2

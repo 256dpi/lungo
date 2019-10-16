@@ -79,6 +79,6 @@ func TestCollectionInsertOne(t *testing.T) {
 			"_id": id,
 			"foo": "baz",
 		})
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 }
