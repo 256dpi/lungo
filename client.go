@@ -21,6 +21,12 @@ type AltClient struct {
 }
 
 func Open(ctx context.Context, opts AltClientOptions) (Client, error) {
+	// setup backend
+	err := opts.Backend.Setup()
+	if err != nil {
+		return nil, err
+	}
+
 	return &AltClient{
 		opts: opts,
 	}, nil

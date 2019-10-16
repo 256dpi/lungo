@@ -25,13 +25,32 @@ type CollectionData struct {
 	Indexes   []IndexData
 }
 
+func NewCollectionData(name string) *CollectionData {
+	return &CollectionData{
+		Name: name,
+	}
+}
+
 type DatabaseData struct {
 	Name        string
 	Collections map[string]*CollectionData
 }
 
+func NewDatabaseData(name string) *DatabaseData {
+	return &DatabaseData{
+		Name:        name,
+		Collections: make(map[string]*CollectionData),
+	}
+}
+
 type Data struct {
 	Databases map[string]*DatabaseData
+}
+
+func NewData() *Data {
+	return &Data{
+		Databases: make(map[string]*DatabaseData),
+	}
 }
 
 type Store interface {
@@ -54,7 +73,9 @@ func NewSingleFileStore(path string, mode os.FileMode) *SingleFileStore {
 func (s *SingleFileStore) Load() (*Data, error) {
 	// load file
 	buf, err := ioutil.ReadFile(s.path)
-	if err != nil {
+	if os.IsNotExist(err) {
+		return NewData(), nil
+	} else if err != nil {
 		return nil, err
 	}
 

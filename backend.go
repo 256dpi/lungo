@@ -12,19 +12,34 @@ var errCursorClosed = errors.New("cursor closed")
 var errCursorExhausted = errors.New("cursor exhausted")
 
 type Backend interface {
+	Setup() error
 	Find(db, coll string, qry bson.M) (Cursor, error)
 	InsertOne(db, coll string, doc bson.M) error
 }
 
 type MemoryBackend struct {
-	store map[string]map[string][]bson.M
+	store Store
+	data  *Data
 	mutex sync.Mutex
 }
 
-func NewMemoryBackend() *MemoryBackend {
+func NewMemoryBackend(store Store) *MemoryBackend {
 	return &MemoryBackend{
-		store: make(map[string]map[string][]bson.M),
+		store: store,
 	}
+}
+
+func (b *MemoryBackend) Setup() error {
+	// load data
+	data, err := b.store.Load()
+	if err != nil {
+		return err
+	}
+
+	// set data
+	b.data = data
+
+	return nil
 }
 
 func (b *MemoryBackend) Find(db, coll string, qry bson.M) (Cursor, error) {
@@ -32,14 +47,14 @@ func (b *MemoryBackend) Find(db, coll string, qry bson.M) (Cursor, error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	// check db
-	if b.store[db] == nil {
+	// check database
+	if b.data.Databases[db] == nil {
 		// TODO: What does mongo do?
 		return &MemoryCursor{}, nil
 	}
 
-	// check coll
-	if b.store[db][coll] == nil {
+	// check collection
+	if b.data.Databases[db].Collections[coll] == nil {
 		// TODO: What does mongo do?
 		return &MemoryCursor{}, nil
 	}
@@ -47,7 +62,7 @@ func (b *MemoryBackend) Find(db, coll string, qry bson.M) (Cursor, error) {
 	// TODO: Apply query.
 
 	return &MemoryCursor{
-		list: b.store[db][coll],
+		list: b.data.Databases[db].Collections[coll].Documents,
 		pos:  0,
 	}, nil
 }
@@ -57,20 +72,20 @@ func (b *MemoryBackend) InsertOne(db, coll string, doc bson.M) error {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	// ensure db
-	if b.store[db] == nil {
-		b.store[db] = make(map[string][]bson.M)
+	// ensure database
+	if b.data.Databases[db] == nil {
+		b.data.Databases[db] = NewDatabaseData(db)
 	}
 
-	// ensure coll
-	if b.store[db][coll] == nil {
-		b.store[db][coll] = make([]bson.M, 0)
+	// ensure collection
+	if b.data.Databases[db].Collections[coll] == nil {
+		b.data.Databases[db].Collections[coll] = NewCollectionData(coll)
 	}
 
 	// TODO: Check indexes (unique id).
 
 	// add document
-	b.store[db][coll] = append(b.store[db][coll], doc)
+	b.data.Databases[db].Collections[coll].Documents = append(b.data.Databases[db].Collections[coll].Documents, doc)
 
 	return nil
 }
