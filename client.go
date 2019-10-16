@@ -10,7 +10,14 @@ import (
 
 var _ Client = &AltClient{}
 
+type AltClientOptions struct {
+}
+
 type AltClient struct {
+}
+
+func Open(ctx context.Context, opts AltClientOptions) (Client, error) {
+	return &AltClient{}, nil
 }
 
 func (c *AltClient) Connect(context.Context) error {
