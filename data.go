@@ -1,8 +1,6 @@
 package lungo
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -78,11 +76,7 @@ func (d *CollectionData) Clone() *CollectionData {
 }
 
 type IndexData struct {
-	Keys       []string
-	Background bool
-	Unique     bool
 	Name       string
-	Partial    bson.M
-	Sparse     bool
-	Expiry     time.Duration
+	Keys       bson.D
+	Unique     bool
 }
