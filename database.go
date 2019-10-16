@@ -10,22 +10,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-var _ Database = &AltDatabase{}
+var _ IDatabase = &AltDatabase{}
 
 type AltDatabase struct {
 	name   string
 	client *AltClient
 }
 
-func (d *AltDatabase) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error) {
+func (d *AltDatabase) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) Client() Client {
+func (d *AltDatabase) Client() IClient {
 	return d.client
 }
 
-func (d *AltDatabase) Collection(name string, opts ...*options.CollectionOptions) Collection {
+func (d *AltDatabase) Collection(name string, opts ...*options.CollectionOptions) ICollection {
 	// merge options
 	opt := options.MergeCollectionOptions(opts...)
 
@@ -50,7 +50,7 @@ func (d *AltDatabase) ListCollectionNames(context.Context, interface{}, ...*opti
 	panic("not implemented")
 }
 
-func (d *AltDatabase) ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (Cursor, error) {
+func (d *AltDatabase) ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
@@ -70,7 +70,7 @@ func (d *AltDatabase) RunCommand(context.Context, interface{}, ...*options.RunCm
 	panic("not implemented")
 }
 
-func (d *AltDatabase) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (Cursor, error) {
+func (d *AltDatabase) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
 	panic("not implemented")
 }
 

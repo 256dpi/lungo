@@ -2,7 +2,7 @@ package lungo
 
 import "context"
 
-var _ Cursor = &AltCursor{}
+var _ ICursor = &AltCursor{}
 
 type AltCursor struct {
 }

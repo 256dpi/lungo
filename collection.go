@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ Collection = &AltCollection{}
+var _ ICollection = &AltCollection{}
 
 type AltCollection struct {
 	name   string
@@ -17,7 +17,7 @@ type AltCollection struct {
 	client *AltClient
 }
 
-func (c *AltCollection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error) {
+func (c *AltCollection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
@@ -25,7 +25,7 @@ func (c *AltCollection) BulkWrite(context.Context, []mongo.WriteModel, ...*optio
 	panic("not implemented")
 }
 
-func (c *AltCollection) Clone(...*options.CollectionOptions) (Collection, error) {
+func (c *AltCollection) Clone(...*options.CollectionOptions) (ICollection, error) {
 	panic("not implemented")
 }
 
@@ -33,7 +33,7 @@ func (c *AltCollection) CountDocuments(context.Context, interface{}, ...*options
 	panic("not implemented")
 }
 
-func (c *AltCollection) Database() Database {
+func (c *AltCollection) Database() IDatabase {
 	return c.db
 }
 
@@ -57,7 +57,7 @@ func (c *AltCollection) EstimatedDocumentCount(context.Context, ...*options.Esti
 	panic("not implemented")
 }
 
-func (c *AltCollection) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (Cursor, error) {
+func (c *AltCollection) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeFindOptions(opts...)
 

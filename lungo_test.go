@@ -10,32 +10,32 @@ import (
 )
 
 var alternativeTypes = map[string]string{
-	"*mongo.Client":     "lungo.Client",
-	"*mongo.Database":   "lungo.Database",
-	"*mongo.Collection": "lungo.Collection",
-	"*mongo.Cursor":     "lungo.Cursor",
+	"*mongo.Client":     "lungo.IClient",
+	"*mongo.Database":   "lungo.IDatabase",
+	"*mongo.Collection": "lungo.ICollection",
+	"*mongo.Cursor":     "lungo.ICursor",
 }
 
 func TestClientInterface(t *testing.T) {
-	a := reflect.TypeOf((*Client)(nil)).Elem()
+	a := reflect.TypeOf((*IClient)(nil)).Elem()
 	b := reflect.TypeOf(&mongo.Client{})
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 
 func TestDatabaseInterface(t *testing.T) {
-	a := reflect.TypeOf((*Database)(nil)).Elem()
+	a := reflect.TypeOf((*IDatabase)(nil)).Elem()
 	b := reflect.TypeOf(&mongo.Database{})
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 
 func TestCollectionInterface(t *testing.T) {
-	a := reflect.TypeOf((*Collection)(nil)).Elem()
+	a := reflect.TypeOf((*ICollection)(nil)).Elem()
 	b := reflect.TypeOf(&mongo.Collection{})
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 
 func TestCursorInterface(t *testing.T) {
-	a := reflect.TypeOf((*Cursor)(nil)).Elem()
+	a := reflect.TypeOf((*ICursor)(nil)).Elem()
 	b := reflect.TypeOf(&mongo.Cursor{})
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }

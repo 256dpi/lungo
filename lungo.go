@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-type Client interface {
+type IClient interface {
 	Connect(context.Context) error
-	Database(string, ...*options.DatabaseOptions) Database
+	Database(string, ...*options.DatabaseOptions) IDatabase
 	Disconnect(context.Context) error
 	ListDatabaseNames(context.Context, interface{}, ...*options.ListDatabasesOptions) ([]string, error)
 	ListDatabases(context.Context, interface{}, ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error)
@@ -23,34 +23,34 @@ type Client interface {
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 }
 
-type Database interface {
-	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error)
-	Client() Client
-	Collection(string, ...*options.CollectionOptions) Collection
+type IDatabase interface {
+	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error)
+	Client() IClient
+	Collection(string, ...*options.CollectionOptions) ICollection
 	Drop(context.Context) error
 	ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error)
-	ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (Cursor, error)
+	ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error)
 	Name() string
 	ReadConcern() *readconcern.ReadConcern
 	ReadPreference() *readpref.ReadPref
 	RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult
-	RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (Cursor, error)
+	RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error)
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 	WriteConcern() *writeconcern.WriteConcern
 }
 
-type Collection interface {
-	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (Cursor, error)
+type ICollection interface {
+	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error)
 	BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error)
-	Clone(...*options.CollectionOptions) (Collection, error)
+	Clone(...*options.CollectionOptions) (ICollection, error)
 	CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error)
-	Database() Database
+	Database() IDatabase
 	DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteOne(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error)
 	Drop(context.Context) error
 	EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error)
-	Find(context.Context, interface{}, ...*options.FindOptions) (Cursor, error)
+	Find(context.Context, interface{}, ...*options.FindOptions) (ICursor, error)
 	FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult
 	FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) *mongo.SingleResult
 	FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) *mongo.SingleResult
@@ -65,7 +65,7 @@ type Collection interface {
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 }
 
-type Cursor interface {
+type ICursor interface {
 	All(context.Context, interface{}) error
 	Close(context.Context) error
 	Decode(interface{}) error

@@ -36,7 +36,7 @@ func (b *Backend) setup() error {
 	return nil
 }
 
-func (b *Backend) find(db, coll string, qry bson.M) (Cursor, error) {
+func (b *Backend) find(db, coll string, qry bson.M) (ICursor, error) {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()

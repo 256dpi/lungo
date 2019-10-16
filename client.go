@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var _ Client = &AltClient{}
+var _ IClient = &AltClient{}
 
 type AltClientOptions struct {
 	Store          Store
@@ -21,7 +21,7 @@ type AltClient struct {
 	opts    AltClientOptions
 }
 
-func Open(ctx context.Context, opts AltClientOptions) (Client, error) {
+func Open(ctx context.Context, opts AltClientOptions) (IClient, error) {
 	// create backend
 	backend := newBackend(opts.Store)
 
@@ -41,7 +41,7 @@ func (c *AltClient) Connect(context.Context) error {
 	panic("not implemented")
 }
 
-func (c *AltClient) Database(name string, opts ...*options.DatabaseOptions) Database {
+func (c *AltClient) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
 	// merge options
 	opt := options.MergeDatabaseOptions(opts...)
 
