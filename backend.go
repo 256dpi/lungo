@@ -55,21 +55,30 @@ func (b *Backend) insertOne(ns string, doc bson.M) error {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	// ensure namespace
-	if b.data.Namespaces[ns] == nil {
-		b.data.Namespaces[ns] = NewNamespace(ns)
-	}
+	// check if namespace exists
+	if b.data.Namespaces[ns] != nil {
+		// check primary index
+		if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+			return fmt.Errorf("document with same _id exists already")
+		}
 
-	// check primary index
-	if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
-		return fmt.Errorf("document with same _id exists already")
+		// TODO: Check secondary indexes.
 	}
 
 	// clone data
 	temp := b.data.Clone()
 
+	// create or clone namespace
+	if temp.Namespaces[ns] == nil {
+		temp.Namespaces[ns] = NewNamespace(ns)
+	} else {
+		temp.Namespaces[ns] = temp.Namespaces[ns].Clone()
+	}
+
 	// add document
-	temp.Namespaces[ns].Documents = append(b.data.Namespaces[ns].Documents, doc)
+	temp.Namespaces[ns].Documents = append(temp.Namespaces[ns].Documents, doc)
+
+	// update primary index
 	temp.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
 
 	// write data

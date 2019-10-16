@@ -36,9 +36,9 @@ func (d *Data) Clone() *Data {
 		Namespaces: map[string]*Namespace{},
 	}
 
-	// clone namespaces
+	// copy namespaces
 	for name, namespace := range d.Namespaces {
-		data.Namespaces[name] = namespace.Clone()
+		data.Namespaces[name] = namespace
 	}
 
 	return data

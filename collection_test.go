@@ -80,5 +80,12 @@ func TestCollectionInsertOne(t *testing.T) {
 			"foo": "baz",
 		})
 		assert.Error(t, err)
+
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
 	})
 }
