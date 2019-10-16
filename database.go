@@ -10,22 +10,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
-var _ IDatabase = &AltDatabase{}
+var _ IDatabase = &Database{}
 
-type AltDatabase struct {
+type Database struct {
 	name   string
-	client *AltClient
+	client *Client
 }
 
-func (d *AltDatabase) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
+func (d *Database) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) Client() IClient {
+func (d *Database) Client() IClient {
 	return d.client
 }
 
-func (d *AltDatabase) Collection(name string, opts ...*options.CollectionOptions) ICollection {
+func (d *Database) Collection(name string, opts ...*options.CollectionOptions) ICollection {
 	// merge options
 	opt := options.MergeCollectionOptions(opts...)
 
@@ -35,49 +35,49 @@ func (d *AltDatabase) Collection(name string, opts ...*options.CollectionOptions
 	d.client.assertUnsupported(opt.ReadPreference == nil, "CollectionOptions.ReadPreference")
 	d.client.assertUnsupported(opt.Registry == nil, "CollectionOptions.Registry")
 
-	return &AltCollection{
+	return &Collection{
 		name:   name,
 		db:     d,
 		client: d.client,
 	}
 }
 
-func (d *AltDatabase) Drop(context.Context) error {
+func (d *Database) Drop(context.Context) error {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error) {
+func (d *Database) ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error) {
+func (d *Database) ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) Name() string {
+func (d *Database) Name() string {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) ReadConcern() *readconcern.ReadConcern {
+func (d *Database) ReadConcern() *readconcern.ReadConcern {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) ReadPreference() *readpref.ReadPref {
+func (d *Database) ReadPreference() *readpref.ReadPref {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult {
+func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
+func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("not implemented")
 }
 
-func (d *AltDatabase) WriteConcern() *writeconcern.WriteConcern {
+func (d *Database) WriteConcern() *writeconcern.WriteConcern {
 	panic("not implemented")
 }

@@ -9,55 +9,55 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var _ ICollection = &AltCollection{}
+var _ ICollection = &Collection{}
 
-type AltCollection struct {
+type Collection struct {
 	name   string
-	db     *AltDatabase
-	client *AltClient
+	db     *Database
+	client *Client
 }
 
-func (c *AltCollection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
+func (c *Collection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+func (c *Collection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Clone(...*options.CollectionOptions) (ICollection, error) {
+func (c *Collection) Clone(...*options.CollectionOptions) (ICollection, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error) {
+func (c *Collection) CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Database() IDatabase {
+func (c *Collection) Database() IDatabase {
 	return c.db
 }
 
-func (c *AltCollection) DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) DeleteOne(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteOne(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error) {
+func (c *Collection) Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Drop(context.Context) error {
+func (c *Collection) Drop(context.Context) error {
 	panic("not implemented")
 }
 
-func (c *AltCollection) EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error) {
+func (c *Collection) EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (ICursor, error) {
+func (c *Collection) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeFindOptions(opts...)
 
@@ -99,31 +99,31 @@ func (c *AltCollection) Find(ctx context.Context, query interface{}, opts ...*op
 	return csr, nil
 }
 
-func (c *AltCollection) FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult {
+func (c *Collection) FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult {
 	panic("not implemented")
 }
 
-func (c *AltCollection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) *mongo.SingleResult {
 	panic("not implemented")
 }
 
-func (c *AltCollection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) *mongo.SingleResult {
 	panic("not implemented")
 }
 
-func (c *AltCollection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) *mongo.SingleResult {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Indexes() mongo.IndexView {
+func (c *Collection) Indexes() mongo.IndexView {
 	panic("not implemented")
 }
 
-func (c *AltCollection) InsertMany(context.Context, []interface{}, ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+func (c *Collection) InsertMany(context.Context, []interface{}, ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
+func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// merge options
 	opt := options.MergeInsertOneOptions(opts...)
 
@@ -156,22 +156,22 @@ func (c *AltCollection) InsertOne(ctx context.Context, document interface{}, opt
 	}, nil
 }
 
-func (c *AltCollection) Name() string {
+func (c *Collection) Name() string {
 	panic("not implemented")
 }
 
-func (c *AltCollection) ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	panic("not implemented")
 }
 
-func (c *AltCollection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("not implemented")
 }

@@ -1,32 +1,101 @@
 package lungo
 
-import "context"
+import (
+	"context"
+	"errors"
+	"sync"
 
-var _ ICursor = &AltCursor{}
+	"go.mongodb.org/mongo-driver/bson"
+)
 
-type AltCursor struct {
+var errCursorClosed = errors.New("cursor closed")
+var errCursorExhausted = errors.New("cursor exhausted")
+
+type staticCursor struct {
+	list   []bson.M
+	pos    int
+	closed bool
+	mutex  sync.Mutex
 }
 
-func (c *AltCursor) All(context.Context, interface{}) error {
-	panic("not implemented")
+func (c *staticCursor) All(ctx context.Context, out interface{}) error {
+	// acquire mutex
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// check if closed
+	if c.closed {
+		return errCursorClosed
+	}
+
+	// decode items
+	err := DecodeList(c.list, out)
+	if err != nil {
+		return err
+	}
+
+	// close cursor
+	c.closed = true
+
+	return nil
 }
 
-func (c *AltCursor) Close(context.Context) error {
-	panic("not implemented")
+func (c *staticCursor) Close(ctx context.Context) error {
+	// acquire mutex
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// close cursor
+	c.closed = true
+
+	return nil
 }
 
-func (c *AltCursor) Decode(interface{}) error {
-	panic("not implemented")
+func (c *staticCursor) Decode(out interface{}) error {
+	// acquire mutex
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// check if closed
+	if c.closed {
+		return errCursorClosed
+	}
+
+	// check if exhausted
+	if c.pos > len(c.list) {
+		return errCursorExhausted
+	}
+
+	// decode item
+	err := DecodeItem(c.list[c.pos-1], out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (c *AltCursor) Err() error {
-	panic("not implemented")
+func (c *staticCursor) Err() error {
+	return nil
 }
 
-func (c *AltCursor) ID() int64 {
-	panic("not implemented")
+func (c *staticCursor) ID() int64 {
+	return 0
 }
 
-func (c *AltCursor) Next(context.Context) bool {
-	panic("not implemented")
+func (c *staticCursor) Next(context.Context) bool {
+	// acquire mutex
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// check if closed
+	if c.closed {
+		return false
+	}
+
+	// increment position
+	c.pos++
+
+	// return whether the are items
+	return c.pos <= len(c.list)
 }
