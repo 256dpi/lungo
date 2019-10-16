@@ -8,6 +8,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func TestCollectionDatabase(t *testing.T) {
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		assert.Equal(t, d, d.Collection("").Database())
+	})
+}
+
 func TestCollectionFind(t *testing.T) {
 	/* missing database */
 
@@ -21,7 +27,7 @@ func TestCollectionFind(t *testing.T) {
 
 	/* missing collection */
 
-	databaseTest(t, func(d IDatabase) {
+	databaseTest(t, func(t *testing.T, d IDatabase) {
 		csr, err := d.Collection("not-existing").Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.NotNil(t, csr)
@@ -32,7 +38,7 @@ func TestCollectionFind(t *testing.T) {
 func TestCollectionInsertOne(t *testing.T) {
 	/* generated id */
 
-	collectionTest(t, func(c ICollection) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
 		res, err := c.InsertOne(nil, bson.M{
 			"foo": "bar",
 		})
@@ -47,7 +53,7 @@ func TestCollectionInsertOne(t *testing.T) {
 
 	/* provided _id */
 
-	collectionTest(t, func(c ICollection) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
 
 		res, err := c.InsertOne(nil, bson.M{
@@ -66,7 +72,7 @@ func TestCollectionInsertOne(t *testing.T) {
 
 	/* duplicate _id key */
 
-	collectionTest(t, func(c ICollection) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
 
 		_, err := c.InsertOne(nil, bson.M{

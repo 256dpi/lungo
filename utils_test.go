@@ -8,6 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const testDB = "test-lungo"
+
 var sharedNativeClient IClient
 var sharedClient IClient
 
@@ -36,7 +38,7 @@ func init() {
 	sharedClient = client2
 }
 
-func clientTest(t *testing.T, fn func(*testing.T, IClient)) {
+func clientTest(t *testing.T, fn func(t *testing.T, c IClient)) {
 	t.Run("NativeClient", func(t *testing.T) {
 		fn(t, sharedNativeClient)
 	})
@@ -46,18 +48,18 @@ func clientTest(t *testing.T, fn func(*testing.T, IClient)) {
 	})
 }
 
-func databaseTest(t *testing.T, fn func(IDatabase)) {
+func databaseTest(t *testing.T, fn func(t *testing.T, d IDatabase)) {
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(client.Database("test-lungo"))
+		fn(t, client.Database(testDB))
 	})
 }
 
-func collectionTest(t *testing.T, fn func(ICollection)) {
+func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 	collCounter++
 	name := fmt.Sprintf("n-%d", collCounter)
 
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(client.Database("test-lungo").Collection(name))
+		fn(t, client.Database(testDB).Collection(name))
 	})
 }
 

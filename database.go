@@ -56,7 +56,7 @@ func (d *Database) ListCollections(context.Context, interface{}, ...*options.Lis
 }
 
 func (d *Database) Name() string {
-	panic("not implemented")
+	return d.name
 }
 
 func (d *Database) ReadConcern() *readconcern.ReadConcern {
