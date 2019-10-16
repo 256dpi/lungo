@@ -91,7 +91,7 @@ func (c *AltCollection) Find(ctx context.Context, query interface{}, opts ...*op
 	// TODO: Check supported operators.
 
 	// get cursor
-	csr, err := c.client.opts.Backend.Find(c.db.name, c.name, qry)
+	csr, err := c.client.backend.find(c.db.name, c.name, qry)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (c *AltCollection) InsertOne(ctx context.Context, document interface{}, opt
 	}
 
 	// write document
-	err = c.client.opts.Backend.InsertOne(c.db.name, c.name, doc)
+	err = c.client.backend.insertOne(c.db.name, c.name, doc)
 	if err != nil {
 		return nil, err
 	}

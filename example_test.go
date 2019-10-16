@@ -12,7 +12,7 @@ func Example() {
 
 	// open database
 	client, err := Open(nil, AltClientOptions{
-		Backend: NewMemoryBackend(NewSingleFileStore("./data", 0666)),
+		Store: NewMemoryStore(),
 	})
 	if err != nil {
 		panic(err)

@@ -11,25 +11,19 @@ import (
 var errCursorClosed = errors.New("cursor closed")
 var errCursorExhausted = errors.New("cursor exhausted")
 
-type Backend interface {
-	Setup() error
-	Find(db, coll string, qry bson.M) (Cursor, error)
-	InsertOne(db, coll string, doc bson.M) error
-}
-
-type MemoryBackend struct {
+type Backend struct {
 	store Store
 	data  *Data
 	mutex sync.Mutex
 }
 
-func NewMemoryBackend(store Store) *MemoryBackend {
-	return &MemoryBackend{
+func newBackend(store Store) *Backend {
+	return &Backend{
 		store: store,
 	}
 }
 
-func (b *MemoryBackend) Setup() error {
+func (b *Backend) setup() error {
 	// load data
 	data, err := b.store.Load()
 	if err != nil {
@@ -42,7 +36,7 @@ func (b *MemoryBackend) Setup() error {
 	return nil
 }
 
-func (b *MemoryBackend) Find(db, coll string, qry bson.M) (Cursor, error) {
+func (b *Backend) find(db, coll string, qry bson.M) (Cursor, error) {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
@@ -50,24 +44,24 @@ func (b *MemoryBackend) Find(db, coll string, qry bson.M) (Cursor, error) {
 	// check database
 	if b.data.Databases[db] == nil {
 		// TODO: What does mongo do?
-		return &MemoryCursor{}, nil
+		return &staticCursor{}, nil
 	}
 
 	// check collection
 	if b.data.Databases[db].Collections[coll] == nil {
 		// TODO: What does mongo do?
-		return &MemoryCursor{}, nil
+		return &staticCursor{}, nil
 	}
 
 	// TODO: Apply query.
 
-	return &MemoryCursor{
+	return &staticCursor{
 		list: b.data.Databases[db].Collections[coll].Documents,
 		pos:  0,
 	}, nil
 }
 
-func (b *MemoryBackend) InsertOne(db, coll string, doc bson.M) error {
+func (b *Backend) insertOne(db, coll string, doc bson.M) error {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
@@ -87,17 +81,23 @@ func (b *MemoryBackend) InsertOne(db, coll string, doc bson.M) error {
 	// add document
 	b.data.Databases[db].Collections[coll].Documents = append(b.data.Databases[db].Collections[coll].Documents, doc)
 
+	// write data
+	err := b.store.Store(b.data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-type MemoryCursor struct {
+type staticCursor struct {
 	list   []bson.M
 	pos    int
 	closed bool
 	mutex  sync.Mutex
 }
 
-func (c *MemoryCursor) All(ctx context.Context, out interface{}) error {
+func (c *staticCursor) All(ctx context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -119,7 +119,7 @@ func (c *MemoryCursor) All(ctx context.Context, out interface{}) error {
 	return nil
 }
 
-func (c *MemoryCursor) Close(ctx context.Context) error {
+func (c *staticCursor) Close(ctx context.Context) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -130,7 +130,7 @@ func (c *MemoryCursor) Close(ctx context.Context) error {
 	return nil
 }
 
-func (c *MemoryCursor) Decode(out interface{}) error {
+func (c *staticCursor) Decode(out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -154,15 +154,15 @@ func (c *MemoryCursor) Decode(out interface{}) error {
 	return nil
 }
 
-func (c *MemoryCursor) Err() error {
+func (c *staticCursor) Err() error {
 	return nil
 }
 
-func (c *MemoryCursor) ID() int64 {
+func (c *staticCursor) ID() int64 {
 	return 0
 }
 
-func (c *MemoryCursor) Next(context.Context) bool {
+func (c *staticCursor) Next(context.Context) bool {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

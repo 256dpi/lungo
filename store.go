@@ -58,6 +58,25 @@ type Store interface {
 	Store(*Data) error
 }
 
+type MemoryStore struct {
+	data *Data
+}
+
+func NewMemoryStore() *MemoryStore {
+	return &MemoryStore{
+		data: NewData(),
+	}
+}
+
+func (m MemoryStore) Load() (*Data, error) {
+	return m.data, nil
+}
+
+func (m MemoryStore) Store(data *Data) error {
+	m.data = data
+	return nil
+}
+
 type SingleFileStore struct {
 	path string
 	mode os.FileMode

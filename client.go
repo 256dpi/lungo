@@ -12,23 +12,28 @@ import (
 var _ Client = &AltClient{}
 
 type AltClientOptions struct {
-	Backend        Backend
+	Store          Store
 	AssertCallback func(string)
 }
 
 type AltClient struct {
-	opts AltClientOptions
+	backend *Backend
+	opts    AltClientOptions
 }
 
 func Open(ctx context.Context, opts AltClientOptions) (Client, error) {
+	// create backend
+	backend := newBackend(opts.Store)
+
 	// setup backend
-	err := opts.Backend.Setup()
+	err := backend.setup()
 	if err != nil {
 		return nil, err
 	}
 
 	return &AltClient{
-		opts: opts,
+		backend: backend,
+		opts:    opts,
 	}, nil
 }
 
