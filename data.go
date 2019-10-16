@@ -76,7 +76,7 @@ func (d *CollectionData) Clone() *CollectionData {
 }
 
 type IndexData struct {
-	Name       string
-	Keys       bson.D
-	Unique     bool
+	Name   string
+	Keys   bson.D
+	Unique bool
 }

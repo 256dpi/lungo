@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkMemoryStore(b *testing.B) {
-	client, err := Open(nil, AltClientOptions{
+	client, err := Open(nil, ClientOptions{
 		Store: NewMemoryStore(),
 	})
 	if err != nil {
@@ -26,7 +26,7 @@ func BenchmarkMemoryStore(b *testing.B) {
 }
 
 func BenchmarkSingleFileStore(b *testing.B) {
-	client, err := Open(nil, AltClientOptions{
+	client, err := Open(nil, ClientOptions{
 		Store: NewSingleFileStore("./bench", 0666),
 	})
 	if err != nil {

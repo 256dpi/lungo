@@ -11,17 +11,17 @@ import (
 
 var _ IClient = &Client{}
 
-type AltClientOptions struct {
+type ClientOptions struct {
 	Store          Store
 	AssertCallback func(string)
 }
 
 type Client struct {
 	backend *Backend
-	opts    AltClientOptions
+	opts    ClientOptions
 }
 
-func Open(ctx context.Context, opts AltClientOptions) (IClient, error) {
+func Open(ctx context.Context, opts ClientOptions) (IClient, error) {
 	// create backend
 	backend := newBackend(opts.Store)
 

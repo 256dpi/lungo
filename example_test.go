@@ -11,7 +11,7 @@ func Example() {
 	}
 
 	// open database
-	client, err := Open(nil, AltClientOptions{
+	client, err := Open(nil, ClientOptions{
 		Store: NewMemoryStore(),
 	})
 	if err != nil {
