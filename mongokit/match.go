@@ -34,6 +34,7 @@ func init() {
 	ExpressionQueryOperators["$lt"] = matchComp("$lt")
 	ExpressionQueryOperators["$gte"] = matchComp("$gte")
 	ExpressionQueryOperators["$lte"] = matchComp("$lte")
+	ExpressionQueryOperators["$ne"] = matchComp("$ne")
 	ExpressionQueryOperators["$in"] = matchIn
 }
 
@@ -254,6 +255,8 @@ func matchComp(op string) Operator {
 			return res < 0, nil
 		case "$lte":
 			return res <= 0, nil
+		case "$ne":
+			return res != 0, nil
 		default:
 			return false, fmt.Errorf("match: unkown comparison operator %q", op)
 		}
