@@ -1,4 +1,4 @@
-package bsoncmp
+package bsonkit
 
 import (
 	"testing"
@@ -19,10 +19,8 @@ func TestInspect(t *testing.T) {
 		{in: int32(42), out: Number},
 		{in: int64(42), out: Number},
 		{in: 4.2, out: Number},
-		{in: primitive.NewDecimal128(1, 2), out: Number},
 		{in: "", out: String},
 		{in: "foo", out: String},
-		{in: bson.M{}, out: Object},
 		{in: bson.D{}, out: Object},
 		{in: bson.A{}, out: Array},
 		{in: []byte{4, 2}, out: Binary},

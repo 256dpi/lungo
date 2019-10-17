@@ -1,4 +1,4 @@
-package bsoncmp
+package bsonkit
 
 import (
 	"fmt"
@@ -14,8 +14,7 @@ import (
 type Type int
 
 const (
-	MinKey Type = iota
-	Null
+	Null Type = iota
 	Number
 	String
 	Object
@@ -26,18 +25,17 @@ const (
 	Date
 	Timestamp
 	Regex
-	MaxKey
 )
 
 func Inspect(v interface{}) (Type, error) {
 	switch v.(type) {
 	case nil:
 		return Null, nil
-	case int32, int64, float64, primitive.Decimal128:
+	case int32, int64, float64:
 		return Number, nil
 	case string:
 		return String, nil
-	case bson.M, bson.D:
+	case bson.D:
 		return Object, nil
 	case bson.A:
 		return Array, nil
