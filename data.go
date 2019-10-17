@@ -1,11 +1,8 @@
 package lungo
 
 import (
-	"bytes"
-
 	"github.com/tidwall/btree"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -103,11 +100,14 @@ func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
 	j := item.(*primaryIndexItem)
 
 	// get ids
-	id1 := bsonkit.Get(i.doc, "_id").(primitive.ObjectID)
-	id2 := bsonkit.Get(j.doc, "_id").(primitive.ObjectID)
+	id1 := bsonkit.Get(i.doc, "_id")
+	id2 := bsonkit.Get(j.doc, "_id")
 
 	// compare ids
-	ret := bytes.Compare(id1[:], id2[:]) < 0
+	ret, err := bsonkit.Compare(id1, id2)
+	if err != nil {
+		panic(err)
+	}
 
-	return ret
+ 	return ret <0
 }
