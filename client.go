@@ -10,18 +10,13 @@ import (
 
 var _ IClient = &Client{}
 
-type ClientOptions struct {
-	Store Store
-}
-
 type Client struct {
 	backend *Backend
-	opts    ClientOptions
 }
 
-func Open(ctx context.Context, opts ClientOptions) (IClient, error) {
+func Open(ctx context.Context, store Store) (IClient, error) {
 	// create backend
-	backend := newBackend(opts.Store)
+	backend := newBackend(store)
 
 	// setup backend
 	err := backend.setup()
@@ -31,7 +26,6 @@ func Open(ctx context.Context, opts ClientOptions) (IClient, error) {
 
 	return &Client{
 		backend: backend,
-		opts:    opts,
 	}, nil
 }
 
