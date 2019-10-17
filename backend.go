@@ -2,9 +2,12 @@ package lungo
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/lungo/mongokit"
 )
 
 type Backend struct {
@@ -32,22 +35,56 @@ func (b *Backend) setup() error {
 	return nil
 }
 
-func (b *Backend) find(ns string, qry bson.D) (ICursor, error) {
+func (b *Backend) listCollections(db string, query bson.D) ([]bson.D, error) {
+	// acquire mutex
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
+	// prepare list
+	list := make([]bson.D, 0)
+
+	// TODO: Add more collection infos.
+
+	// add documents
+	for ns := range b.data.Namespaces {
+		if strings.HasPrefix(ns, db) {
+			list = append(list, bson.D{
+				bson.E{Key: "name", Value: strings.TrimPrefix(ns, db)[1:]},
+				bson.E{Key: "type", Value: "collection"},
+				bson.E{Key: "options", Value: bson.D{}},
+				bson.E{Key: "info", Value: bson.D{
+					bson.E{Key: "readOnly", Value: false},
+				}},
+			})
+		}
+	}
+
+	// filter list
+	list, err := mongokit.Filter(list, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (b *Backend) find(ns string, query bson.D) ([]bson.D, error) {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
 	// check namespace
 	if b.data.Namespaces[ns] == nil {
-		return &staticCursor{}, nil
+		return nil, nil
 	}
 
-	// TODO: Apply query.
+	// filter documents
+	list, err := mongokit.Filter(b.data.Namespaces[ns].Documents, query)
+	if err != nil {
+		return nil, err
+	}
 
-	return &staticCursor{
-		list: b.data.Namespaces[ns].Documents,
-		pos:  0,
-	}, nil
+	return list, nil
 }
 
 func (b *Backend) insertOne(ns string, doc bson.D) error {

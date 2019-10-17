@@ -8,6 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 var _ IDatabase = &Database{}
@@ -47,12 +49,54 @@ func (d *Database) Drop(context.Context) error {
 	panic("not implemented")
 }
 
-func (d *Database) ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error) {
-	panic("not implemented")
+func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
+	// merge options
+	opt := options.MergeListCollectionsOptions(opts...)
+
+	// assert unsupported options
+	d.client.assertUnsupported(opt.NameOnly == nil, "ListCollectionsOptions.NameOnly")
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// list collections
+	list, err := d.client.backend.listCollections(d.name, query)
+	if err != nil {
+		return nil, err
+	}
+
+	// collect names
+	names := make([]string, 0)
+	for _, doc := range list {
+		names = append(names, bsonkit.Get(doc, "name").(string))
+	}
+
+	return names, nil
 }
 
-func (d *Database) ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error) {
-	panic("not implemented")
+func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
+	// merge options
+	opt := options.MergeListCollectionsOptions(opts...)
+
+	// assert unsupported options
+	d.client.assertUnsupported(opt.NameOnly == nil, "ListCollectionsOptions.NameOnly")
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// list collections
+	list, err := d.client.backend.listCollections(d.name, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &staticCursor{list: list}, nil
 }
 
 func (d *Database) Name() string {

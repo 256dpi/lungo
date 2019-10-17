@@ -61,7 +61,7 @@ func (c *Collection) EstimatedDocumentCount(context.Context, ...*options.Estimat
 	panic("not implemented")
 }
 
-func (c *Collection) Find(ctx context.Context, query interface{}, opts ...*options.FindOptions) (ICursor, error) {
+func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeFindOptions(opts...)
 
@@ -86,21 +86,19 @@ func (c *Collection) Find(ctx context.Context, query interface{}, opts ...*optio
 	c.client.assertUnsupported(opt.Snapshot == nil, "FindOptions.Snapshot")
 	c.client.assertUnsupported(opt.Sort == nil, "FindOptions.Sort")
 
-	// transform query
-	qry, err := bsonkit.Transform(query)
+	// transform filter
+	query, err := bsonkit.Transform(filter)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Check supported operators.
-
-	// get cursor
-	csr, err := c.client.backend.find(c.ns, qry)
+	// get documents
+	list, err := c.client.backend.find(c.ns, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return csr, nil
+	return &staticCursor{list: list}, nil
 }
 
 func (c *Collection) FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult {
