@@ -37,6 +37,7 @@ func init() {
 	ExpressionQueryOperators["$ne"] = matchComp("$ne")
 	ExpressionQueryOperators["$in"] = matchIn
 	ExpressionQueryOperators["$nin"] = matchNin
+	ExpressionQueryOperators["$exists"] = matchExists
 }
 
 func Match(doc, query bson.D) (bool, error) {
@@ -314,4 +315,20 @@ func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func matchExists(doc bson.D, path string, v interface{}) (bool, error) {
+	// get boolean
+	exists, ok := v.(bool)
+	if !ok {
+		return false, fmt.Errorf("match: $exists: expected boolean")
+	}
+
+	// get field value
+	field := bsonkit.Get(doc, path)
+	if exists {
+		return field != bsonkit.Missing, nil
+	}
+
+	return field == bsonkit.Missing, nil
 }
