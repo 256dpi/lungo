@@ -60,11 +60,11 @@ func (d *Database) Name() string {
 }
 
 func (d *Database) ReadConcern() *readconcern.ReadConcern {
-	panic("not implemented")
+	return readconcern.New()
 }
 
 func (d *Database) ReadPreference() *readpref.ReadPref {
-	panic("not implemented")
+	return readpref.Primary()
 }
 
 func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult {
@@ -80,5 +80,5 @@ func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamO
 }
 
 func (d *Database) WriteConcern() *writeconcern.WriteConcern {
-	panic("not implemented")
+	return nil
 }
