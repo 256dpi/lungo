@@ -6,6 +6,8 @@ import (
 	"github.com/tidwall/btree"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 type Data struct {
@@ -46,7 +48,7 @@ func (d *Data) Clone() *Data {
 
 type Namespace struct {
 	Name      string   `bson:"name"`
-	Documents []bson.M `bson:"documents"`
+	Documents []bson.D `bson:"documents"`
 	Indexes   []Index  `bson:"indexes"`
 
 	primaryIndex *btree.BTree `bson:"-"`
@@ -93,7 +95,7 @@ type Index struct {
 }
 
 type primaryIndexItem struct {
-	doc bson.M
+	doc bson.D
 }
 
 func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
@@ -101,8 +103,8 @@ func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
 	j := item.(*primaryIndexItem)
 
 	// get ids
-	id1 := i.doc["_id"].(primitive.ObjectID)
-	id2 := j.doc["_id"].(primitive.ObjectID)
+	id1 := bsonkit.Get(i.doc, "_id").(primitive.ObjectID)
+	id2 := bsonkit.Get(j.doc, "_id").(primitive.ObjectID)
 
 	// compare ids
 	ret := bytes.Compare(id1[:], id2[:]) < 0

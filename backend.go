@@ -32,7 +32,7 @@ func (b *Backend) setup() error {
 	return nil
 }
 
-func (b *Backend) find(ns string, qry bson.M) (ICursor, error) {
+func (b *Backend) find(ns string, qry bson.D) (ICursor, error) {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
@@ -50,7 +50,7 @@ func (b *Backend) find(ns string, qry bson.M) (ICursor, error) {
 	}, nil
 }
 
-func (b *Backend) insertOne(ns string, doc bson.M) error {
+func (b *Backend) insertOne(ns string, doc bson.D) error {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()

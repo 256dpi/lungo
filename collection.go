@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 var _ ICollection = &Collection{}
@@ -83,8 +86,8 @@ func (c *Collection) Find(ctx context.Context, query interface{}, opts ...*optio
 	c.client.assertUnsupported(opt.Snapshot == nil, "FindOptions.Snapshot")
 	c.client.assertUnsupported(opt.Sort == nil, "FindOptions.Sort")
 
-	// reduce query
-	qry, err := ReduceDocument(query)
+	// transform query
+	qry, err := bsonkit.Transform(query)
 	if err != nil {
 		return nil, err
 	}
@@ -131,19 +134,16 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	// assert unsupported options
 	c.client.assertUnsupported(opt.BypassDocumentValidation == nil, "InsertOneOptions.BypassDocumentValidation")
 
-	// reduce document
-	doc, err := ReduceDocument(document)
+	// transform document
+	doc, err := bsonkit.Transform(document)
 	if err != nil {
 		return nil, err
 	}
 
-	// check & ensure id
-	if doc["_id"] != nil {
-		if _, ok := doc["_id"].(primitive.ObjectID); !ok {
-			return nil, fmt.Errorf("only primitive.OjectID values are supported in _id field")
-		}
-	} else {
-		doc["_id"] = primitive.NewObjectID()
+	// ensure object id
+	doc, id, err := ensureObjectID(doc)
+	if err != nil {
+		return nil, err
 	}
 
 	// write document
@@ -153,7 +153,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	return &mongo.InsertOneResult{
-		InsertedID: doc["_id"],
+		InsertedID: id,
 	}, nil
 }
 
@@ -175,4 +175,29 @@ func (c *Collection) UpdateOne(context.Context, interface{}, interface{}, ...*op
 
 func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("not implemented")
+}
+
+func ensureObjectID(doc bson.D) (bson.D, primitive.ObjectID, error) {
+	// check id
+	var id primitive.ObjectID
+	if v := bsonkit.Get(doc, "_id"); v != bsonkit.Missing {
+		// check existing value
+		oid, ok := v.(primitive.ObjectID)
+		if !ok {
+			return nil, oid, fmt.Errorf("only primitive.OjectID values are supported in _id field")
+		} else if oid.IsZero() {
+			return nil, oid, fmt.Errorf("found zero primitive.OjectID value in _id field")
+		}
+
+		// set id
+		id = oid
+	}
+
+	// prepend id if zero
+	if id.IsZero() {
+		id = primitive.NewObjectID()
+		bsonkit.Set(doc, "_id", id, true)
+	}
+
+	return doc, id, nil
 }

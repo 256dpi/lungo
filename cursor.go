@@ -6,13 +6,15 @@ import (
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 var errCursorClosed = errors.New("cursor closed")
 var errCursorExhausted = errors.New("cursor exhausted")
 
 type staticCursor struct {
-	list   []bson.M
+	list   []bson.D
 	pos    int
 	closed bool
 	mutex  sync.Mutex
@@ -29,7 +31,7 @@ func (c *staticCursor) All(ctx context.Context, out interface{}) error {
 	}
 
 	// decode items
-	err := DecodeList(c.list, out)
+	err := bsonkit.DecodeList(c.list, out)
 	if err != nil {
 		return err
 	}
@@ -67,7 +69,7 @@ func (c *staticCursor) Decode(out interface{}) error {
 	}
 
 	// decode item
-	err := DecodeItem(c.list[c.pos-1], out)
+	err := bsonkit.Decode(c.list[c.pos-1], out)
 	if err != nil {
 		return err
 	}
