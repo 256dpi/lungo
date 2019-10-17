@@ -125,19 +125,19 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	return &staticCursor{list: list}, nil
 }
 
-func (c *Collection) FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult {
+func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
 	panic("not implemented")
 }
 
-func (c *Collection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) ISingleResult {
 	panic("not implemented")
 }
 
-func (c *Collection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) ISingleResult {
 	panic("not implemented")
 }
 
-func (c *Collection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) *mongo.SingleResult {
+func (c *Collection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) ISingleResult {
 	panic("not implemented")
 }
 
@@ -188,7 +188,7 @@ func (c *Collection) Name() string {
 	return c.name
 }
 
-func (c *Collection) ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	panic("not implemented")
 }
 

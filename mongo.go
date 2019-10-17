@@ -50,6 +50,10 @@ func (d *MongoDatabase) ListCollections(ctx context.Context, filter interface{},
 	return d.Database.ListCollections(ctx, filter, opts...)
 }
 
+func (d *MongoDatabase) RunCommand(ctx context.Context, runCommand interface{}, opts ...*options.RunCmdOptions) ISingleResult {
+	return d.Database.RunCommand(ctx, runCommand, opts...)
+}
+
 func (d *MongoDatabase) RunCommandCursor(ctx context.Context, filter interface{}, opts ...*options.RunCmdOptions) (ICursor, error) {
 	return d.Database.RunCommandCursor(ctx, filter, opts...)
 }
@@ -81,4 +85,20 @@ func (c *MongoCollection) Database() IDatabase {
 
 func (c *MongoCollection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	return c.Collection.Find(ctx, filter, opts...)
+}
+
+func (c *MongoCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
+	return c.Collection.FindOne(ctx, filter, opts...)
+}
+
+func (c *MongoCollection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
+	return c.Collection.FindOneAndDelete(ctx, filter, opts...)
+}
+
+func (c *MongoCollection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
+	return c.Collection.FindOneAndReplace(ctx, filter, replacement, opts...)
+}
+
+func (c *MongoCollection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
+	return c.Collection.FindOneAndUpdate(ctx, filter, update, opts...)
 }

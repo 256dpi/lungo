@@ -126,7 +126,7 @@ func (d *Database) ReadPreference() *readpref.ReadPref {
 	return readpref.Primary()
 }
 
-func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult {
+func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult {
 	panic("not implemented")
 }
 

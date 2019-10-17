@@ -3,6 +3,7 @@ package lungo
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -30,7 +31,7 @@ type IDatabase interface {
 	Name() string
 	ReadConcern() *readconcern.ReadConcern
 	ReadPreference() *readpref.ReadPref
-	RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) *mongo.SingleResult
+	RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult
 	RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error)
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 	WriteConcern() *writeconcern.WriteConcern
@@ -48,10 +49,10 @@ type ICollection interface {
 	Drop(context.Context) error
 	EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error)
 	Find(context.Context, interface{}, ...*options.FindOptions) (ICursor, error)
-	FindOne(context.Context, interface{}, ...*options.FindOneOptions) *mongo.SingleResult
-	FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) *mongo.SingleResult
-	FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) *mongo.SingleResult
-	FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) *mongo.SingleResult
+	FindOne(context.Context, interface{}, ...*options.FindOneOptions) ISingleResult
+	FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) ISingleResult
+	FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) ISingleResult
+	FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) ISingleResult
 	Indexes() mongo.IndexView
 	InsertMany(context.Context, []interface{}, ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
 	InsertOne(context.Context, interface{}, ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
@@ -69,4 +70,10 @@ type ICursor interface {
 	Err() error
 	ID() int64
 	Next(context.Context) bool
+}
+
+type ISingleResult interface {
+	Decode(interface {}) error
+	DecodeBytes() (bson.Raw, error)
+	Err() error
 }

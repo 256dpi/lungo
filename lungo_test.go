@@ -10,10 +10,11 @@ import (
 )
 
 var interfaceReplacements = map[string]string{
-	"*mongo.Client":     "lungo.IClient",
-	"*mongo.Database":   "lungo.IDatabase",
-	"*mongo.Collection": "lungo.ICollection",
-	"*mongo.Cursor":     "lungo.ICursor",
+	"*mongo.Client":       "lungo.IClient",
+	"*mongo.Database":     "lungo.IDatabase",
+	"*mongo.Collection":   "lungo.ICollection",
+	"*mongo.Cursor":       "lungo.ICursor",
+	"*mongo.SingleResult": "lungo.ISingleResult",
 }
 
 func TestClientInterface(t *testing.T) {
@@ -40,6 +41,12 @@ func TestCursorInterface(t *testing.T) {
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 
+func TestSingleResultInterface(t *testing.T) {
+	a := reflect.TypeOf((*ISingleResult)(nil)).Elem()
+	b := reflect.TypeOf(&mongo.SingleResult{})
+	assert.Equal(t, listMethods(a, false), listMethods(b, true))
+}
+
 func listMethods(t reflect.Type, original bool, skip ...string) string {
 	blacklist := map[string]bool{}
 	for _, name := range skip {
@@ -57,7 +64,7 @@ func listMethods(t reflect.Type, original bool, skip ...string) string {
 
 		if original {
 			c := strings.Index(f, ",")
-			if c >= 0 {
+			if c >= 0 && c < strings.Index(f, ")") {
 				f = "(" + f[c+2:]
 			} else {
 				c = strings.Index(f, ")")
