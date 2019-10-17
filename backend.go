@@ -87,7 +87,7 @@ func (b *Backend) find(ns string, query bson.D) ([]bson.D, error) {
 	return list, nil
 }
 
-func (b *Backend) insertOne(ns string, doc bson.D) error {
+func (b *Backend) insert(ns string, docs []bson.D) error {
 	// acquire mutex
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
@@ -95,8 +95,10 @@ func (b *Backend) insertOne(ns string, doc bson.D) error {
 	// check if namespace exists
 	if b.data.Namespaces[ns] != nil {
 		// check primary index
-		if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
-			return fmt.Errorf("document with same _id exists already")
+		for _, doc := range docs {
+			if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+				return fmt.Errorf("document with same _id exists already")
+			}
 		}
 
 		// TODO: Check secondary indexes.
@@ -112,11 +114,14 @@ func (b *Backend) insertOne(ns string, doc bson.D) error {
 		temp.Namespaces[ns] = temp.Namespaces[ns].Clone()
 	}
 
-	// add document
-	temp.Namespaces[ns].Documents = append(temp.Namespaces[ns].Documents, doc)
+	// add documents
+	for _, doc := range docs {
+		// add document
+		temp.Namespaces[ns].Documents = append(temp.Namespaces[ns].Documents, doc)
 
-	// update primary index
-	temp.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
+		// update primary index
+		temp.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
+	}
 
 	// write data
 	err := b.store.Store(temp)

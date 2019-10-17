@@ -43,6 +43,92 @@ func TestCollectionFind(t *testing.T) {
 	})
 }
 
+func TestCollectionInsertMany(t *testing.T) {
+	/* generated id */
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		res, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"foo": "bar",
+			},
+			bson.M{
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"foo": "bar",
+			},
+			{
+				"bar": "baz",
+			},
+		}, dumpCollection(c, true))
+	})
+
+	/* provided _id */
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+
+	/* duplicate _id key */
+
+	// TODO: Test duplicate ids in request.
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		_, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id,
+				"foo": "bar",
+			},
+		})
+		assert.NoError(t, err)
+
+		_, err = c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id,
+				"foo": "baz",
+			},
+		})
+		assert.Error(t, err)
+
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionInsertOne(t *testing.T) {
 	/* generated id */
 

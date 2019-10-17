@@ -145,8 +145,52 @@ func (c *Collection) Indexes() mongo.IndexView {
 	panic("not implemented")
 }
 
-func (c *Collection) InsertMany(context.Context, []interface{}, ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
-	panic("not implemented")
+func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+	// merge options
+	opt := options.MergeInsertManyOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Allow unordered.
+
+	// prepare lists
+	docs := make([]bson.D, 0, len(documents))
+	ids := make([]interface{}, 0, len(documents))
+
+	// process documents
+	for _, document := range documents {
+		// transform document
+		doc, err := bsonkit.Transform(document)
+		if err != nil {
+			return nil, err
+		}
+
+		// ensure object id
+		doc, id, err := ensureObjectID(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		// add to lists
+		docs = append(docs, doc)
+		ids = append(ids, id)
+	}
+
+	// write documents
+	err = c.client.backend.insert(c.ns, docs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.InsertManyResult{
+		InsertedIDs: ids,
+	}, nil
 }
 
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
@@ -174,7 +218,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// write document
-	err = c.client.backend.insertOne(c.ns, doc)
+	err = c.client.backend.insert(c.ns, []bson.D{doc})
 	if err != nil {
 		return nil, err
 	}
