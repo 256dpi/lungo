@@ -9,6 +9,8 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// TODO: Properly test all operators.
+
 func matchTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))) {
 	t.Run("Mongo", func(t *testing.T) {
 		coll := testCollection()
@@ -31,6 +33,7 @@ func matchTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))) 
 		fn(func(query bson.M, result interface{}) {
 			res, err := Match(bsonkit.Convert(doc), bsonkit.Convert(query))
 			if str, ok := result.(string); ok {
+				assert.Error(t, err)
 				assert.Equal(t, str, err.Error())
 				assert.False(t, res, query)
 			} else {
@@ -182,6 +185,27 @@ func TestMatchEq(t *testing.T) {
 					"bar": "baz",
 				},
 			},
+		}, true)
+	})
+}
+
+func TestMatchIn(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// missing list
+		fn(bson.M{
+			"foo": bson.M{"$in": ""},
+		}, "match: $in: expected list")
+
+		// empty list
+		fn(bson.M{
+			"foo": bson.M{"$in": bson.A{}},
+		}, false)
+
+		// matching list
+		fn(bson.M{
+			"foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 	})
 }

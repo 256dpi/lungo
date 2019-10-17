@@ -34,6 +34,7 @@ func init() {
 	ExpressionQueryOperators["$lt"] = matchComp("$lt")
 	ExpressionQueryOperators["$gte"] = matchComp("$gte")
 	ExpressionQueryOperators["$lte"] = matchComp("$lte")
+	ExpressionQueryOperators["$in"] = matchIn
 }
 
 func Match(doc, query bson.D) (bool, error) {
@@ -257,4 +258,30 @@ func matchComp(op string) Operator {
 			return false, fmt.Errorf("match: unkown comparison operator %q", op)
 		}
 	}
+}
+
+func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
+	// get array
+	list, ok := v.(bson.A)
+	if !ok {
+		return false, fmt.Errorf("match: $in: expected list")
+	}
+
+	// get field value
+	field := bsonkit.Get(doc, path)
+	if field == bsonkit.Missing {
+		field = nil
+	}
+
+	// check if field is in list
+	for _, item := range list {
+		res, err := bsonkit.Compare(field, item)
+		if err != nil {
+			return false, err
+		} else if res == 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
