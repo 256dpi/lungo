@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var alternativeTypes = map[string]string{
+var interfaceReplacements = map[string]string{
 	"*mongo.Client":     "lungo.IClient",
 	"*mongo.Database":   "lungo.IDatabase",
 	"*mongo.Collection": "lungo.ICollection",
@@ -55,7 +55,7 @@ func listMethods(t reflect.Type, original bool) string {
 				f = "(" + f[c:]
 			}
 
-			for a, b := range alternativeTypes {
+			for a, b := range interfaceReplacements {
 				f = strings.ReplaceAll(f, a, b)
 			}
 		}

@@ -10,41 +10,41 @@ import (
 
 const testDB = "test-lungo"
 
-var sharedNativeClient IClient
-var sharedClient IClient
+var testMongoClient IClient
+var testLungoClient IClient
 
-var collCounter = 0
+var testCollCounter = 0
 
 func init() {
-	nativeClient, err := Connect(nil, options.Client().ApplyURI("mongodb://localhost"))
+	mongoClient, err := Connect(nil, options.Client().ApplyURI("mongodb://localhost"))
 	if err != nil {
 		panic(err)
 	}
 
-	err = nativeClient.Database("test-lungo").Drop(nil)
+	err = mongoClient.Database(testDB).Drop(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	sharedNativeClient = nativeClient
+	testMongoClient = mongoClient
 
-	client2, err := Open(nil, ClientOptions{
+	lungoClient, err := Open(nil, ClientOptions{
 		Store: NewMemoryStore(),
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	sharedClient = client2
+	testLungoClient = lungoClient
 }
 
 func clientTest(t *testing.T, fn func(t *testing.T, c IClient)) {
-	t.Run("NativeClient", func(t *testing.T) {
-		fn(t, sharedNativeClient)
+	t.Run("Mongo", func(t *testing.T) {
+		fn(t, testMongoClient)
 	})
 
-	t.Run("Client", func(t *testing.T) {
-		fn(t, sharedClient)
+	t.Run("Lungo", func(t *testing.T) {
+		fn(t, testLungoClient)
 	})
 }
 
@@ -55,8 +55,8 @@ func databaseTest(t *testing.T, fn func(t *testing.T, d IDatabase)) {
 }
 
 func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
-	collCounter++
-	name := fmt.Sprintf("n-%d", collCounter)
+	testCollCounter++
+	name := fmt.Sprintf("n-%d", testCollCounter)
 
 	clientTest(t, func(t *testing.T, client IClient) {
 		fn(t, client.Database(testDB).Collection(name))
