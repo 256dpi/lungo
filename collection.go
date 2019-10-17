@@ -223,7 +223,7 @@ func ensureObjectID(doc bson.D) (bson.D, primitive.ObjectID, error) {
 	// prepend id if zero
 	if id.IsZero() {
 		id = primitive.NewObjectID()
-		bsonkit.Set(doc, "_id", id, true)
+		doc = bsonkit.Set(doc, "_id", id, true)
 	}
 
 	return doc, id, nil
