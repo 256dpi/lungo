@@ -16,17 +16,17 @@ func matchTest(t *testing.T, doc, query bson.M, result bool) {
 		assert.NoError(t, err)
 		n, err := coll.CountDocuments(nil, query)
 		assert.NoError(t, err)
-		assert.Equal(t, result, n == 1)
+		assert.Equal(t, result, n == 1, query)
 	})
 
 	t.Run("Lungo", func(t *testing.T) {
 		res, err := Match(bsonkit.Convert(doc), bsonkit.Convert(query))
 		assert.NoError(t, err)
-		assert.Equal(t, result, res)
+		assert.Equal(t, result, res, query)
 	})
 }
 
-func TestMatchEq(t *testing.T) {
+func TestMatchValidEq(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 	}, bson.M{
@@ -54,4 +54,18 @@ func TestMatchEq(t *testing.T) {
 			"$eq": "baz",
 		},
 	}, false)
+
+	matchTest(t, bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"$eq": "baz",
+			},
+		},
+	}, bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"$eq": "baz",
+			},
+		},
+	}, true)
 }

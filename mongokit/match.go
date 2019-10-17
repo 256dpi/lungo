@@ -30,13 +30,9 @@ func init() {
 }
 
 func Match(doc, query bson.D) (bool, error) {
-	return matchAll(doc, "", query)
-}
-
-func matchAll(doc bson.D, path string, query bson.D) (bool, error) {
 	// match all expressions (implicit and)
 	for _, exp := range query {
-		ok, err := matchPair(doc, path, exp)
+		ok, err := matchQueryPair(doc, exp)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -47,27 +43,52 @@ func matchAll(doc bson.D, path string, query bson.D) (bool, error) {
 	return true, nil
 }
 
-func matchPair(doc bson.D, path string, exp bson.E) (bool, error) {
-	// check root matchers "{ $exp: value }"
-	matcher := Matchers[exp.Key]
-	if matcher != nil {
-		return matcher(doc, path, exp.Value)
-	}
+// the query document may contain root matchers "{ $and: [], ...}", field matchers
+// "{ field: { $exp: value }, ... }" and simple equality matchers "{ field: value }, ... }"
 
-	// join path
-	if path == "" {
-		path = exp.Key
-	} else {
-		path = path + "." + exp.Key
+// expressions documents however may only contain expressions "$exp: value, ..."
+
+func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
+	// handle root matchers e.g. $and, $or, ...
+	rootMatcher := Matchers[pair.Key]
+	if rootMatcher != nil {
+		return rootMatcher(doc, "", pair.Value)
 	}
 
 	// check document matcher "{ field: { $exp: value } }"
-	if d, ok := exp.Value.(bson.D); ok {
-		return matchAll(doc, path, d)
+	if exps, ok := pair.Value.(bson.D); ok {
+		// check if there are operators
+		found := false
+		for _, exp := range exps {
+			if exp.Key[0] == '$' {
+				found = true
+			}
+		}
+
+		// match all expressions if found (implicit and)
+		if found {
+			for _, exp := range exps {
+				// lookup matcher
+				matcher := Matchers[exp.Key]
+				if matcher == nil {
+					return false, fmt.Errorf("match: unkown matcher %q", exp.Key)
+				}
+
+				// call matcher
+				ok, err := matcher(doc, pair.Key, exp.Value)
+				if err != nil {
+					return false, err
+				} else if !ok {
+					return false, nil
+				}
+			}
+
+			return true, nil
+		}
 	}
 
-	// use default equality matcher  "{ field: value } }"
-	return Matchers["$eq"](doc, path, exp.Value)
+	// use default equality matcher "{ field: value } }"
+	return Matchers["$eq"](doc, pair.Key, pair.Value)
 }
 
 func matchAnd(doc bson.D, _ string, v interface{}) (bool, error) {
