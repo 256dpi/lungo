@@ -36,6 +36,7 @@ func init() {
 	ExpressionQueryOperators["$lte"] = matchComp("$lte")
 	ExpressionQueryOperators["$ne"] = matchComp("$ne")
 	ExpressionQueryOperators["$in"] = matchIn
+	ExpressionQueryOperators["$nin"] = matchNin
 }
 
 func Match(doc, query bson.D) (bool, error) {
@@ -287,4 +288,30 @@ func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
+	// get array
+	list, ok := v.(bson.A)
+	if !ok {
+		return false, fmt.Errorf("match: $nin: expected list")
+	}
+
+	// get field value
+	field := bsonkit.Get(doc, path)
+	if field == bsonkit.Missing {
+		field = nil
+	}
+
+	// check if field is not in list
+	for _, item := range list {
+		res, err := bsonkit.Compare(field, item)
+		if err != nil {
+			return false, err
+		} else if res == 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
