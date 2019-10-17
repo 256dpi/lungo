@@ -51,10 +51,16 @@ func Match(doc, query bson.D) (bool, error) {
 }
 
 func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
-	// call top level query operators which may appear together with field
+	// check for top level query operator which may appear together with field
 	// expressions in the query filter document
-	operator := TopLevelQueryOperators[pair.Key]
-	if operator != nil {
+	if len(pair.Key) > 0 && pair.Key[0] == '$' {
+		// lookup top level operator
+		operator := TopLevelQueryOperators[pair.Key]
+		if operator == nil {
+			return false, fmt.Errorf("match: unknown top level operator %q", pair.Key)
+		}
+
+		// call operator
 		return operator(doc, "", pair.Value)
 	}
 
@@ -63,18 +69,21 @@ func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
 	if exps, ok := pair.Value.(bson.D); ok {
 		// match all expressions if found (implicit and)
 		for i, exp := range exps {
-			// break and leave document fo the default equality operator if the
+			// break and leave document as a simple equality condition if the
 			// first key does not look like an operator
-			if i == 0 && len(exp.Key) > 0 && exp.Key[0] != '$' {
+			if i == 0 && (len(exp.Key) == 0 || exp.Key[0] != '$') {
 				break
+			}
+
+			// check operator validity
+			if len(exp.Key) == 0 || exp.Key[0] != '$' {
+				return false, fmt.Errorf("match: expected operator, got %q", exp.Key)
 			}
 
 			// lookup operator
 			operator := ExpressionQueryOperators[exp.Key]
-			if operator == nil && i == 0 {
-				break
-			} else if operator == nil {
-				return false, fmt.Errorf("match: unkown operator %q", exp.Key)
+			if operator == nil {
+				return false, fmt.Errorf("match: unknown operator %q", exp.Key)
 			}
 
 			// call matcher
@@ -84,15 +93,18 @@ func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
 			} else if !ok {
 				return false, nil
 			}
-		}
 
-		return true, nil
+			// return success if last one
+			if i == len(exps)-1 {
+				return true, nil
+			}
+		}
 	}
 
 	// handle pair as a simple equality condition
 
 	// get the equality query operator
-	operator = ExpressionQueryOperators["$eq"]
+	operator := ExpressionQueryOperators["$eq"]
 	if operator == nil {
 		return false, fmt.Errorf("match: missing default equality operator")
 	}
