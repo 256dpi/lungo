@@ -5,7 +5,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var _ IClient = &Client{}
@@ -29,10 +28,6 @@ func Open(ctx context.Context, store Store) (IClient, error) {
 	}, nil
 }
 
-func (c *Client) Connect(context.Context) error {
-	panic("not implemented")
-}
-
 func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
 	// merge options
 	opt := options.MergeDatabaseOptions(opts...)
@@ -54,20 +49,12 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 	}
 }
 
-func (c *Client) Disconnect(context.Context) error {
-	panic("not implemented")
-}
-
 func (c *Client) ListDatabaseNames(context.Context, interface{}, ...*options.ListDatabasesOptions) ([]string, error) {
 	panic("not implemented")
 }
 
 func (c *Client) ListDatabases(context.Context, interface{}, ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error) {
 	panic("not implemented")
-}
-
-func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
-	return nil
 }
 
 func (c *Client) StartSession(...*options.SessionOptions) (mongo.Session, error) {
