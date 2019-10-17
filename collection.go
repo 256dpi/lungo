@@ -29,8 +29,27 @@ func (c *Collection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.
 	panic("not implemented")
 }
 
-func (c *Collection) Clone(...*options.CollectionOptions) (ICollection, error) {
-	panic("not implemented")
+func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, error) {
+	// merge options
+	opt := options.MergeCollectionOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"CollectionOptions.ReadConcern":    opt.ReadConcern != nil,
+		"CollectionOptions.WriteConcern":   opt.WriteConcern != nil,
+		"CollectionOptions.ReadPreference": opt.ReadPreference != nil,
+		"CollectionOptions.Registry":       opt.Registry != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Collection{
+		ns:     c.ns,
+		name:   c.name,
+		db:     c.db,
+		client: c.client,
+	}, nil
 }
 
 func (c *Collection) CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error) {
@@ -166,7 +185,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 }
 
 func (c *Collection) Name() string {
-	panic("not implemented")
+	return c.name
 }
 
 func (c *Collection) ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {

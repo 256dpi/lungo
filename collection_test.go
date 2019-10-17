@@ -8,6 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func TestCollectionClone(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		c2, err := c.Clone()
+		assert.NoError(t, err)
+		assert.NotNil(t, c2)
+	})
+}
+
 func TestCollectionDatabase(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		assert.Equal(t, d, d.Collection("").Database())
@@ -93,5 +101,11 @@ func TestCollectionInsertOne(t *testing.T) {
 				"foo": "bar",
 			},
 		}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionName(t *testing.T) {
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		assert.Equal(t, "foo", d.Collection("foo").Name())
 	})
 }
