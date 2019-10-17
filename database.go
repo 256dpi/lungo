@@ -32,10 +32,15 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	opt := options.MergeCollectionOptions(opts...)
 
 	// assert unsupported options
-	d.client.assertUnsupported(opt.ReadConcern == nil, "CollectionOptions.ReadConcern")
-	d.client.assertUnsupported(opt.WriteConcern == nil, "CollectionOptions.WriteConcern")
-	d.client.assertUnsupported(opt.ReadPreference == nil, "CollectionOptions.ReadPreference")
-	d.client.assertUnsupported(opt.Registry == nil, "CollectionOptions.Registry")
+	err := assertUnsupported(map[string]bool{
+		"CollectionOptions.ReadConcern":    opt.ReadConcern != nil,
+		"CollectionOptions.WriteConcern":   opt.WriteConcern != nil,
+		"CollectionOptions.ReadPreference": opt.ReadPreference != nil,
+		"CollectionOptions.Registry":       opt.Registry != nil,
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	return &Collection{
 		ns:     d.name + "." + name,
@@ -54,7 +59,12 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	opt := options.MergeListCollectionsOptions(opts...)
 
 	// assert unsupported options
-	d.client.assertUnsupported(opt.NameOnly == nil, "ListCollectionsOptions.NameOnly")
+	err := assertUnsupported(map[string]bool{
+		"ListCollectionsOptions.NameOnly": opt.NameOnly != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)
@@ -82,7 +92,12 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	opt := options.MergeListCollectionsOptions(opts...)
 
 	// assert unsupported options
-	d.client.assertUnsupported(opt.NameOnly == nil, "ListCollectionsOptions.NameOnly")
+	err := assertUnsupported(map[string]bool{
+		"ListCollectionsOptions.NameOnly": opt.NameOnly != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)

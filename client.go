@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"context"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -12,8 +11,7 @@ import (
 var _ IClient = &Client{}
 
 type ClientOptions struct {
-	Store          Store
-	AssertCallback func(string)
+	Store Store
 }
 
 type Client struct {
@@ -46,10 +44,15 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 	opt := options.MergeDatabaseOptions(opts...)
 
 	// assert unsupported options
-	c.assertUnsupported(opt.ReadConcern == nil, "DatabaseOptions.ReadConcern")
-	c.assertUnsupported(opt.WriteConcern == nil, "DatabaseOptions.WriteConcern")
-	c.assertUnsupported(opt.ReadPreference == nil, "DatabaseOptions.ReadPreference")
-	c.assertUnsupported(opt.Registry == nil, "DatabaseOptions.Registry")
+	err := assertUnsupported(map[string]bool{
+		"DatabaseOptions.ReadConcern":    opt.ReadConcern != nil,
+		"DatabaseOptions.WriteConcern":   opt.WriteConcern != nil,
+		"DatabaseOptions.ReadPreference": opt.ReadPreference != nil,
+		"DatabaseOptions.Registry":       opt.Registry != nil,
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	return &Database{
 		name:   name,
@@ -87,21 +90,4 @@ func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions,
 
 func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("not implemented")
-}
-
-func (c *Client) assertUnsupported(ok bool, typ string) {
-	// check condition
-	if ok {
-		return
-	}
-
-	// create message
-	msg := fmt.Sprintf("unsupported: %s", typ)
-
-	// call callback or panic
-	if c.opts.AssertCallback != nil {
-		c.opts.AssertCallback(msg)
-	} else {
-		panic(msg)
-	}
 }

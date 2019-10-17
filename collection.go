@@ -66,25 +66,30 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	opt := options.MergeFindOptions(opts...)
 
 	// assert unsupported options
-	c.client.assertUnsupported(opt.AllowPartialResults == nil, "FindOptions.AllowPartialResults")
-	c.client.assertUnsupported(opt.BatchSize == nil, "FindOptions.BatchSize")
-	c.client.assertUnsupported(opt.Collation == nil, "FindOptions.Collation")
-	c.client.assertUnsupported(opt.Comment == nil, "FindOptions.Comment")
-	c.client.assertUnsupported(opt.CursorType == nil, "FindOptions.CursorType")
-	c.client.assertUnsupported(opt.Hint == nil, "FindOptions.Hint")
-	c.client.assertUnsupported(opt.Limit == nil, "FindOptions.Limit")
-	c.client.assertUnsupported(opt.Max == nil, "FindOptions.Max")
-	c.client.assertUnsupported(opt.MaxAwaitTime == nil, "FindOptions.MaxAwaitTime")
-	c.client.assertUnsupported(opt.MaxTime == nil, "FindOptions.MaxTime")
-	c.client.assertUnsupported(opt.Min == nil, "FindOptions.Min")
-	c.client.assertUnsupported(opt.NoCursorTimeout == nil, "FindOptions.NoCursorTimeout")
-	c.client.assertUnsupported(opt.OplogReplay == nil, "FindOptions.OplogReplay")
-	c.client.assertUnsupported(opt.Projection == nil, "FindOptions.Projection")
-	c.client.assertUnsupported(opt.ReturnKey == nil, "FindOptions.ReturnKey")
-	c.client.assertUnsupported(opt.ShowRecordID == nil, "FindOptions.ShowRecordID")
-	c.client.assertUnsupported(opt.Skip == nil, "FindOptions.Skip")
-	c.client.assertUnsupported(opt.Snapshot == nil, "FindOptions.Snapshot")
-	c.client.assertUnsupported(opt.Sort == nil, "FindOptions.Sort")
+	err := assertUnsupported(map[string]bool{
+		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
+		"FindOptions.BatchSize":           opt.BatchSize != nil,
+		"FindOptions.Collation":           opt.Collation != nil,
+		"FindOptions.Comment":             opt.Comment != nil,
+		"FindOptions.CursorType":          opt.CursorType != nil,
+		"FindOptions.Hint":                opt.Hint != nil,
+		"FindOptions.Limit":               opt.Limit != nil,
+		"FindOptions.Max":                 opt.Max != nil,
+		"FindOptions.MaxAwaitTime":        opt.MaxAwaitTime != nil,
+		"FindOptions.MaxTime":             opt.MaxTime != nil,
+		"FindOptions.Min":                 opt.Min != nil,
+		"FindOptions.NoCursorTimeout":     opt.NoCursorTimeout != nil,
+		"FindOptions.OplogReplay":         opt.OplogReplay != nil,
+		"FindOptions.Projection":          opt.Projection != nil,
+		"FindOptions.ReturnKey":           opt.ReturnKey != nil,
+		"FindOptions.ShowRecordID":        opt.ShowRecordID != nil,
+		"FindOptions.Skip":                opt.Skip != nil,
+		"FindOptions.Snapshot":            opt.Snapshot != nil,
+		"FindOptions.Sort":                opt.Sort != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)
@@ -130,7 +135,12 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	opt := options.MergeInsertOneOptions(opts...)
 
 	// assert unsupported options
-	c.client.assertUnsupported(opt.BypassDocumentValidation == nil, "InsertOneOptions.BypassDocumentValidation")
+	err := assertUnsupported(map[string]bool{
+		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// transform document
 	doc, err := bsonkit.Transform(document)
