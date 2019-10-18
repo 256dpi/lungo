@@ -15,6 +15,7 @@ func TestInspect(t *testing.T) {
 		out Type
 	}{
 		{in: nil, out: Null},
+		{in: primitive.Null{}, out: Null},
 		{in: int32(42), out: Number},
 		{in: int64(42), out: Number},
 		{in: 4.2, out: Number},

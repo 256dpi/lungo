@@ -29,7 +29,7 @@ const (
 
 func Inspect(v interface{}) Type {
 	switch v.(type) {
-	case nil:
+	case nil, primitive.Null:
 		return Null
 	case int32, int64, float64:
 		return Number
