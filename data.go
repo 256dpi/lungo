@@ -69,20 +69,22 @@ func (n *Namespace) Prepare() *Namespace {
 
 func (n *Namespace) Clone() *Namespace {
 	// create new namespace
-	data := &Namespace{
+	clone := &Namespace{
 		Name: n.Name,
 	}
 
 	// copy documents
-	copy(data.Documents, n.Documents)
+	clone.Documents = make(bsonkit.List, len(n.Documents))
+	copy(clone.Documents, n.Documents)
 
 	// copy indexes
-	copy(data.Indexes, n.Indexes)
+	clone.Indexes = make([]Index, len(n.Indexes))
+	copy(clone.Indexes, n.Indexes)
 
 	// clone primary index
-	data.primaryIndex = n.primaryIndex.Clone()
+	clone.primaryIndex = n.primaryIndex.Clone()
 
-	return data
+	return clone
 }
 
 type Index struct {
