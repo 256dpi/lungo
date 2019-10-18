@@ -55,32 +55,18 @@ func (d *Database) Drop(context.Context) error {
 }
 
 func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
-	// merge options
-	opt := options.MergeListCollectionsOptions(opts...)
-
-	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
-		"ListCollectionsOptions.NameOnly": opt.NameOnly != nil,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// transform filter
-	query, err := bsonkit.Transform(filter)
-	if err != nil {
-		return nil, err
-	}
-
 	// list collections
-	list, err := d.client.engine.listCollections(d.name, query)
+	res, err := d.ListCollections(ctx, filter, opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	// convert cursor
+	csr := res.(*staticCursor)
 
 	// collect names
 	names := make([]string, 0)
-	for _, doc := range list {
+	for _, doc := range csr.list {
 		names = append(names, bsonkit.Get(doc, "name").(string))
 	}
 

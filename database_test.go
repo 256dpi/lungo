@@ -18,30 +18,30 @@ func TestDatabaseClient(t *testing.T) {
 func TestDatabaseListCollectionsAndNames(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		names, err := d.ListCollectionNames(nil, bson.M{
-			"name": bson.M{"$in": bson.A{"coll-names"}},
+			"name": "coll-names",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{}, names)
 
 		csr, err := d.ListCollections(nil, bson.M{
-			"name": bson.M{"$in": bson.A{"coll-names"}},
+			"name": "coll-names",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		_, err = d.Collection("coll-names").InsertOne(nil, bson.M{
-			"name": bson.M{"$in": bson.A{"coll-names"}},
+			"foo": "bar",
 		})
 		assert.NoError(t, err)
 
 		names, err = d.ListCollectionNames(nil, bson.M{
-			"name": bson.M{"$in": bson.A{"coll-names"}},
+			"name": "coll-names",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"coll-names"}, names)
 
 		csr, err = d.ListCollections(nil, bson.M{
-			"name": bson.M{"$in": bson.A{"coll-names"}},
+			"name": "coll-names",
 		})
 		assert.NoError(t, err)
 
