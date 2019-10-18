@@ -207,7 +207,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		return nil, err
 	}
 
-	// TODO: Allow unordered.
+	// TODO: Handle unordered.
 
 	// prepare lists
 	docs := make([]bson.D, 0, len(documents))
