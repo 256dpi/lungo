@@ -122,6 +122,21 @@ func (e *engine) listCollections(db string, query bson.D) ([]bson.D, error) {
 	return list, nil
 }
 
+func (e *engine) dropCollection(ns string) error {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// drop all namespaces
+	for name := range e.data.Namespaces {
+		if name == ns {
+			delete(e.data.Namespaces, name)
+		}
+	}
+
+	return nil
+}
+
 func (e *engine) find(ns string, query bson.D) ([]bson.D, error) {
 	// acquire mutex
 	e.mutex.Lock()

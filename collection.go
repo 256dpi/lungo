@@ -72,7 +72,13 @@ func (c *Collection) Distinct(context.Context, string, interface{}, ...*options.
 }
 
 func (c *Collection) Drop(context.Context) error {
-	panic("not implemented")
+	// drop collection
+	err := c.client.engine.dropCollection(c.ns)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Collection) EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error) {

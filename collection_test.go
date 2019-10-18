@@ -23,6 +23,24 @@ func TestCollectionDatabase(t *testing.T) {
 	})
 }
 
+func TestCollectionDrop(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"foo": "bar",
+			},
+		}, dumpCollection(c, true))
+
+		err = c.Drop(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, true))
+	})
+}
+
 func TestCollectionFind(t *testing.T) {
 	/* missing database */
 
