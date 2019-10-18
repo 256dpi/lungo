@@ -350,7 +350,51 @@ func (c *Collection) Name() string {
 }
 
 func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
-	panic("not implemented")
+	// merge options
+	opt := options.MergeReplaceOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"InsertOneOptions.Collation":                opt.Collation != nil,
+		"InsertOneOptions.Upsert":                   opt.Upsert != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// transform document
+	doc, err := bsonkit.Transform(replacement)
+	if err != nil {
+		return nil, err
+	}
+
+	// ensure object id
+	id := bsonkit.Get(doc, "_id")
+	if id == bsonkit.Missing {
+		id = primitive.NewObjectID()
+		err = bsonkit.Set(doc, "_id", id, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// insert document
+	res, err := c.client.engine.replace(c.ns, query, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.UpdateResult{
+		MatchedCount:  int64(res.matched),
+		ModifiedCount: int64(res.modified),
+	}, nil
 }
 
 func (c *Collection) UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {

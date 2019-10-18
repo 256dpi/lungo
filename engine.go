@@ -11,6 +11,11 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
+type result struct {
+	matched  int
+	modified int
+}
+
 type engine struct {
 	store Store
 	data  *Data
@@ -236,4 +241,64 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 	e.data = clone
 
 	return nil
+}
+
+func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return &result{}, nil
+	}
+
+	// filter documents
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	// check list
+	if len(list) == 0 {
+		return &result{}, nil
+	}
+
+	// clone data and namespace
+	clone := e.data.Clone()
+	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
+
+	// replace document
+	var old bsonkit.Doc
+	for i, doc := range clone.Namespaces[ns].Documents {
+		if doc == list[0] {
+			old = doc
+			clone.Namespaces[ns].Documents[i] = repl
+		}
+	}
+
+	// remove old doc from index
+	clone.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: old})
+
+	// check index
+	if clone.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: repl}) {
+		return nil, fmt.Errorf("document with same _id exists already")
+	}
+
+	// update primary index
+	clone.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: repl})
+
+	// write data
+	err = e.store.Store(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	// set new data
+	e.data = clone
+
+	return &result{
+		matched:  len(list),
+		modified: 1,
+	}, nil
 }

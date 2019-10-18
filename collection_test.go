@@ -455,3 +455,93 @@ func TestCollectionName(t *testing.T) {
 		assert.Equal(t, "foo", d.Collection("foo").Name())
 	})
 }
+
+func TestCollectionReplaceOne(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// replace first document
+		res2, err := c.ReplaceOne(nil, bson.M{}, bson.M{
+			"_id": id1,
+			"foo": "baz",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// replace second document
+		res2, err = c.ReplaceOne(nil, bson.M{
+			"_id": id2,
+		}, bson.M{
+			"_id": id2,
+			"bar": "quz",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"bar": "quz",
+			},
+		}, dumpCollection(c, false))
+
+		// duplicate key
+		res2, err = c.ReplaceOne(nil, bson.M{
+			"_id": id2,
+		}, bson.M{
+			"_id": id1,
+			"bar": "qux",
+		})
+		assert.Error(t, err)
+		assert.Nil(t, res2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"bar": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
