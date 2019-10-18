@@ -10,9 +10,7 @@ import (
 
 // https://github.com/mongodb/mongo/blob/master/src/mongo/db/matcher/expression_leaf.cpp
 
-// TODO: Use bsonkit.Doc for operators?
-
-type Operator func(bson.D, string, interface{}) (bool, error)
+type Operator func(bsonkit.Doc, string, interface{}) (bool, error)
 
 var TopLevelQueryOperators = map[string]Operator{}
 var ExpressionQueryOperators = map[string]Operator{}
@@ -45,7 +43,7 @@ func init() {
 func Match(doc, query bsonkit.Doc) (bool, error) {
 	// match all expressions (implicit and)
 	for _, exp := range *query {
-		ok, err := matchQueryPair(*doc, exp)
+		ok, err := matchQueryPair(doc, exp)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -56,7 +54,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	return true, nil
 }
 
-func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
+func matchQueryPair(doc bsonkit.Doc, pair bson.E) (bool, error) {
 	// check for top level query operator which may appear together with field
 	// expressions in the query filter document
 	if len(pair.Key) > 0 && pair.Key[0] == '$' {
@@ -121,7 +119,7 @@ func matchQueryPair(doc bson.D, pair bson.E) (bool, error) {
 	return res, err
 }
 
-func matchAnd(doc bson.D, _ string, v interface{}) (bool, error) {
+func matchAnd(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -142,7 +140,7 @@ func matchAnd(doc bson.D, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(&doc, &query)
+		ok, err := Match(doc, &query)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -153,7 +151,7 @@ func matchAnd(doc bson.D, _ string, v interface{}) (bool, error) {
 	return true, nil
 }
 
-func matchNot(doc bson.D, _ string, v interface{}) (bool, error) {
+func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	// coerce item
 	query, ok := v.(bson.D)
 	if !ok {
@@ -161,7 +159,7 @@ func matchNot(doc bson.D, _ string, v interface{}) (bool, error) {
 	}
 
 	// match document
-	ok, err := Match(&doc, &query)
+	ok, err := Match(doc, &query)
 	if err != nil {
 		return false, err
 	}
@@ -169,7 +167,7 @@ func matchNot(doc bson.D, _ string, v interface{}) (bool, error) {
 	return !ok, nil
 }
 
-func matchNor(doc bson.D, _ string, v interface{}) (bool, error) {
+func matchNor(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -190,7 +188,7 @@ func matchNor(doc bson.D, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(&doc, &query)
+		ok, err := Match(doc, &query)
 		if err != nil {
 			return false, err
 		} else if ok {
@@ -201,7 +199,7 @@ func matchNor(doc bson.D, _ string, v interface{}) (bool, error) {
 	return true, nil
 }
 
-func matchOr(doc bson.D, _ string, v interface{}) (bool, error) {
+func matchOr(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -222,7 +220,7 @@ func matchOr(doc bson.D, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(&doc, &query)
+		ok, err := Match(doc, &query)
 		if err != nil {
 			return false, err
 		} else if ok {
@@ -234,9 +232,9 @@ func matchOr(doc bson.D, _ string, v interface{}) (bool, error) {
 }
 
 func matchComp(op string) Operator {
-	return func(doc bson.D, path string, v interface{}) (bool, error) {
+	return func(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 		// get field value
-		field := bsonkit.Get(&doc, path)
+		field := bsonkit.Get(doc, path)
 
 		// compare field with value
 		res := bsonkit.Compare(field, v)
@@ -261,7 +259,7 @@ func matchComp(op string) Operator {
 	}
 }
 
-func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
+func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -269,7 +267,7 @@ func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
 	}
 
 	// get field value
-	field := bsonkit.Get(&doc, path)
+	field := bsonkit.Get(doc, path)
 
 	// check if field is in list
 	for _, item := range list {
@@ -282,7 +280,7 @@ func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
 	return false, nil
 }
 
-func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
+func matchNin(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -290,7 +288,7 @@ func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
 	}
 
 	// get field value
-	field := bsonkit.Get(&doc, path)
+	field := bsonkit.Get(doc, path)
 
 	// check if field is not in list
 	for _, item := range list {
@@ -303,7 +301,7 @@ func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
 	return true, nil
 }
 
-func matchExists(doc bson.D, path string, v interface{}) (bool, error) {
+func matchExists(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 	// get boolean
 	exists, ok := v.(bool)
 	if !ok {
@@ -311,7 +309,7 @@ func matchExists(doc bson.D, path string, v interface{}) (bool, error) {
 	}
 
 	// get field value
-	field := bsonkit.Get(&doc, path)
+	field := bsonkit.Get(doc, path)
 	if exists {
 		return field != bsonkit.Missing, nil
 	}
