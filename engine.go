@@ -34,6 +34,46 @@ func createEngine(store Store) (*engine, error) {
 	return e, nil
 }
 
+func (e *engine) listDatabases(query bson.D) ([]bson.D, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// sort namespaces
+	sort := map[string][]*Namespace{}
+	for _, ns := range e.data.Namespaces {
+		name := strings.Split(ns.Name, ".")[0]
+		sort[name] = append(sort[name], ns)
+	}
+
+	// prepare list
+	var list []bson.D
+	for name, nss := range sort {
+		// check emptiness
+		empty := true
+		for _, ns := range nss {
+			if len(ns.Documents) > 0 {
+				empty = false
+			}
+		}
+
+		// add specification
+		list = append(list, bson.D{
+			bson.E{Key: "name", Value: name},
+			bson.E{Key: "sizeOnDisk", Value: 42},
+			bson.E{Key: "empty", Value: empty},
+		})
+	}
+
+	// filter list
+	list, err := mongokit.Filter(list, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 func (e *engine) dropDatabase(name string) error {
 	// acquire mutex
 	e.mutex.Lock()
