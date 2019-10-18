@@ -15,6 +15,12 @@ func TestDatabaseClient(t *testing.T) {
 	})
 }
 
+func TestDatabaseCollection(t *testing.T) {
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		assert.NotNil(t, d.Collection("foo"))
+	})
+}
+
 func TestDatabaseListCollectionsAndNames(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		names, err := d.ListCollectionNames(nil, bson.M{
