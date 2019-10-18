@@ -21,6 +21,24 @@ func TestDatabaseCollection(t *testing.T) {
 	})
 }
 
+func TestDatabaseDrop(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"foo": "bar",
+			},
+		}, dumpCollection(c, true))
+
+		err = c.Database().Drop(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, true))
+	})
+}
+
 func TestDatabaseListCollectionsAndNames(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		names, err := d.ListCollectionNames(nil, bson.M{

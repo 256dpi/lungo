@@ -34,6 +34,21 @@ func createEngine(store Store) (*engine, error) {
 	return e, nil
 }
 
+func (e *engine) dropDatabase(name string) error {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// drop all namespaces
+	for ns := range e.data.Namespaces {
+		if strings.Split(ns, ".")[0] == name {
+			delete(e.data.Namespaces, ns)
+		}
+	}
+
+	return nil
+}
+
 func (e *engine) listCollections(db string, query bson.D) ([]bson.D, error) {
 	// acquire mutex
 	e.mutex.Lock()

@@ -51,7 +51,13 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 }
 
 func (d *Database) Drop(context.Context) error {
-	panic("not implemented")
+	// drop database
+	err := d.client.engine.dropDatabase(d.name)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
