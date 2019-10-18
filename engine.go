@@ -96,7 +96,7 @@ func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	defer e.mutex.Unlock()
 
 	// prepare list
-	list := make(bsonkit.List, 0)
+	list := make(bsonkit.List, 0, len(e.data.Namespaces))
 
 	// TODO: Add more collection infos.
 
@@ -155,25 +155,25 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 	}
 
 	// clone data and namespace
-	temp := e.data.Clone()
-	temp.Namespaces[ns] = temp.Namespaces[ns].Clone()
+	clone := e.data.Clone()
+	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
 
-	// remove found documents
-	temp.Namespaces[ns].Documents = bsonkit.Difference(temp.Namespaces[ns].Documents, list)
+	// remove documents
+	clone.Namespaces[ns].Documents = bsonkit.Difference(clone.Namespaces[ns].Documents, list)
 
 	// update primary index
 	for _, doc := range list {
-		temp.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: doc})
+		clone.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: doc})
 	}
 
 	// write data
-	err = e.store.Store(temp)
+	err = e.store.Store(clone)
 	if err != nil {
 		return 0, err
 	}
 
 	// set new data
-	e.data = temp
+	e.data = clone
 
 	return len(list), nil
 }
@@ -202,43 +202,38 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	// check if namespace exists
-	if e.data.Namespaces[ns] != nil {
-		// check primary index
-		for _, doc := range docs {
-			if e.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
-				return fmt.Errorf("document with same _id exists already")
-			}
-		}
-	}
-
 	// clone data
-	temp := e.data.Clone()
+	clone := e.data.Clone()
 
 	// create or clone namespace
-	if temp.Namespaces[ns] == nil {
-		temp.Namespaces[ns] = NewNamespace(ns)
+	if clone.Namespaces[ns] == nil {
+		clone.Namespaces[ns] = NewNamespace(ns)
 	} else {
-		temp.Namespaces[ns] = temp.Namespaces[ns].Clone()
+		clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
 	}
 
 	// add documents
 	for _, doc := range docs {
+		// check primary index
+		if clone.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+			return fmt.Errorf("document with same _id exists already")
+		}
+
 		// add document
-		temp.Namespaces[ns].Documents = append(temp.Namespaces[ns].Documents, doc)
+		clone.Namespaces[ns].Documents = append(clone.Namespaces[ns].Documents, doc)
 
 		// update primary index
-		temp.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
+		clone.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
 	}
 
 	// write data
-	err := e.store.Store(temp)
+	err := e.store.Store(clone)
 	if err != nil {
 		return err
 	}
 
 	// set new data
-	e.data = temp
+	e.data = clone
 
 	return nil
 }
