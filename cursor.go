@@ -5,8 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/256dpi/lungo/bsonkit"
 )
 
@@ -14,7 +12,7 @@ var errCursorClosed = errors.New("cursor closed")
 var errCursorExhausted = errors.New("cursor exhausted")
 
 type staticCursor struct {
-	list   []bson.D
+	list   bsonkit.List
 	pos    int
 	closed bool
 	mutex  sync.Mutex

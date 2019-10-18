@@ -11,13 +11,13 @@ type missing struct{}
 
 var Missing = missing{}
 
-func Get(doc bson.D, path string) interface{} {
+func Get(doc Doc, path string) interface{} {
 	return get(doc, strings.Split(path, "."))
 }
 
-func get(doc bson.D, path []string) interface{} {
+func get(doc Doc, path []string) interface{} {
 	// search for element
-	for _, el := range doc {
+	for _, el := range *doc {
 		if el.Key == path[0] {
 			if len(path) == 1 {
 				return el.Value
@@ -25,7 +25,7 @@ func get(doc bson.D, path []string) interface{} {
 
 			// check if doc
 			if d, ok := el.Value.(bson.D); ok {
-				return get(d, path[1:])
+				return get(&d, path[1:])
 			}
 
 			return Missing
@@ -35,11 +35,11 @@ func get(doc bson.D, path []string) interface{} {
 	return Missing
 }
 
-func Set(doc *bson.D, path string, value interface{}, prepend bool) error {
+func Set(doc Doc, path string, value interface{}, prepend bool) error {
 	return set(doc, strings.Split(path, "."), value, prepend)
 }
 
-func set(doc *bson.D, path []string, value interface{}, prepend bool) error {
+func set(doc Doc, path []string, value interface{}, prepend bool) error {
 	// search for element
 	for i, el := range *doc {
 		if el.Key == path[0] {

@@ -2,11 +2,9 @@ package bsonkit
 
 import (
 	"sort"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Sort(list []bson.D, path string, reverse bool) []bson.D {
+func Sort(list List, path string, reverse bool) List {
 	// sort slice by comparing values
 	sort.Slice(list, func(i, j int) bool {
 		// get values

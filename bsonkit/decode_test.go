@@ -14,7 +14,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	var doc model
-	err := Decode(bson.D{
+	err := Decode(&bson.D{
 		bson.E{Key: "title", Value: "Hello"},
 		bson.E{Key: "clicks", Value: 42},
 		bson.E{Key: "foo", Value: false},
@@ -33,7 +33,7 @@ func TestDecodeList(t *testing.T) {
 	}
 
 	var list []model
-	err := DecodeList([]bson.D{
+	err := DecodeList(List{
 		{
 			bson.E{Key: "title", Value: "Hello"},
 			bson.E{Key: "clicks", Value: 42},

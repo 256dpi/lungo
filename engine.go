@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
 )
 
@@ -34,7 +35,7 @@ func createEngine(store Store) (*engine, error) {
 	return e, nil
 }
 
-func (e *engine) listDatabases(query bson.D) ([]bson.D, error) {
+func (e *engine) listDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -47,7 +48,7 @@ func (e *engine) listDatabases(query bson.D) ([]bson.D, error) {
 	}
 
 	// prepare list
-	var list []bson.D
+	var list bsonkit.List
 	for name, nss := range sort {
 		// check emptiness
 		empty := true
@@ -58,7 +59,7 @@ func (e *engine) listDatabases(query bson.D) ([]bson.D, error) {
 		}
 
 		// add specification
-		list = append(list, bson.D{
+		list = append(list, &bson.D{
 			bson.E{Key: "name", Value: name},
 			bson.E{Key: "sizeOnDisk", Value: 42},
 			bson.E{Key: "empty", Value: empty},
@@ -89,20 +90,20 @@ func (e *engine) dropDatabase(name string) error {
 	return nil
 }
 
-func (e *engine) listCollections(db string, query bson.D) ([]bson.D, error) {
+func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// prepare list
-	list := make([]bson.D, 0)
+	list := make(bsonkit.List, 0)
 
 	// TODO: Add more collection infos.
 
 	// add documents
 	for ns := range e.data.Namespaces {
 		if strings.HasPrefix(ns, db) {
-			list = append(list, bson.D{
+			list = append(list, &bson.D{
 				bson.E{Key: "name", Value: strings.TrimPrefix(ns, db)[1:]},
 				bson.E{Key: "type", Value: "collection"},
 				bson.E{Key: "options", Value: bson.D{}},
@@ -137,7 +138,7 @@ func (e *engine) dropCollection(ns string) error {
 	return nil
 }
 
-func (e *engine) find(ns string, query bson.D) ([]bson.D, error) {
+func (e *engine) find(ns string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -156,7 +157,7 @@ func (e *engine) find(ns string, query bson.D) ([]bson.D, error) {
 	return list, nil
 }
 
-func (e *engine) insert(ns string, docs []bson.D) error {
+func (e *engine) insert(ns string, docs bsonkit.List) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()

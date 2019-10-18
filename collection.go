@@ -3,7 +3,6 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -210,7 +209,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	// TODO: Handle unordered.
 
 	// prepare lists
-	docs := make([]bson.D, 0, len(documents))
+	docs := make(bsonkit.List, 0, len(documents))
 	ids := make([]interface{}, 0, len(documents))
 
 	// process documents
@@ -225,7 +224,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		id := bsonkit.Get(doc, "_id")
 		if id == bsonkit.Missing {
 			id = primitive.NewObjectID()
-			err = bsonkit.Set(&doc, "_id", id, true)
+			err = bsonkit.Set(doc, "_id", id, true)
 			if err != nil {
 				return nil, err
 			}
@@ -269,14 +268,14 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	id := bsonkit.Get(doc, "_id")
 	if id == bsonkit.Missing {
 		id = primitive.NewObjectID()
-		err = bsonkit.Set(&doc, "_id", id, true)
+		err = bsonkit.Set(doc, "_id", id, true)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// insert document
-	err = c.client.engine.insert(c.ns, []bson.D{doc})
+	err = c.client.engine.insert(c.ns, bsonkit.List{doc})
 	if err != nil {
 		return nil, err
 	}

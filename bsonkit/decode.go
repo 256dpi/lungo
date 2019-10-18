@@ -7,11 +7,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Decode(item bson.D, out interface{}) error {
+func Decode(doc Doc, out interface{}) error {
 	// TODO: This approach is slow, we should do it directly in memory if possible.
 
-	// marshal item
-	bytes, err := bson.Marshal(item)
+	// marshal doc
+	bytes, err := bson.Marshal(doc)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func Decode(item bson.D, out interface{}) error {
 	return nil
 }
 
-func DecodeList(list []bson.D, out interface{}) error {
+func DecodeList(list List, out interface{}) error {
 	// get out value
 	outValue := reflect.ValueOf(out)
 	if outValue.Kind() != reflect.Ptr {

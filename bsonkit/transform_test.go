@@ -15,7 +15,7 @@ func TestTransform(t *testing.T) {
 	}{
 		{
 			in: bson.M{"foo": "bar"},
-			out: bson.D{
+			out: &bson.D{
 				bson.E{Key: "foo", Value: "bar"},
 			},
 		},
@@ -23,7 +23,7 @@ func TestTransform(t *testing.T) {
 			in: bson.D{
 				bson.E{Key: "foo", Value: "bar"},
 			},
-			out: bson.D{
+			out: &bson.D{
 				bson.E{Key: "foo", Value: "bar"},
 			},
 		},
@@ -33,7 +33,7 @@ func TestTransform(t *testing.T) {
 					bson.M{"bar": "baz"},
 				},
 			},
-			out: bson.D{
+			out: &bson.D{
 				bson.E{Key: "foo", Value: bson.A{
 					bson.D{
 						bson.E{Key: "bar", Value: "baz"},
@@ -43,7 +43,7 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			in: struct{ Title string }{Title: "cool"},
-			out: bson.D{
+			out: &bson.D{
 				bson.E{Key: "title", Value: "cool"},
 			},
 		},
@@ -64,7 +64,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "float32", Value: float32(4.2)},
 				bson.E{Key: "float64", Value: 4.2},
 			},
-			out: bson.D{
+			out: &bson.D{
 				bson.E{Key: "true", Value: true},
 				bson.E{Key: "false", Value: false},
 				bson.E{Key: "int", Value: int32(42)},

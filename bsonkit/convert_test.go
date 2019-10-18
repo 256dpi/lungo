@@ -21,7 +21,7 @@ func TestConvert(t *testing.T) {
 			}},
 		},
 	})
-	assert.Equal(t, bson.D{
+	assert.Equal(t, &bson.D{
 		bson.E{Key: "bar", Value: bson.A{
 			bson.D{
 				bson.E{Key: "foo", Value: "bar"},

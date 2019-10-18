@@ -7,7 +7,7 @@ import (
 )
 
 type SingleResult struct {
-	doc bson.D
+	doc bsonkit.Doc
 	err error
 }
 

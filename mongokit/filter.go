@@ -1,24 +1,26 @@
 package mongokit
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"github.com/256dpi/lungo/bsonkit"
+)
 
-func Filter(list []bson.D, query bson.D, limit int) ([]bson.D, error) {
+func Filter(list bsonkit.List, query bsonkit.Doc, limit int) (bsonkit.List, error) {
 	// filter list based on query
-	var ret []bson.D
+	var result bsonkit.List
 	for _, item := range list {
 		// match item
 		res, err := Match(item, query)
 		if err != nil {
 			return nil, err
 		} else if res {
-			ret = append(ret, item)
+			result = append(result, item)
 		}
 
 		// check limit
-		if limit > 0 && len(ret) >= limit {
-			return ret, nil
+		if limit > 0 && len(result) >= limit {
+			return result, nil
 		}
 	}
 
-	return ret, nil
+	return result, nil
 }

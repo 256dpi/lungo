@@ -6,7 +6,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Convert(m bson.M) bson.D {
+func Convert(m bson.M) Doc {
+	d := convertMap(m)
+	return &d
+}
+
+func convertMap(m bson.M) bson.D {
 	// prepare m
 	d := make(bson.D, 0, len(m))
 
@@ -14,7 +19,7 @@ func Convert(m bson.M) bson.D {
 	for key, field := range m {
 		d = append(d, bson.E{
 			Key:   key,
-			Value: convert(field),
+			Value: convertValue(field),
 		})
 	}
 
@@ -26,22 +31,22 @@ func Convert(m bson.M) bson.D {
 	return d
 }
 
-func convert(v interface{}) interface{} {
+func convertValue(v interface{}) interface{} {
 	// convert recursively
 	switch value := v.(type) {
 	case bson.M:
-		return Convert(value)
+		return convertMap(value)
 	case bson.A:
 		a := make(bson.A, len(value))
 		for i, item := range value {
-			a[i] = convert(item)
+			a[i] = convertValue(item)
 		}
 		return a
 	case bson.D:
 		d := make(bson.D, len(value))
 		for i, item := range value {
 			d[i].Key = item.Key
-			d[i].Value = convert(item.Value)
+			d[i].Value = convertValue(item.Value)
 		}
 		return d
 	default:

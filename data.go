@@ -44,9 +44,9 @@ func (d *Data) Clone() *Data {
 }
 
 type Namespace struct {
-	Name      string   `bson:"name"`
-	Documents []bson.D `bson:"documents"`
-	Indexes   []Index  `bson:"indexes"`
+	Name      string       `bson:"name"`
+	Documents bsonkit.List `bson:"documents"`
+	Indexes   []Index      `bson:"indexes"`
 
 	primaryIndex *btree.BTree `bson:"-"`
 }
@@ -92,7 +92,7 @@ type Index struct {
 }
 
 type primaryIndexItem struct {
-	doc bson.D
+	doc bsonkit.Doc
 }
 
 func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
