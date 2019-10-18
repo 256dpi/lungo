@@ -42,3 +42,50 @@ func Sort(list List, path string, reverse bool) List {
 
 	return list
 }
+
+func Collect(list List, path string, compact, distinct bool) []interface{} {
+	// prepare result
+	result := make([]interface{}, 0, len(list))
+
+	// add values
+	for _, doc := range list {
+		// get value
+		v := Get(doc, path)
+		if v == Missing && compact {
+			continue
+		}
+
+		// add value
+		result = append(result, Get(doc, path))
+	}
+
+	// return early if not distinct
+	if !distinct {
+		return result
+	}
+
+	// sort results
+	sort.Slice(result, func(i, j int) bool {
+		return Compare(result[i], result[j]) < 0
+	})
+
+	// prepare distincts
+	distincts := make([]interface{}, 0, len(result))
+
+	// keep last value
+	var lastValue interface{}
+
+	// add distinct values
+	for _, value := range result {
+		// check if same as previous value
+		if len(distincts) > 0 && Compare(lastValue, value) == 0 {
+			continue
+		}
+
+		// add value
+		distincts = append(distincts, value)
+		lastValue = value
+	}
+
+	return distincts
+}
