@@ -168,7 +168,7 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 
 	// update primary index
 	for _, doc := range list {
-		clone.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: doc})
+		clone.Namespaces[ns].primaryIndex.Delete(doc)
 	}
 
 	// write data
@@ -220,7 +220,7 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 	// add documents
 	for _, doc := range docs {
 		// check primary index
-		if clone.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+		if clone.Namespaces[ns].primaryIndex.Has(doc) {
 			return fmt.Errorf("document with same _id exists already")
 		}
 
@@ -228,7 +228,7 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 		clone.Namespaces[ns].Documents = append(clone.Namespaces[ns].Documents, doc)
 
 		// update primary index
-		clone.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
+		clone.Namespaces[ns].primaryIndex.Set(doc)
 	}
 
 	// write data
@@ -269,24 +269,24 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
 
 	// replace document
-	var old bsonkit.Doc
+	var oldDoc bsonkit.Doc
 	for i, doc := range clone.Namespaces[ns].Documents {
 		if doc == list[0] {
-			old = doc
+			oldDoc = doc
 			clone.Namespaces[ns].Documents[i] = repl
 		}
 	}
 
 	// remove old doc from index
-	clone.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: old})
+	clone.Namespaces[ns].primaryIndex.Delete(oldDoc)
 
 	// check index
-	if clone.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: repl}) {
+	if clone.Namespaces[ns].primaryIndex.Has(repl) {
 		return nil, fmt.Errorf("document with same _id exists already")
 	}
 
 	// update primary index
-	clone.Namespaces[ns].primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: repl})
+	clone.Namespaces[ns].primaryIndex.Set(repl)
 
 	// write data
 	err = e.store.Store(clone)

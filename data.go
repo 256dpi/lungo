@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"github.com/tidwall/btree"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
@@ -48,7 +47,7 @@ type Namespace struct {
 	Documents bsonkit.List `bson:"documents"`
 	Indexes   []Index      `bson:"indexes"`
 
-	primaryIndex *btree.BTree `bson:"-"`
+	primaryIndex *uniqueIndex `bson:"-"`
 }
 
 func NewNamespace(name string) *Namespace {
@@ -56,13 +55,9 @@ func NewNamespace(name string) *Namespace {
 }
 
 func (n *Namespace) Prepare() *Namespace {
-	// create primary index
-	n.primaryIndex = btree.New(64, "_id")
-
-	// index all documents
-	for _, doc := range n.Documents {
-		n.primaryIndex.ReplaceOrInsert(&primaryIndexItem{doc: doc})
-	}
+	// create and fill primary index
+	n.primaryIndex = newUniqueIndex("_id")
+	n.primaryIndex.Fill(n.Documents)
 
 	return n
 }
@@ -91,22 +86,4 @@ type Index struct {
 	Name   string `bson:"name"`
 	Keys   bson.D `bson:"keys"`
 	Unique bool   `bson:"unique"`
-}
-
-type primaryIndexItem struct {
-	doc bsonkit.Doc
-}
-
-func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
-	// coerce item
-	j := item.(*primaryIndexItem)
-
-	// get ids
-	id1 := bsonkit.Get(i.doc, "_id")
-	id2 := bsonkit.Get(j.doc, "_id")
-
-	// compare ids
-	ret := bsonkit.Compare(id1, id2)
-
-	return ret < 0
 }
