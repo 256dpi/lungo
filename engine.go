@@ -178,7 +178,7 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 	return len(list), nil
 }
 
-func (e *engine) find(ns string, query bsonkit.Doc) (bsonkit.List, error) {
+func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -189,7 +189,7 @@ func (e *engine) find(ns string, query bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 0)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
 		return nil, err
 	}

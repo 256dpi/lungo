@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestCollectionClone(t *testing.T) {
@@ -150,6 +151,48 @@ func TestCollectionFind(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, csr)
 		assert.Equal(t, []bson.M{}, readAll(csr))
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+
+		// find all
+		csr, err := c.Find(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, readAll(csr))
+
+		// find, limit 1
+		csr, err = c.Find(nil, bson.M{}, options.Find().SetLimit(1))
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+		}, readAll(csr))
 	})
 }
 

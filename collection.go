@@ -146,7 +146,6 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		"FindOptions.Comment":             opt.Comment != nil,
 		"FindOptions.CursorType":          opt.CursorType != nil,
 		"FindOptions.Hint":                opt.Hint != nil,
-		"FindOptions.Limit":               opt.Limit != nil,
 		"FindOptions.Max":                 opt.Max != nil,
 		"FindOptions.MaxAwaitTime":        opt.MaxAwaitTime != nil,
 		"FindOptions.MaxTime":             opt.MaxTime != nil,
@@ -164,14 +163,25 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		return nil, err
 	}
 
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
 		return nil, err
 	}
 
+	// get limit
+	var limit int
+	if opt.Limit != nil {
+		limit = int(*opt.Limit)
+	}
+
 	// find documents
-	list, err := c.client.engine.find(c.ns, query)
+	list, err := c.client.engine.find(c.ns, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +225,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// find documents
-	list, err := c.client.engine.find(c.ns, query)
+	list, err := c.client.engine.find(c.ns, query, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
