@@ -235,9 +235,6 @@ func matchComp(op string) Operator {
 	return func(doc bson.D, path string, v interface{}) (bool, error) {
 		// get field value
 		field := bsonkit.Get(doc, path)
-		if field == bsonkit.Missing {
-			field = nil
-		}
 
 		// compare field with value
 		res := bsonkit.Compare(field, v)
@@ -271,9 +268,6 @@ func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
 
 	// get field value
 	field := bsonkit.Get(doc, path)
-	if field == bsonkit.Missing {
-		field = nil
-	}
 
 	// check if field is in list
 	for _, item := range list {
@@ -295,9 +289,6 @@ func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
 
 	// get field value
 	field := bsonkit.Get(doc, path)
-	if field == bsonkit.Missing {
-		field = nil
-	}
 
 	// check if field is not in list
 	for _, item := range list {
