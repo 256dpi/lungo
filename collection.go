@@ -58,7 +58,6 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	err := assertUnsupported(map[string]bool{
 		"FindOptions.Collation": opt.Collation != nil,
 		"FindOptions.Hint":      opt.Hint != nil,
-		"FindOptions.MaxTime":   opt.MaxTime != nil,
 		"FindOptions.Skip":      opt.Skip != nil,
 	})
 	if err != nil {
@@ -160,7 +159,6 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
 		"FindOptions.Collation": opt.Collation != nil,
-		"FindOptions.MaxTime":   opt.MaxTime != nil,
 	})
 	if err != nil {
 		return nil, err
@@ -218,17 +216,11 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
 		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
-		"FindOptions.BatchSize":           opt.BatchSize != nil,
 		"FindOptions.Collation":           opt.Collation != nil,
-		"FindOptions.Comment":             opt.Comment != nil,
 		"FindOptions.CursorType":          opt.CursorType != nil,
 		"FindOptions.Hint":                opt.Hint != nil,
 		"FindOptions.Max":                 opt.Max != nil,
-		"FindOptions.MaxAwaitTime":        opt.MaxAwaitTime != nil,
-		"FindOptions.MaxTime":             opt.MaxTime != nil,
 		"FindOptions.Min":                 opt.Min != nil,
-		"FindOptions.NoCursorTimeout":     opt.NoCursorTimeout != nil,
-		"FindOptions.OplogReplay":         opt.OplogReplay != nil,
 		"FindOptions.Projection":          opt.Projection != nil,
 		"FindOptions.ReturnKey":           opt.ReturnKey != nil,
 		"FindOptions.ShowRecordID":        opt.ShowRecordID != nil,
@@ -273,17 +265,11 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
 		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
-		"FindOptions.BatchSize":           opt.BatchSize != nil,
 		"FindOptions.Collation":           opt.Collation != nil,
-		"FindOptions.Comment":             opt.Comment != nil,
 		"FindOptions.CursorType":          opt.CursorType != nil,
 		"FindOptions.Hint":                opt.Hint != nil,
 		"FindOptions.Max":                 opt.Max != nil,
-		"FindOptions.MaxAwaitTime":        opt.MaxAwaitTime != nil,
-		"FindOptions.MaxTime":             opt.MaxTime != nil,
 		"FindOptions.Min":                 opt.Min != nil,
-		"FindOptions.NoCursorTimeout":     opt.NoCursorTimeout != nil,
-		"FindOptions.OplogReplay":         opt.OplogReplay != nil,
 		"FindOptions.Projection":          opt.Projection != nil,
 		"FindOptions.ReturnKey":           opt.ReturnKey != nil,
 		"FindOptions.ShowRecordID":        opt.ShowRecordID != nil,
