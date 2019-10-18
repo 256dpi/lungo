@@ -7,6 +7,28 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func TestDifference(t *testing.T) {
+	a := &bson.D{}
+	b := &bson.D{}
+	c := &bson.D{}
+	d := &bson.D{}
+
+	res := Difference(List{a, b, c, d}, List{})
+	assert.Equal(t, List{a, b, c, d}, res)
+
+	res = Difference(List{a, b, c, d}, List{b, d})
+	assert.Equal(t, List{a, d}, res)
+
+	res = Difference(List{a, b, c, d}, List{a, d})
+	assert.Equal(t, List{b, c}, res)
+
+	res = Difference(List{a, b, c, d}, List{a, b})
+	assert.Equal(t, List{c, d}, res)
+
+	res = Difference(List{a, b, c, d}, List{c, d})
+	assert.Equal(t, List{a, b}, res)
+}
+
 func TestSort(t *testing.T) {
 	a1 := Convert(bson.M{"a": "1"})
 	a2 := Convert(bson.M{"a": "2"})
