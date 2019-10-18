@@ -41,6 +41,97 @@ func TestCollectionDrop(t *testing.T) {
 	})
 }
 
+func TestCollectionDeleteMany(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		res2, err := c.DeleteMany(nil, bson.M{
+			"_id": "foo",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), res2.DeletedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		res2, err = c.DeleteMany(nil, bson.M{
+			"_id": bson.M{"$in": bson.A{id1, id2}},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), res2.DeletedCount)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionDeleteOne(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		res1, err := c.InsertOne(nil, bson.M{
+			"_id": id,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+		assert.True(t, !res1.InsertedID.(primitive.ObjectID).IsZero())
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+
+		res2, err := c.DeleteOne(nil, bson.M{
+			"_id": "foo",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), res2.DeletedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+
+		res2, err = c.DeleteOne(nil, bson.M{
+			"_id": id,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.DeletedCount)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionFind(t *testing.T) {
 	/* missing database */
 

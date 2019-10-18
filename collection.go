@@ -58,12 +58,62 @@ func (c *Collection) Database() IDatabase {
 	return c.db
 }
 
-func (c *Collection) DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	panic("not implemented")
+func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	// merge options
+	opt := options.MergeDeleteOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"InsertOneOptions.Collation": opt.Collation != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// find documents
+	n, err := c.client.engine.delete(c.ns, query, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.DeleteResult{
+		DeletedCount: int64(n),
+	}, nil
 }
 
-func (c *Collection) DeleteOne(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	panic("not implemented")
+func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	// merge options
+	opt := options.MergeDeleteOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"InsertOneOptions.Collation": opt.Collation != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// find documents
+	n, err := c.client.engine.delete(c.ns, query, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.DeleteResult{
+		DeletedCount: int64(n),
+	}, nil
 }
 
 func (c *Collection) Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error) {

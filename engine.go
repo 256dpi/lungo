@@ -138,6 +138,46 @@ func (e *engine) dropCollection(ns string) error {
 	return nil
 }
 
+func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return 0, nil
+	}
+
+	// filter documents
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	if err != nil {
+		return 0, err
+	}
+
+	// clone data and namespace
+	temp := e.data.Clone()
+	temp.Namespaces[ns] = temp.Namespaces[ns].Clone()
+
+	// remove found documents
+	temp.Namespaces[ns].Documents = bsonkit.Difference(temp.Namespaces[ns].Documents, list)
+
+	// update primary index
+	for _, doc := range list {
+		temp.Namespaces[ns].primaryIndex.Delete(&primaryIndexItem{doc: doc})
+	}
+
+	// write data
+	err = e.store.Store(temp)
+	if err != nil {
+		return 0, err
+	}
+
+	// set new data
+	e.data = temp
+
+	return len(list), nil
+}
+
 func (e *engine) find(ns string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -170,8 +210,6 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 				return fmt.Errorf("document with same _id exists already")
 			}
 		}
-
-		// TODO: Check secondary indexes.
 	}
 
 	// clone data
