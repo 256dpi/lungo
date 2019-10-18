@@ -180,12 +180,45 @@ func compareArrays(lv, rv interface{}) int {
 }
 
 func compareBinaries(lv, rv interface{}) int {
-	// get bytes
-	l := lv.([]byte)
-	r := rv.([]byte)
+	// prepare values
+	var l, r primitive.Binary
+
+	// coerce left value
+	switch lvv := lv.(type) {
+	case []byte:
+		l = primitive.Binary{
+			Data: lvv,
+		}
+	case primitive.Binary:
+		l = lvv
+	}
+
+	// coerce right value
+	switch rvv := rv.(type) {
+	case []byte:
+		r = primitive.Binary{
+			Data: rvv,
+		}
+	case primitive.Binary:
+		r = rvv
+	}
+
+	// compare length
+	if len(l.Data) > len(r.Data) {
+		return 1
+	} else if len(l.Data) < len(r.Data) {
+		return -1
+	}
+
+	// compare sub type
+	if l.Subtype > r.Subtype {
+		return 1
+	} else if l.Subtype < r.Subtype {
+		return -1
+	}
 
 	// compare bytes
-	res := bytes.Compare(l, r)
+	res := bytes.Compare(l.Data, r.Data)
 
 	return res
 }

@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TODO: Support all types from primitive package.
+// TODO: Add support for decimal128 type.
 
 type Type int
 
@@ -39,7 +39,7 @@ func Inspect(v interface{}) Type {
 		return Object
 	case bson.A:
 		return Array
-	case []byte:
+	case []byte, primitive.Binary:
 		return Binary
 	case primitive.ObjectID:
 		return ObjectID
