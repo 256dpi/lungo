@@ -25,6 +25,7 @@ func init() {
 	TopLevelQueryOperators["$or"] = matchOr
 
 	// register expression query operators
+	ExpressionQueryOperators[""] = matchComp("$eq")
 	ExpressionQueryOperators["$and"] = matchAnd
 	ExpressionQueryOperators["$not"] = matchNot
 	ExpressionQueryOperators["$nor"] = matchNor
@@ -55,7 +56,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 }
 
 func matchQueryPair(doc bsonkit.Doc, pair bson.E) (bool, error) {
-	// check for top level query operator which may appear together with field
+	// check for top level query operators which may appear together with field
 	// expressions in the query filter document
 	if len(pair.Key) > 0 && pair.Key[0] == '$' {
 		// lookup top level operator
@@ -108,7 +109,7 @@ func matchQueryPair(doc bsonkit.Doc, pair bson.E) (bool, error) {
 	// handle pair as a simple equality condition
 
 	// get the equality query operator
-	operator := ExpressionQueryOperators["$eq"]
+	operator := ExpressionQueryOperators[""]
 	if operator == nil {
 		return false, fmt.Errorf("match: missing default equality operator")
 	}
