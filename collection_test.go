@@ -18,6 +18,51 @@ func TestCollectionClone(t *testing.T) {
 	})
 }
 
+func TestCollectionCountDocuments(t *testing.T) {
+	/* missing database */
+
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		num, err := c.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), num)
+	})
+
+	/* missing collection */
+
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		num, err := d.Collection("not-existing").CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), num)
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+
+		num, err := c.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), num)
+
+		num, err = c.CountDocuments(nil, bson.M{}, options.Count().SetLimit(1))
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), num)
+	})
+}
+
 func TestCollectionDatabase(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		assert.Equal(t, d, d.Collection("").Database())

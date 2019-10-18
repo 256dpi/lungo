@@ -50,8 +50,45 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	}, nil
 }
 
-func (c *Collection) CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error) {
-	panic("not implemented")
+func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
+	// merge options
+	opt := options.MergeCountOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOptions.Collation":           opt.Collation != nil,
+		"FindOptions.Hint":                opt.Hint != nil,
+		"FindOptions.MaxTime":             opt.MaxTime != nil,
+		"FindOptions.Skip":                opt.Skip != nil,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return 0, err
+	}
+
+	// get limit
+	var limit int
+	if opt.Limit != nil {
+		limit = int(*opt.Limit)
+	}
+
+	// find documents
+	list, err := c.client.engine.find(c.ns, query, limit)
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(len(list)), nil
 }
 
 func (c *Collection) Database() IDatabase {
