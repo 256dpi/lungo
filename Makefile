@@ -1,4 +1,4 @@
-all: fmt vet lint test
+all: fmt vet lint
 
 fmt:
 	go fmt ./...
@@ -8,6 +8,3 @@ vet:
 
 lint:
 	golint ./...
-
-test:
-	go test -cover ./...

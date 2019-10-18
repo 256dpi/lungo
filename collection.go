@@ -116,8 +116,8 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		return nil, err
 	}
 
-	// get documents
-	list, err := c.client.backend.find(c.ns, query)
+	// find documents
+	list, err := c.client.engine.find(c.ns, query)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +160,8 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		return &SingleResult{err: err}
 	}
 
-	// get documents
-	list, err := c.client.backend.find(c.ns, query)
+	// find documents
+	list, err := c.client.engine.find(c.ns, query)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -227,8 +227,8 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		ids = append(ids, id)
 	}
 
-	// write documents
-	err = c.client.backend.insert(c.ns, docs)
+	// insert documents
+	err = c.client.engine.insert(c.ns, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -262,8 +262,8 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
-	// write document
-	err = c.client.backend.insert(c.ns, []bson.D{doc})
+	// insert document
+	err = c.client.engine.insert(c.ns, []bson.D{doc})
 	if err != nil {
 		return nil, err
 	}

@@ -109,5 +109,5 @@ func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
 		panic(err)
 	}
 
- 	return ret <0
+	return ret < 0
 }

@@ -73,7 +73,7 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	}
 
 	// list collections
-	list, err := d.client.backend.listCollections(d.name, query)
+	list, err := d.client.engine.listCollections(d.name, query)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	}
 
 	// list collections
-	list, err := d.client.backend.listCollections(d.name, query)
+	list, err := d.client.engine.listCollections(d.name, query)
 	if err != nil {
 		return nil, err
 	}

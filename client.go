@@ -10,21 +10,18 @@ import (
 var _ IClient = &Client{}
 
 type Client struct {
-	backend *Backend
+	engine *engine
 }
 
 func Open(ctx context.Context, store Store) (IClient, error) {
-	// create backend
-	backend := newBackend(store)
-
-	// setup backend
-	err := backend.setup()
+	// create engine
+	engine, err := createEngine(store)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		backend: backend,
+		engine: engine,
 	}, nil
 }
 

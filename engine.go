@@ -10,35 +10,34 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
-type Backend struct {
+type engine struct {
 	store Store
 	data  *Data
 	mutex sync.Mutex
 }
 
-func newBackend(store Store) *Backend {
-	return &Backend{
+func createEngine(store Store) (*engine, error) {
+	// create engine
+	e := &engine{
 		store: store,
 	}
-}
 
-func (b *Backend) setup() error {
 	// load data
-	data, err := b.store.Load()
+	data, err := e.store.Load()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set data
-	b.data = data
+	e.data = data
 
-	return nil
+	return e, nil
 }
 
-func (b *Backend) listCollections(db string, query bson.D) ([]bson.D, error) {
+func (e *engine) listCollections(db string, query bson.D) ([]bson.D, error) {
 	// acquire mutex
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	// prepare list
 	list := make([]bson.D, 0)
@@ -46,7 +45,7 @@ func (b *Backend) listCollections(db string, query bson.D) ([]bson.D, error) {
 	// TODO: Add more collection infos.
 
 	// add documents
-	for ns := range b.data.Namespaces {
+	for ns := range e.data.Namespaces {
 		if strings.HasPrefix(ns, db) {
 			list = append(list, bson.D{
 				bson.E{Key: "name", Value: strings.TrimPrefix(ns, db)[1:]},
@@ -68,18 +67,18 @@ func (b *Backend) listCollections(db string, query bson.D) ([]bson.D, error) {
 	return list, nil
 }
 
-func (b *Backend) find(ns string, query bson.D) ([]bson.D, error) {
+func (e *engine) find(ns string, query bson.D) ([]bson.D, error) {
 	// acquire mutex
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	// check namespace
-	if b.data.Namespaces[ns] == nil {
+	if e.data.Namespaces[ns] == nil {
 		return nil, nil
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(b.data.Namespaces[ns].Documents, query)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query)
 	if err != nil {
 		return nil, err
 	}
@@ -87,16 +86,16 @@ func (b *Backend) find(ns string, query bson.D) ([]bson.D, error) {
 	return list, nil
 }
 
-func (b *Backend) insert(ns string, docs []bson.D) error {
+func (e *engine) insert(ns string, docs []bson.D) error {
 	// acquire mutex
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	// check if namespace exists
-	if b.data.Namespaces[ns] != nil {
+	if e.data.Namespaces[ns] != nil {
 		// check primary index
 		for _, doc := range docs {
-			if b.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
+			if e.data.Namespaces[ns].primaryIndex.Has(&primaryIndexItem{doc: doc}) {
 				return fmt.Errorf("document with same _id exists already")
 			}
 		}
@@ -105,7 +104,7 @@ func (b *Backend) insert(ns string, docs []bson.D) error {
 	}
 
 	// clone data
-	temp := b.data.Clone()
+	temp := e.data.Clone()
 
 	// create or clone namespace
 	if temp.Namespaces[ns] == nil {
@@ -124,13 +123,13 @@ func (b *Backend) insert(ns string, docs []bson.D) error {
 	}
 
 	// write data
-	err := b.store.Store(temp)
+	err := e.store.Store(temp)
 	if err != nil {
 		return err
 	}
 
 	// set new data
-	b.data = temp
+	e.data = temp
 
 	return nil
 }

@@ -73,7 +73,7 @@ type ICursor interface {
 }
 
 type ISingleResult interface {
-	Decode(interface {}) error
+	Decode(interface{}) error
 	DecodeBytes() (bson.Raw, error)
 	Err() error
 }
