@@ -66,7 +66,7 @@ func (e *engine) listDatabases(query bson.D) ([]bson.D, error) {
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query)
+	list, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (e *engine) listCollections(db string, query bson.D) ([]bson.D, error) {
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query)
+	list, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (e *engine) find(ns string, query bson.D) ([]bson.D, error) {
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 0)
 	if err != nil {
 		return nil, err
 	}
