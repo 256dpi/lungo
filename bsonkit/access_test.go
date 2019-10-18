@@ -139,7 +139,7 @@ func TestSet(t *testing.T) {
 
 	err = Set(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
-	assert.Equal(t, "set: cannot add field to 42", err.Error())
+	assert.Equal(t, "set: cannot set field in 42", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
@@ -158,4 +158,49 @@ func TestSet(t *testing.T) {
 			},
 		},
 	}), doc)
+}
+
+func TestUnset(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	// leaf field
+	err := Unset(doc, "foo.bar.baz.quz")
+	assert.Error(t, err)
+	assert.Equal(t, "unset: cannot unset field in 42", err.Error())
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
+
+	// leaf field
+	err = Unset(doc, "foo.bar.baz")
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{},
+		},
+	}), doc)
+
+	// missing field
+	err = Unset(doc, "foo.bar.baz")
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{},
+		},
+	}), doc)
+
+	// top level field
+	err = Unset(doc, "foo")
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{}), doc)
 }
