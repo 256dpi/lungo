@@ -69,24 +69,6 @@ func TestCollectionDatabase(t *testing.T) {
 	})
 }
 
-func TestCollectionDrop(t *testing.T) {
-	collectionTest(t, func(t *testing.T, c ICollection) {
-		_, err := c.InsertOne(nil, bson.M{
-			"foo": "bar",
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, []bson.M{
-			{
-				"foo": "bar",
-			},
-		}, dumpCollection(c, true))
-
-		err = c.Drop(nil)
-		assert.NoError(t, err)
-		assert.Equal(t, []bson.M{}, dumpCollection(c, true))
-	})
-}
-
 func TestCollectionDeleteMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
@@ -175,6 +157,64 @@ func TestCollectionDeleteOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), res2.DeletedCount)
 		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionDrop(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"foo": "bar",
+			},
+		}, dumpCollection(c, true))
+
+		err = c.Drop(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, true))
+	})
+}
+
+func TestCollectionEstimatedDocumentCount(t *testing.T) {
+	// missing database
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		num, err := c.EstimatedDocumentCount(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), num)
+	})
+
+	// missing collection
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		num, err := d.Collection("not-existing").EstimatedDocumentCount(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), num)
+	})
+
+	// with documents
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+
+		num, err := c.EstimatedDocumentCount(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), num)
 	})
 }
 

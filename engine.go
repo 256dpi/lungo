@@ -143,6 +143,20 @@ func (e *engine) dropCollection(ns string) error {
 	return nil
 }
 
+func (e *engine) numDocuments(ns string) int {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	namespace, ok := e.data.Namespaces[ns]
+	if !ok {
+		return 0
+	}
+
+	return len(namespace.Documents)
+}
+
 func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 	// acquire mutex
 	e.mutex.Lock()

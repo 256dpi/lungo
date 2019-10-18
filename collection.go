@@ -56,10 +56,10 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"FindOptions.Collation":           opt.Collation != nil,
-		"FindOptions.Hint":                opt.Hint != nil,
-		"FindOptions.MaxTime":             opt.MaxTime != nil,
-		"FindOptions.Skip":                opt.Skip != nil,
+		"FindOptions.Collation": opt.Collation != nil,
+		"FindOptions.Hint":      opt.Hint != nil,
+		"FindOptions.MaxTime":   opt.MaxTime != nil,
+		"FindOptions.Skip":      opt.Skip != nil,
 	})
 	if err != nil {
 		return 0, err
@@ -167,8 +167,11 @@ func (c *Collection) Drop(context.Context) error {
 	return nil
 }
 
-func (c *Collection) EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error) {
-	panic("not implemented")
+func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
+	// get num documents
+	num := c.client.engine.numDocuments(c.ns)
+
+	return int64(num), nil
 }
 
 func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
