@@ -2,7 +2,6 @@ package bsonkit
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -14,30 +13,22 @@ import (
 // https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bsonelement.cpp
 // https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bsonobj.cpp
 
-func Compare(lv, rv interface{}) (int, error) {
-	// inspect left value
-	lt, err := Inspect(lv)
-	if err != nil {
-		return 0, err
-	}
-
-	// inspect right value
-	rt, err := Inspect(rv)
-	if err != nil {
-		return 0, err
-	}
+func Compare(lv, rv interface{}) int {
+	// get types
+	lt := Inspect(lv)
+	rt := Inspect(rv)
 
 	// check type equality
 	if lt > rt {
-		return 1, nil
+		return 1
 	} else if lt < rt {
-		return -1, nil
+		return -1
 	}
 
 	// check value equality
 	switch lt {
 	case Null:
-		return 0, nil
+		return 0
 	case Number:
 		return compareNumbers(lv, rv)
 	case String:
@@ -58,76 +49,70 @@ func Compare(lv, rv interface{}) (int, error) {
 		return compareTimestamps(lv, rv)
 	case Regex:
 		return compareRegexes(lv, rv)
+	default:
+		panic("compare: unreachable")
 	}
-
-	return 0, fmt.Errorf("compare: unreachable")
 }
 
-func compareNumbers(lv, rv interface{}) (int, error) {
+func compareNumbers(lv, rv interface{}) int {
 	switch l := lv.(type) {
 	case float64:
 		switch r := rv.(type) {
 		case float64:
-			return compareFloat64s(l, r), nil
+			return compareFloat64s(l, r)
 		case int32:
-			return compareFloat64s(l, float64(r)), nil
+			return compareFloat64s(l, float64(r))
 		case int64:
-			return compareFloat64ToInt64(l, r), nil
+			return compareFloat64ToInt64(l, r)
 		}
 	case int32:
 		switch r := rv.(type) {
 		case float64:
-			return compareFloat64s(float64(l), r), nil
+			return compareFloat64s(float64(l), r)
 		case int32:
-			return compareInt32s(l, r), nil
+			return compareInt32s(l, r)
 		case int64:
-			return compareInt64s(int64(l), r), nil
+			return compareInt64s(int64(l), r)
 		}
 	case int64:
 		switch r := rv.(type) {
 		case float64:
-			return compareInt64ToFloat64(l, r), nil
+			return compareInt64ToFloat64(l, r)
 		case int32:
-			return compareInt64s(l, int64(r)), nil
+			return compareInt64s(l, int64(r))
 		case int64:
-			return compareInt64s(l, r), nil
+			return compareInt64s(l, r)
 		}
 	}
 
-	return 0, fmt.Errorf("compare: unreachable")
+	panic("compare: unreachable")
 }
 
-func compareStrings(lv, rv interface{}) (int, error) {
+func compareStrings(lv, rv interface{}) int {
 	// get strings
-	l, lo := lv.(string)
-	r, ro := rv.(string)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected strings")
-	}
+	l := lv.(string)
+	r := rv.(string)
 
 	// compare strings
 	res := strings.Compare(l, r)
 
-	return res, nil
+	return res
 }
 
-func compareObjects(lv, rv interface{}) (int, error) {
+func compareObjects(lv, rv interface{}) int {
 	// get documents
-	l, lo := lv.(bson.D)
-	r, ro := rv.(bson.D)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected documents")
-	}
+	l := lv.(bson.D)
+	r := rv.(bson.D)
 
 	// handle emptiness
 	if len(l) == 0 {
 		if len(r) == 0 {
-			return 0, nil
+			return 0
 		} else {
-			return -1, nil
+			return -1
 		}
 	} else if len(r) == 0 {
-		return 1, nil
+		return 1
 	}
 
 	// compare document elements
@@ -135,47 +120,42 @@ func compareObjects(lv, rv interface{}) (int, error) {
 		// handle exhaustion
 		if i == len(l) {
 			if i == len(r) {
-				return 0, nil
+				return 0
 			} else {
-				return -1, nil
+				return -1
 			}
 		} else if i == len(r) {
-			return 1, nil
+			return 1
 		}
 
 		// compare keys
 		res := strings.Compare(l[i].Key, r[i].Key)
 		if res != 0 {
-			return res, nil
+			return res
 		}
 
 		// compare values
-		res, err := Compare(l[i].Value, r[i].Value)
-		if err != nil {
-			return 0, err
-		} else if res != 0 {
-			return res, nil
+		res = Compare(l[i].Value, r[i].Value)
+		if res != 0 {
+			return res
 		}
 	}
 }
 
-func compareArrays(lv, rv interface{}) (int, error) {
+func compareArrays(lv, rv interface{}) int {
 	// get array
-	l, lo := lv.(bson.A)
-	r, ro := rv.(bson.A)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected arrays")
-	}
+	l := lv.(bson.A)
+	r := rv.(bson.A)
 
 	// handle emptiness
 	if len(l) == 0 {
 		if len(r) == 0 {
-			return 0, nil
+			return 0
 		} else {
-			return -1, nil
+			return -1
 		}
 	} else if len(r) == 0 {
-		return 1, nil
+		return 1
 	}
 
 	// compare array elements
@@ -183,120 +163,100 @@ func compareArrays(lv, rv interface{}) (int, error) {
 		// handle exhaustion
 		if i == len(l) {
 			if i == len(r) {
-				return 0, nil
+				return 0
 			} else {
-				return -1, nil
+				return -1
 			}
 		} else if i == len(r) {
-			return 1, nil
+			return 1
 		}
 
 		// compare elements
-		res, err := Compare(l[i], r[i])
-		if err != nil {
-			return 0, err
-		} else if res != 0 {
-			return res, nil
+		res := Compare(l[i], r[i])
+		if res != 0 {
+			return res
 		}
 	}
 }
 
-func compareBinaries(lv, rv interface{}) (int, error) {
+func compareBinaries(lv, rv interface{}) int {
 	// get bytes
-	l, lo := lv.([]byte)
-	r, ro := rv.([]byte)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected bytes")
-	}
+	l := lv.([]byte)
+	r := rv.([]byte)
 
 	// compare bytes
 	res := bytes.Compare(l, r)
 
-	return res, nil
+	return res
 }
 
-func compareObjectIDs(lv, rv interface{}) (int, error) {
+func compareObjectIDs(lv, rv interface{}) int {
 	// get object ids
-	l, lo := lv.(primitive.ObjectID)
-	r, ro := rv.(primitive.ObjectID)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected object ids")
-	}
+	l := lv.(primitive.ObjectID)
+	r := rv.(primitive.ObjectID)
 
 	// compare object ids
 	res := bytes.Compare(l[:], r[:])
 
-	return res, nil
+	return res
 }
 
-func compareBooleans(lv, rv interface{}) (int, error) {
+func compareBooleans(lv, rv interface{}) int {
 	// get booleans
-	l, lo := lv.(bool)
-	r, ro := rv.(bool)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected booleans")
-	}
+	l := lv.(bool)
+	r := rv.(bool)
 
 	// compare booleans
 	if l == r {
-		return 0, nil
+		return 0
 	} else if l {
-		return 1, nil
+		return 1
 	} else {
-		return -1, nil
+		return -1
 	}
 }
 
-func compareDates(lv, rv interface{}) (int, error) {
+func compareDates(lv, rv interface{}) int {
 	// get times
-	l, lo := lv.(time.Time)
-	r, ro := rv.(time.Time)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected times")
-	}
+	l := lv.(time.Time)
+	r := rv.(time.Time)
 
 	// compare times
 	if l.Equal(r) {
-		return 0, nil
+		return 0
 	} else if l.After(r) {
-		return 1, nil
+		return 1
 	} else {
-		return -1, nil
+		return -1
 	}
 }
 
-func compareTimestamps(lv, rv interface{}) (int, error) {
+func compareTimestamps(lv, rv interface{}) int {
 	// get timestamps
-	l, lo := lv.(primitive.Timestamp)
-	r, ro := rv.(primitive.Timestamp)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected timestamps")
-	}
+	l := lv.(primitive.Timestamp)
+	r := rv.(primitive.Timestamp)
 
 	// compare timestamps
 	ret := primitive.CompareTimestamp(l, r)
 
-	return ret, nil
+	return ret
 }
 
-func compareRegexes(lv, rv interface{}) (int, error) {
+func compareRegexes(lv, rv interface{}) int {
 	// get regexes
-	l, lo := lv.(primitive.Regex)
-	r, ro := rv.(primitive.Regex)
-	if !lo || !ro {
-		return 0, fmt.Errorf("compare: expected regexes")
-	}
+	l := lv.(primitive.Regex)
+	r := rv.(primitive.Regex)
 
 	// compare patterns
 	ret := strings.Compare(l.Pattern, r.Pattern)
 	if ret > 0 {
-		return ret, nil
+		return ret
 	}
 
 	// compare options
 	ret = strings.Compare(l.Options, r.Options)
 
-	return ret, nil
+	return ret
 }
 
 // https://github.com/mongodb/mongo/blob/master/src/mongo/base/compare_numbers.h

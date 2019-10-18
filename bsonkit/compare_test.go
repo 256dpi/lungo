@@ -8,15 +8,15 @@ import (
 )
 
 func TestCompare(t *testing.T) {
-	/* equality */
-
-	ret, err := Compare(bson.D{}, bson.D{})
-	assert.NoError(t, err)
+	// equality
+	ret := Compare(bson.D{}, bson.D{})
 	assert.Equal(t, 0, ret)
 
-	/* inequality */
-
-	ret, err = Compare("foo", false)
-	assert.NoError(t, err)
+	// less than
+	ret = Compare("foo", false)
 	assert.Equal(t, -1, ret)
+
+	// greater than
+	ret = Compare(false, "foo")
+	assert.Equal(t, 1, ret)
 }

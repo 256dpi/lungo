@@ -240,10 +240,7 @@ func matchComp(op string) Operator {
 		}
 
 		// compare field with value
-		res, err := bsonkit.Compare(field, v)
-		if err != nil {
-			return false, err
-		}
+		res := bsonkit.Compare(field, v)
 
 		// check operator
 		switch op {
@@ -280,10 +277,8 @@ func matchIn(doc bson.D, path string, v interface{}) (bool, error) {
 
 	// check if field is in list
 	for _, item := range list {
-		res, err := bsonkit.Compare(field, item)
-		if err != nil {
-			return false, err
-		} else if res == 0 {
+		res := bsonkit.Compare(field, item)
+		if res == 0 {
 			return true, nil
 		}
 	}
@@ -306,10 +301,8 @@ func matchNin(doc bson.D, path string, v interface{}) (bool, error) {
 
 	// check if field is not in list
 	for _, item := range list {
-		res, err := bsonkit.Compare(field, item)
-		if err != nil {
-			return false, err
-		} else if res == 0 {
+		res := bsonkit.Compare(field, item)
+		if res == 0 {
 			return false, nil
 		}
 	}

@@ -104,10 +104,7 @@ func (i *primaryIndexItem) Less(item btree.Item, _ interface{}) bool {
 	id2 := bsonkit.Get(j.doc, "_id")
 
 	// compare ids
-	ret, err := bsonkit.Compare(id1, id2)
-	if err != nil {
-		panic(err)
-	}
+	ret := bsonkit.Compare(id1, id2)
 
 	return ret < 0
 }

@@ -27,31 +27,31 @@ const (
 	Regex
 )
 
-func Inspect(v interface{}) (Type, error) {
+func Inspect(v interface{}) Type {
 	switch v.(type) {
 	case nil:
-		return Null, nil
+		return Null
 	case int32, int64, float64:
-		return Number, nil
+		return Number
 	case string:
-		return String, nil
+		return String
 	case bson.D:
-		return Object, nil
+		return Object
 	case bson.A:
-		return Array, nil
+		return Array
 	case []byte:
-		return Binary, nil
+		return Binary
 	case primitive.ObjectID:
-		return ObjectID, nil
+		return ObjectID
 	case bool:
-		return Boolean, nil
+		return Boolean
 	case time.Time:
-		return Date, nil
+		return Date
 	case primitive.Timestamp:
-		return Timestamp, nil
+		return Timestamp
 	case primitive.Regex:
-		return Regex, nil
+		return Regex
+	default:
+		panic(fmt.Sprintf("inspect: unsupported type: %q", reflect.TypeOf(v).String()))
 	}
-
-	return 0, fmt.Errorf("inspect: unknown type %q", reflect.TypeOf(v).String())
 }

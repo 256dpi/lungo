@@ -6,10 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Sort(list []bson.D, path string, reverse bool) ([]bson.D, error) {
-	// prepare error
-	var sortErr error
-
+func Sort(list []bson.D, path string, reverse bool) []bson.D {
 	// sort slice by comparing values
 	sort.Slice(list, func(i, j int) bool {
 		// get values
@@ -17,10 +14,7 @@ func Sort(list []bson.D, path string, reverse bool) ([]bson.D, error) {
 		b := Get(list[j], path)
 
 		// compare values
-		res, err := Compare(a, b)
-		if err != nil && sortErr == nil {
-			sortErr = err
-		}
+		res := Compare(a, b)
 
 		// check reverse
 		if reverse {
@@ -30,10 +24,5 @@ func Sort(list []bson.D, path string, reverse bool) ([]bson.D, error) {
 		return res < 0
 	})
 
-	// check error
-	if sortErr != nil {
-		return nil, sortErr
-	}
-
-	return list, nil
+	return list
 }
