@@ -225,7 +225,10 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		id := bsonkit.Get(doc, "_id")
 		if id == bsonkit.Missing {
 			id = primitive.NewObjectID()
-			doc = bsonkit.Set(doc, "_id", id, true)
+			err = bsonkit.Set(&doc, "_id", id, true)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// add to lists
@@ -266,7 +269,10 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	id := bsonkit.Get(doc, "_id")
 	if id == bsonkit.Missing {
 		id = primitive.NewObjectID()
-		doc = bsonkit.Set(doc, "_id", id, true)
+		err = bsonkit.Set(&doc, "_id", id, true)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// insert document

@@ -1,6 +1,7 @@
 package bsonkit
 
 import (
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,24 +35,64 @@ func get(doc bson.D, path []string) interface{} {
 	return Missing
 }
 
-func Set(doc bson.D, field string, value interface{}, prepend bool) bson.D {
-	// update element in place
-	for i, el := range doc {
-		if el.Key == field {
-			doc[i].Value = value
-			return doc
+func Set(doc *bson.D, path string, value interface{}, prepend bool) error {
+	return set(doc, strings.Split(path, "."), value, prepend)
+}
+
+func set(doc *bson.D, path []string, value interface{}, prepend bool) error {
+	// search for element
+	for i, el := range *doc {
+		if el.Key == path[0] {
+			// replace value
+			if len(path) == 1 {
+				(*doc)[i].Value = value
+				return nil
+			}
+
+			// check if doc
+			if d, ok := el.Value.(bson.D); ok {
+				err := set(&d, path[1:], value, prepend)
+				if err != nil {
+					return err
+				}
+
+				// update value
+				(*doc)[i].Value = d
+
+				return nil
+			}
+
+			return fmt.Errorf("set: cannot add field to %+v", el.Value)
 		}
 	}
 
-	// create element
-	e := bson.E{Key: field, Value: value}
+	// add intermediary element
+	if len(path) > 1 {
+		// prepare object
+		d := bson.D{}
+		err := set(&d, path[1:], value, prepend)
+		if err != nil {
+			return err
+		}
 
-	// prepend or append to document
-	if prepend {
-		doc = append(bson.D{e}, doc...)
-	} else {
-		doc = append(doc, e)
+		// add object
+		e := bson.E{Key: path[0], Value: d}
+		if prepend {
+			*doc = append(bson.D{e}, *doc...)
+		} else {
+			*doc = append(*doc, e)
+		}
+
+		return nil
 	}
 
-	return doc
+	// add final element
+	e := bson.E{Key: path[0], Value: value}
+	if prepend {
+		*doc = append(bson.D{e}, *doc...)
+	} else {
+		*doc = append(*doc, e)
+	}
+
+	return nil
 }
