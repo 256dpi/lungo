@@ -19,8 +19,7 @@ func TestCollectionClone(t *testing.T) {
 }
 
 func TestCollectionCountDocuments(t *testing.T) {
-	/* missing database */
-
+	// missing database
 	clientTest(t, func(t *testing.T, client IClient) {
 		c := client.Database("not-existing").Collection("not-existing")
 		num, err := c.CountDocuments(nil, bson.M{})
@@ -28,8 +27,7 @@ func TestCollectionCountDocuments(t *testing.T) {
 		assert.Equal(t, int64(0), num)
 	})
 
-	/* missing collection */
-
+	// missing collection
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		num, err := d.Collection("not-existing").CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
@@ -259,8 +257,7 @@ func TestCollectionEstimatedDocumentCount(t *testing.T) {
 }
 
 func TestCollectionFind(t *testing.T) {
-	/* missing database */
-
+	// missing database
 	clientTest(t, func(t *testing.T, client IClient) {
 		c := client.Database("not-existing").Collection("not-existing")
 		csr, err := c.Find(nil, bson.M{})
@@ -269,8 +266,7 @@ func TestCollectionFind(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 	})
 
-	/* missing collection */
-
+	// missing collection
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		csr, err := d.Collection("not-existing").Find(nil, bson.M{})
 		assert.NoError(t, err)
@@ -322,8 +318,7 @@ func TestCollectionFind(t *testing.T) {
 }
 
 func TestCollectionFindOne(t *testing.T) {
-	/* missing database */
-
+	// missing database
 	clientTest(t, func(t *testing.T, client IClient) {
 		c := client.Database("not-existing").Collection("not-existing")
 		res := c.FindOne(nil, bson.M{})
@@ -331,16 +326,14 @@ func TestCollectionFindOne(t *testing.T) {
 		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
 	})
 
-	/* missing collection */
-
+	// missing collection
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		res := d.Collection("not-existing").FindOne(nil, bson.M{})
 		assert.Error(t, res.Err())
 		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
 	})
 
-	/* fine one by id */
-
+	// fine one by id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
@@ -368,8 +361,7 @@ func TestCollectionFindOne(t *testing.T) {
 		}, doc)
 	})
 
-	/* first from multiple results */
-
+	// first from multiple results
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
@@ -397,8 +389,7 @@ func TestCollectionFindOne(t *testing.T) {
 }
 
 func TestCollectionInsertMany(t *testing.T) {
-	/* generated id */
-
+	// generated id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		res, err := c.InsertMany(nil, []interface{}{
 			bson.M{
@@ -420,8 +411,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		}, dumpCollection(c, true))
 	})
 
-	/* provided _id */
-
+	// provided _id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
@@ -449,8 +439,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
-		/* duplicate key */
-
+		// duplicate key
 		res, err = c.InsertMany(nil, []interface{}{
 			bson.M{
 				"_id": id1,
@@ -471,8 +460,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		}, dumpCollection(c, false))
 	})
 
-	/* complex _id */
-
+	// complex _id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := bson.M{
 			"some-id": "a",
@@ -493,8 +481,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
-		/* duplicate key */
-
+		// duplicate key
 		res, err = c.InsertMany(nil, []interface{}{
 			bson.M{
 				"_id": id1,
@@ -515,8 +502,7 @@ func TestCollectionInsertMany(t *testing.T) {
 }
 
 func TestCollectionInsertOne(t *testing.T) {
-	/* generated id */
-
+	// generated id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		res, err := c.InsertOne(nil, bson.M{
 			"foo": "bar",
@@ -530,8 +516,7 @@ func TestCollectionInsertOne(t *testing.T) {
 		}, dumpCollection(c, true))
 	})
 
-	/* provided _id */
-
+	// provided _id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
 
@@ -549,8 +534,7 @@ func TestCollectionInsertOne(t *testing.T) {
 		}, dumpCollection(c, false))
 	})
 
-	/* duplicate _id key */
-
+	// duplicate _id key
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
 
