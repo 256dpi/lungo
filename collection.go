@@ -153,8 +153,45 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}, nil
 }
 
-func (c *Collection) Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error) {
-	panic("not implemented")
+func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
+	// merge options
+	opt := options.MergeDistinctOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOptions.Collation": opt.Collation != nil,
+		"FindOptions.MaxTime":   opt.MaxTime != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// check field
+	if field == "" {
+		panic("lungo: empty field path")
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// find documents
+	list, err := c.client.engine.find(c.ns, query, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// collect distinct values
+	values := bsonkit.Collect(list, field, true, true)
+
+	return values, nil
 }
 
 func (c *Collection) Drop(context.Context) error {

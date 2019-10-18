@@ -160,6 +160,46 @@ func TestCollectionDeleteOne(t *testing.T) {
 	})
 }
 
+func TestCollectionDistinct(t *testing.T) {
+	// missing database
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		res, err := c.Distinct(nil, "foo", bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, []interface{}{}, res)
+	})
+
+	// missing collection
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		res, err := d.Collection("not-existing").Distinct(nil, "foo", bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, []interface{}{}, res)
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+
+		// distinct values
+		res, err := c.Distinct(nil, "foo", bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, []interface{}{"bar", "baz"}, res)
+	})
+}
+
 func TestCollectionDrop(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		_, err := c.InsertOne(nil, bson.M{
