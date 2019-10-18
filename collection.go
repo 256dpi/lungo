@@ -126,7 +126,52 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 }
 
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
-	panic("not implemented")
+	// merge options
+	opt := options.MergeFindOneOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
+		"FindOptions.BatchSize":           opt.BatchSize != nil,
+		"FindOptions.Collation":           opt.Collation != nil,
+		"FindOptions.Comment":             opt.Comment != nil,
+		"FindOptions.CursorType":          opt.CursorType != nil,
+		"FindOptions.Hint":                opt.Hint != nil,
+		"FindOptions.Max":                 opt.Max != nil,
+		"FindOptions.MaxAwaitTime":        opt.MaxAwaitTime != nil,
+		"FindOptions.MaxTime":             opt.MaxTime != nil,
+		"FindOptions.Min":                 opt.Min != nil,
+		"FindOptions.NoCursorTimeout":     opt.NoCursorTimeout != nil,
+		"FindOptions.OplogReplay":         opt.OplogReplay != nil,
+		"FindOptions.Projection":          opt.Projection != nil,
+		"FindOptions.ReturnKey":           opt.ReturnKey != nil,
+		"FindOptions.ShowRecordID":        opt.ShowRecordID != nil,
+		"FindOptions.Skip":                opt.Skip != nil,
+		"FindOptions.Snapshot":            opt.Snapshot != nil,
+		"FindOptions.Sort":                opt.Sort != nil,
+	})
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// get documents
+	list, err := c.client.backend.find(c.ns, query)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// check length
+	if len(list) == 0 {
+		return &SingleResult{err: mongo.ErrNoDocuments}
+	}
+
+	return &SingleResult{doc: list[0]}
 }
 
 func (c *Collection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) ISingleResult {
@@ -233,6 +278,31 @@ func (c *Collection) Name() string {
 }
 
 func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+	// // merge options
+	// opt := options.MergeReplaceOptions(opts...)
+	//
+	// // assert unsupported options
+	// err := assertUnsupported(map[string]bool{
+	// 	"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+	// 	"InsertOneOptions.Collation": opt.Collation != nil,
+	// 	"InsertOneOptions.Upsert": opt.Upsert != nil,
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// // transform filter
+	// query, err := bsonkit.Transform(filter)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// // transform document
+	// doc, err := bsonkit.Transform(replacement)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	panic("not implemented")
 }
 

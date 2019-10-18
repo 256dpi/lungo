@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestCollectionClone(t *testing.T) {
@@ -40,6 +41,81 @@ func TestCollectionFind(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, csr)
 		assert.Equal(t, []bson.M{}, readAll(csr))
+	})
+}
+
+func TestCollectionFindOne(t *testing.T) {
+	/* missing database */
+
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		res := c.FindOne(nil, bson.M{})
+		assert.Error(t, res.Err())
+		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
+	})
+
+	/* missing collection */
+
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		res := d.Collection("not-existing").FindOne(nil, bson.M{})
+		assert.Error(t, res.Err())
+		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
+	})
+
+	/* fine one by id */
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		_, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+
+		var doc bson.M
+		err = c.FindOne(nil, bson.M{
+			"_id": id1,
+		}).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id1,
+			"foo": "bar",
+		}, doc)
+	})
+
+	/* first from multiple results */
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		_, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.NoError(t, err)
+
+		var doc bson.M
+		err = c.FindOne(nil, bson.M{}).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id1,
+			"foo": "bar",
+		}, doc)
 	})
 }
 
