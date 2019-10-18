@@ -171,38 +171,70 @@ func TestCollectionInsertMany(t *testing.T) {
 				"bar": "baz",
 			},
 		}, dumpCollection(c, false))
+
+		/* duplicate key */
+
+		res, err = c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+		})
+		assert.Error(t, err)
+		// assert.Len(t, res.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
 	})
 
-	/* duplicate _id key */
-
-	// TODO: Test duplicate ids in request.
+	/* complex _id */
 
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		id := primitive.NewObjectID()
+		id1 := bson.M{
+			"some-id": "a",
+		}
 
-		_, err := c.InsertMany(nil, []interface{}{
+		res, err := c.InsertMany(nil, []interface{}{
 			bson.M{
-				"_id": id,
+				"_id": id1,
 				"foo": "bar",
 			},
 		})
 		assert.NoError(t, err)
+		assert.Len(t, res.InsertedIDs, 1)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
 
-		_, err = c.InsertMany(nil, []interface{}{
+		/* duplicate key */
+
+		res, err = c.InsertMany(nil, []interface{}{
 			bson.M{
-				"_id": id,
-				"foo": "baz",
+				"_id": id1,
+				"foo": "bar",
 			},
 		})
 		assert.Error(t, err)
-
+		// assert.Nil(t, res) // TODO: mongo returns all ids in any case, bug?
 		assert.Equal(t, []bson.M{
 			{
-				"_id": id,
+				"_id": id1,
 				"foo": "bar",
 			},
 		}, dumpCollection(c, false))
 	})
+
+	// TODO: Test duplicate ids in request.
 }
 
 func TestCollectionInsertOne(t *testing.T) {

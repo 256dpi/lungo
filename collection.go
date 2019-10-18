@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"context"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -217,9 +216,10 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		}
 
 		// ensure object id
-		doc, id, err := ensureObjectID(doc)
-		if err != nil {
-			return nil, err
+		id := bsonkit.Get(doc, "_id")
+		if id == bsonkit.Missing {
+			id = primitive.NewObjectID()
+			doc = bsonkit.Set(doc, "_id", id, true)
 		}
 
 		// add to lists
@@ -257,9 +257,10 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// ensure object id
-	doc, id, err := ensureObjectID(doc)
-	if err != nil {
-		return nil, err
+	id := bsonkit.Get(doc, "_id")
+	if id == bsonkit.Missing {
+		id = primitive.NewObjectID()
+		doc = bsonkit.Set(doc, "_id", id, true)
 	}
 
 	// insert document
@@ -278,31 +279,6 @@ func (c *Collection) Name() string {
 }
 
 func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
-	// // merge options
-	// opt := options.MergeReplaceOptions(opts...)
-	//
-	// // assert unsupported options
-	// err := assertUnsupported(map[string]bool{
-	// 	"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
-	// 	"InsertOneOptions.Collation": opt.Collation != nil,
-	// 	"InsertOneOptions.Upsert": opt.Upsert != nil,
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// // transform filter
-	// query, err := bsonkit.Transform(filter)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// // transform document
-	// doc, err := bsonkit.Transform(replacement)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	panic("not implemented")
 }
 
@@ -316,29 +292,4 @@ func (c *Collection) UpdateOne(context.Context, interface{}, interface{}, ...*op
 
 func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("not implemented")
-}
-
-func ensureObjectID(doc bson.D) (bson.D, primitive.ObjectID, error) {
-	// check id
-	var id primitive.ObjectID
-	if v := bsonkit.Get(doc, "_id"); v != bsonkit.Missing {
-		// check existing value
-		oid, ok := v.(primitive.ObjectID)
-		if !ok {
-			return nil, oid, fmt.Errorf("only primitive.OjectID values are supported in _id field")
-		} else if oid.IsZero() {
-			return nil, oid, fmt.Errorf("found zero primitive.OjectID value in _id field")
-		}
-
-		// set id
-		id = oid
-	}
-
-	// prepend id if zero
-	if id.IsZero() {
-		id = primitive.NewObjectID()
-		doc = bsonkit.Set(doc, "_id", id, true)
-	}
-
-	return doc, id, nil
 }
