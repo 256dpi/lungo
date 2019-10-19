@@ -216,10 +216,17 @@ func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, er
 	return list, nil
 }
 
-func (e *engine) insert(ns string, docs bsonkit.List) error {
+func (e *engine) insert(ns string, list bsonkit.List) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check ids
+	for _, doc := range list {
+		if bsonkit.Get(doc, "_id") == bsonkit.Missing {
+			return fmt.Errorf("document is missng the _id field")
+		}
+	}
 
 	// clone data
 	clone := e.data.Clone()
@@ -232,7 +239,7 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 	}
 
 	// add documents
-	for _, doc := range docs {
+	for _, doc := range list {
 		// add document to primary index
 		if !clone.Namespaces[ns].primaryIndex.Set(doc) {
 			return fmt.Errorf("document with same _id exists already")
@@ -262,6 +269,11 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
 		return &result{}, nil
+	}
+
+	// check id
+	if bsonkit.Get(repl, "_id") == bsonkit.Missing {
+		return nil, fmt.Errorf("document is missng the _id field")
 	}
 
 	// filter documents
