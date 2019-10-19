@@ -22,7 +22,6 @@ func TestInspect(t *testing.T) {
 		{in: "foo", out: String},
 		{in: bson.D{}, out: Object},
 		{in: bson.A{}, out: Array},
-		{in: []byte{4, 2}, out: Binary},
 		{in: primitive.Binary{}, out: Binary},
 		{in: primitive.NewObjectID(), out: ObjectID},
 		{in: true, out: Boolean},

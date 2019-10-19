@@ -38,7 +38,7 @@ func Inspect(v interface{}) Type {
 		return Object
 	case bson.A:
 		return Array
-	case []byte, primitive.Binary:
+	case primitive.Binary:
 		return Binary
 	case primitive.ObjectID:
 		return ObjectID

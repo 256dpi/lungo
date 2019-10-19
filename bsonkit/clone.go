@@ -35,7 +35,7 @@ func cloneValue(v interface{}) interface{} {
 	case primitive.Null, primitive.ObjectID, primitive.DateTime, primitive.Timestamp, primitive.Regex:
 		// structures of primitives do not need cloning
 		return value
-	case []byte, primitive.Binary:
+	case primitive.Binary:
 		// do not clone binary data as they do not get mutated themselves
 		return value
 	case bson.D:

@@ -66,6 +66,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "float32", Value: float32(4.2)},
 				bson.E{Key: "float64", Value: 4.2},
 				bson.E{Key: "time", Value: time.Date(2019, 10, 10, 17, 37, 0, 0, time.UTC)},
+				bson.E{Key: "bytes", Value: []byte("foo")},
 			},
 			out: &bson.D{
 				bson.E{Key: "true", Value: true},
@@ -83,6 +84,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "float32", Value: 4.199999809265137},
 				bson.E{Key: "float64", Value: 4.2},
 				bson.E{Key: "time", Value: primitive.DateTime(1570729020000)},
+				bson.E{Key: "bytes", Value: primitive.Binary{Data: []byte("foo")}},
 			},
 		},
 	}
