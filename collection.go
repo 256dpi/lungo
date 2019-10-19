@@ -335,8 +335,57 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	return &SingleResult{doc: list[0]}
 }
 
-func (c *Collection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) ISingleResult {
-	panic("not implemented")
+func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
+	// merge options
+	opt := options.MergeFindOneAndReplaceOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOneAndReplaceOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"FindOneAndReplaceOptions.Collation":                opt.Collation != nil,
+		"FindOneAndReplaceOptions.Projection":               opt.Projection != nil,
+		"FindOneAndReplaceOptions.ReturnDocument":           opt.ReturnDocument != nil,
+		"FindOneAndReplaceOptions.Sort":                     opt.Sort != nil,
+		"FindOneAndReplaceOptions.Upsert":                   opt.Upsert != nil,
+	})
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform document
+	doc, err := bsonkit.Transform(replacement)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// ensure object id
+	id := bsonkit.Get(doc, "_id")
+	if id == bsonkit.Missing {
+		id = primitive.NewObjectID()
+		err = bsonkit.Set(doc, "_id", id, true)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
+	// insert document
+	res, err := c.client.engine.replace(c.ns, query, doc)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// check list
+	if res.replaced == nil {
+		return &SingleResult{err: mongo.ErrNoDocuments}
+	}
+
+	return &SingleResult{doc: res.matched[0]}
 }
 
 func (c *Collection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) ISingleResult {
