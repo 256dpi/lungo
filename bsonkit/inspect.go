@@ -3,7 +3,6 @@ package bsonkit
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -45,7 +44,7 @@ func Inspect(v interface{}) Type {
 		return ObjectID
 	case bool:
 		return Boolean
-	case time.Time:
+	case primitive.DateTime:
 		return Date
 	case primitive.Timestamp:
 		return Timestamp

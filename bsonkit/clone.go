@@ -3,7 +3,6 @@ package bsonkit
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,10 +30,10 @@ func CloneList(list List) List {
 func cloneValue(v interface{}) interface{} {
 	switch value := v.(type) {
 	case nil, int32, int64, float64, string, bool:
-		// primitive do not need cloning
+		// primitives do not need cloning
 		return value
-	case primitive.Null, primitive.ObjectID, primitive.Timestamp, time.Time, primitive.Regex:
-		// basic structure do not need cloning
+	case primitive.Null, primitive.ObjectID, primitive.DateTime, primitive.Timestamp, primitive.Regex:
+		// structures of primitives do not need cloning
 		return value
 	case []byte, primitive.Binary:
 		// do not clone binary data as they do not get mutated themselves

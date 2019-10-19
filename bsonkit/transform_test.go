@@ -2,9 +2,11 @@ package bsonkit
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestTransform(t *testing.T) {
@@ -63,6 +65,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "uint64", Value: uint64(42)},
 				bson.E{Key: "float32", Value: float32(4.2)},
 				bson.E{Key: "float64", Value: 4.2},
+				bson.E{Key: "time", Value: time.Date(2019, 10, 10, 17, 37, 0, 0, time.UTC)},
 			},
 			out: &bson.D{
 				bson.E{Key: "true", Value: true},
@@ -79,6 +82,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "uint64", Value: int64(42)},
 				bson.E{Key: "float32", Value: 4.199999809265137},
 				bson.E{Key: "float64", Value: 4.2},
+				bson.E{Key: "time", Value: primitive.DateTime(1570729020000)},
 			},
 		},
 	}

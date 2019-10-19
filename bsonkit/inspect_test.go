@@ -2,7 +2,6 @@ package bsonkit
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +27,7 @@ func TestInspect(t *testing.T) {
 		{in: primitive.NewObjectID(), out: ObjectID},
 		{in: true, out: Boolean},
 		{in: false, out: Boolean},
-		{in: time.Now(), out: Date},
+		{in: primitive.DateTime(1570729020000), out: Date},
 		{in: primitive.Timestamp{}, out: Timestamp},
 		{in: primitive.Regex{}, out: Regex},
 	}

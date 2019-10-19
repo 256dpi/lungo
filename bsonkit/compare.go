@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math"
 	"strings"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -251,13 +250,13 @@ func compareBooleans(lv, rv interface{}) int {
 
 func compareDates(lv, rv interface{}) int {
 	// get times
-	l := lv.(time.Time)
-	r := rv.(time.Time)
+	l := lv.(primitive.DateTime)
+	r := rv.(primitive.DateTime)
 
 	// compare times
-	if l.Equal(r) {
+	if l == r {
 		return 0
-	} else if l.After(r) {
+	} else if l > r {
 		return 1
 	} else {
 		return -1
