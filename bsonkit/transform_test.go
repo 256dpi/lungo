@@ -51,6 +51,7 @@ func TestTransform(t *testing.T) {
 		},
 		{
 			in: bson.D{
+				bson.E{Key: "nil", Value: nil},
 				bson.E{Key: "true", Value: true},
 				bson.E{Key: "false", Value: false},
 				bson.E{Key: "int", Value: 42},
@@ -69,6 +70,7 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "bytes", Value: []byte("foo")},
 			},
 			out: &bson.D{
+				bson.E{Key: "nil", Value: nil},
 				bson.E{Key: "true", Value: true},
 				bson.E{Key: "false", Value: false},
 				bson.E{Key: "int", Value: int32(42)},
