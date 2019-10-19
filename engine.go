@@ -233,16 +233,13 @@ func (e *engine) insert(ns string, docs bsonkit.List) error {
 
 	// add documents
 	for _, doc := range docs {
-		// check primary index
-		if clone.Namespaces[ns].primaryIndex.Has(doc) {
+		// add document to primary index
+		if !clone.Namespaces[ns].primaryIndex.Set(doc) {
 			return fmt.Errorf("document with same _id exists already")
 		}
 
 		// add document
 		clone.Namespaces[ns].Documents = append(clone.Namespaces[ns].Documents, doc)
-
-		// update primary index
-		clone.Namespaces[ns].primaryIndex.Set(doc)
 	}
 
 	// write data
@@ -285,16 +282,13 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	// remove old doc from index
 	clone.Namespaces[ns].primaryIndex.Delete(list[0])
 
-	// check index
-	if clone.Namespaces[ns].primaryIndex.Has(repl) {
+	// add document to index
+	if !clone.Namespaces[ns].primaryIndex.Set(repl) {
 		return nil, fmt.Errorf("document with same _id exists already")
 	}
 
 	// replace document
 	clone.Namespaces[ns].Documents[index[0]] = repl
-
-	// update primary index
-	clone.Namespaces[ns].primaryIndex.Set(repl)
 
 	// write data
 	err = e.store.Store(clone)

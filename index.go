@@ -41,8 +41,8 @@ func (i *uniqueIndex) Fill(list bsonkit.List) {
 	}
 }
 
-func (i *uniqueIndex) Set(doc bsonkit.Doc) {
-	i.btree.ReplaceOrInsert(&uniqueIndexItem{doc: doc})
+func (i *uniqueIndex) Set(doc bsonkit.Doc) bool {
+	return i.btree.ReplaceOrInsert(&uniqueIndexItem{doc: doc}) == nil
 }
 
 func (i *uniqueIndex) Has(doc bsonkit.Doc) bool {
