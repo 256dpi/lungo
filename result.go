@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -17,6 +18,11 @@ func (r *SingleResult) Decode(out interface{}) error {
 		return r.err
 	}
 
+	// check document
+	if r.doc == nil {
+		return mongo.ErrNoDocuments
+	}
+
 	// decode document
 	return bsonkit.Decode(r.doc, out)
 }
@@ -27,10 +33,25 @@ func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 		return nil, r.err
 	}
 
+	// check document
+	if r.doc == nil {
+		return nil, mongo.ErrNoDocuments
+	}
+
 	// marshal document
 	return bson.Marshal(r.doc)
 }
 
 func (r *SingleResult) Err() error {
-	return r.err
+	// check error
+	if r.err != nil {
+		return r.err
+	}
+
+	// check document
+	if r.doc == nil {
+		return mongo.ErrNoDocuments
+	}
+
+	return nil
 }

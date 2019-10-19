@@ -295,7 +295,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// check list
 	if len(res.matched) == 0 {
-		return &SingleResult{err: mongo.ErrNoDocuments}
+		return &SingleResult{}
 	}
 
 	return &SingleResult{doc: res.matched[0]}
@@ -329,7 +329,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// check list
 	if len(res.matched) == 0 {
-		return &SingleResult{err: mongo.ErrNoDocuments}
+		return &SingleResult{}
 	}
 
 	return &SingleResult{doc: res.matched[0]}
@@ -382,7 +382,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// check list
 	if res.replaced == nil {
-		return &SingleResult{err: mongo.ErrNoDocuments}
+		return &SingleResult{}
 	}
 
 	return &SingleResult{doc: res.matched[0]}
@@ -426,7 +426,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// check list
 	if len(res.updated) == 0 {
-		return &SingleResult{err: mongo.ErrNoDocuments}
+		return &SingleResult{}
 	}
 
 	return &SingleResult{doc: res.matched[0]}
