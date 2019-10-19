@@ -56,9 +56,9 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"FindOptions.Collation": opt.Collation != nil,
-		"FindOptions.Hint":      opt.Hint != nil,
-		"FindOptions.Skip":      opt.Skip != nil,
+		"CountOptions.Collation": opt.Collation != nil,
+		"CountOptions.Hint":      opt.Hint != nil,
+		"CountOptions.Skip":      opt.Skip != nil,
 	})
 	if err != nil {
 		return 0, err
@@ -100,7 +100,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"InsertOneOptions.Collation": opt.Collation != nil,
+		"DeleteOptions.Collation": opt.Collation != nil,
 	})
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"InsertOneOptions.Collation": opt.Collation != nil,
+		"DeleteOptions.Collation": opt.Collation != nil,
 	})
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"FindOptions.Collation": opt.Collation != nil,
+		"DistinctOptions.Collation": opt.Collation != nil,
 	})
 	if err != nil {
 		return nil, err
@@ -264,18 +264,18 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
-		"FindOptions.Collation":           opt.Collation != nil,
-		"FindOptions.CursorType":          opt.CursorType != nil,
-		"FindOptions.Hint":                opt.Hint != nil,
-		"FindOptions.Max":                 opt.Max != nil,
-		"FindOptions.Min":                 opt.Min != nil,
-		"FindOptions.Projection":          opt.Projection != nil,
-		"FindOptions.ReturnKey":           opt.ReturnKey != nil,
-		"FindOptions.ShowRecordID":        opt.ShowRecordID != nil,
-		"FindOptions.Skip":                opt.Skip != nil,
-		"FindOptions.Snapshot":            opt.Snapshot != nil,
-		"FindOptions.Sort":                opt.Sort != nil,
+		"FindOneOptions.AllowPartialResults": opt.AllowPartialResults != nil,
+		"FindOneOptions.Collation":           opt.Collation != nil,
+		"FindOneOptions.CursorType":          opt.CursorType != nil,
+		"FindOneOptions.Hint":                opt.Hint != nil,
+		"FindOneOptions.Max":                 opt.Max != nil,
+		"FindOneOptions.Min":                 opt.Min != nil,
+		"FindOneOptions.Projection":          opt.Projection != nil,
+		"FindOneOptions.ReturnKey":           opt.ReturnKey != nil,
+		"FindOneOptions.ShowRecordID":        opt.ShowRecordID != nil,
+		"FindOneOptions.Skip":                opt.Skip != nil,
+		"FindOneOptions.Snapshot":            opt.Snapshot != nil,
+		"FindOneOptions.Sort":                opt.Sort != nil,
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -323,7 +323,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"InsertManyOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 	})
 	if err != nil {
 		return nil, err
@@ -418,9 +418,9 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
-		"InsertOneOptions.Collation":                opt.Collation != nil,
-		"InsertOneOptions.Upsert":                   opt.Upsert != nil,
+		"ReplaceOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"ReplaceOptions.Collation":                opt.Collation != nil,
+		"ReplaceOptions.Upsert":                   opt.Upsert != nil,
 	})
 	if err != nil {
 		return nil, err

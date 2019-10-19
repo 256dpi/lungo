@@ -70,7 +70,7 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 
 	// assert unsupported options
 	err := assertUnsupported(map[string]bool{
-		"ListCollectionsOptions.NameOnly": opt.NameOnly != nil,
+		"ListDatabasesOptions.NameOnly": opt.NameOnly != nil,
 	})
 	if err != nil {
 		return mongo.ListDatabasesResult{}, err
