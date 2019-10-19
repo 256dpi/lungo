@@ -388,8 +388,48 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	return &SingleResult{doc: res.matched[0]}
 }
 
-func (c *Collection) FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) ISingleResult {
-	panic("not implemented")
+func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
+	// merge options
+	opt := options.MergeFindOneAndUpdateOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOneAndUpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
+		"FindOneAndUpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"FindOneAndUpdateOptions.Collation":                opt.Collation != nil,
+		"FindOneAndUpdateOptions.Projection":               opt.Projection != nil,
+		"FindOneAndUpdateOptions.ReturnDocument":           opt.ReturnDocument != nil,
+		"FindOneAndUpdateOptions.Sort":                     opt.Sort != nil,
+		"FindOneAndUpdateOptions.Upsert":                   opt.Upsert != nil,
+	})
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform document
+	doc, err := bsonkit.Transform(update)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// update documents
+	res, err := c.client.engine.update(c.ns, query, doc, 1)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// check list
+	if len(res.updated) == 0 {
+		return &SingleResult{err: mongo.ErrNoDocuments}
+	}
+
+	return &SingleResult{doc: res.matched[0]}
 }
 
 func (c *Collection) Indexes() mongo.IndexView {
