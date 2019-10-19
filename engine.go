@@ -157,46 +157,6 @@ func (e *engine) numDocuments(ns string) int {
 	return len(namespace.Documents)
 }
 
-func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// check namespace
-	if e.data.Namespaces[ns] == nil {
-		return 0, nil
-	}
-
-	// filter documents
-	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
-	if err != nil {
-		return 0, err
-	}
-
-	// clone data and namespace
-	clone := e.data.Clone()
-	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
-
-	// remove documents
-	clone.Namespaces[ns].Documents = bsonkit.Difference(clone.Namespaces[ns].Documents, list)
-
-	// update primary index
-	for _, doc := range list {
-		clone.Namespaces[ns].primaryIndex.Delete(doc)
-	}
-
-	// write data
-	err = e.store.Store(clone)
-	if err != nil {
-		return 0, err
-	}
-
-	// set new data
-	e.data = clone
-
-	return len(list), nil
-}
-
 func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -381,4 +341,44 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 		matched:  len(list),
 		modified: len(list),
 	}, nil
+}
+
+func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return 0, nil
+	}
+
+	// filter documents
+	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	if err != nil {
+		return 0, err
+	}
+
+	// clone data and namespace
+	clone := e.data.Clone()
+	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
+
+	// remove documents
+	clone.Namespaces[ns].Documents = bsonkit.Difference(clone.Namespaces[ns].Documents, list)
+
+	// update primary index
+	for _, doc := range list {
+		clone.Namespaces[ns].primaryIndex.Delete(doc)
+	}
+
+	// write data
+	err = e.store.Store(clone)
+	if err != nil {
+		return 0, err
+	}
+
+	// set new data
+	e.data = clone
+
+	return len(list), nil
 }
