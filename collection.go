@@ -460,12 +460,82 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}, nil
 }
 
-func (c *Collection) UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	panic("not implemented")
+func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	// merge options
+	opt := options.MergeUpdateOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"UpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
+		"UpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"UpdateOptions.Collation":                opt.Collation != nil,
+		"UpdateOptions.Upsert":                   opt.Upsert != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// transform document
+	doc, err := bsonkit.Transform(update)
+	if err != nil {
+		return nil, err
+	}
+
+	// update documents
+	res, err := c.client.engine.update(c.ns, query, doc, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.UpdateResult{
+		MatchedCount:  int64(res.matched),
+		ModifiedCount: int64(res.modified),
+	}, nil
 }
 
-func (c *Collection) UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	panic("not implemented")
+func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	// merge options
+	opt := options.MergeUpdateOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"UpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
+		"UpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
+		"UpdateOptions.Collation":                opt.Collation != nil,
+		"UpdateOptions.Upsert":                   opt.Upsert != nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// transform document
+	doc, err := bsonkit.Transform(update)
+	if err != nil {
+		return nil, err
+	}
+
+	// update documents
+	res, err := c.client.engine.update(c.ns, query, doc, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongo.UpdateResult{
+		MatchedCount:  int64(res.matched),
+		ModifiedCount: int64(res.modified),
+	}, nil
 }
 
 func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {

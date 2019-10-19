@@ -316,3 +316,69 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 		modified: 1,
 	}, nil
 }
+
+func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*result, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return &result{}, nil
+	}
+
+	// filter documents
+	list, index, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// check list
+	if len(list) == 0 {
+		return &result{}, nil
+	}
+
+	// clone documents
+	newList := bsonkit.CloneList(list)
+
+	// update documents
+	err = mongokit.Update(newList, update, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// clone data and namespace
+	clone := e.data.Clone()
+	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
+
+	// remove old docs from index
+	for _, doc := range list {
+		clone.Namespaces[ns].primaryIndex.Delete(doc)
+	}
+
+	// add new docs to index
+	for _, doc := range newList {
+		if !clone.Namespaces[ns].primaryIndex.Set(doc) {
+			return nil, fmt.Errorf("document with same _id exists already")
+		}
+	}
+
+	// replace documents
+	for i, doc := range newList {
+		clone.Namespaces[ns].Documents[index[i]] = doc
+	}
+
+	// write data
+	err = e.store.Store(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	// set new data
+	e.data = clone
+
+	return &result{
+		matched:  len(list),
+		modified: len(list),
+	}, nil
+}

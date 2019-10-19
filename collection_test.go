@@ -654,3 +654,147 @@ func TestCollectionReplaceOne(t *testing.T) {
 		}, dumpCollection(c, false))
 	})
 }
+
+func TestCollectionUpdateMany(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// update single document
+		res2, err := c.UpdateMany(nil, bson.M{
+			"foo": "bar",
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// update all documents
+		res2, err = c.UpdateMany(nil, bson.M{}, bson.M{
+			"$set": bson.M{
+				"foo": "quz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), res2.MatchedCount)
+		assert.Equal(t, int64(2), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "quz",
+			},
+			{
+				"_id": id2,
+				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionUpdateOne(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, []interface{}{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// update specific document
+		res2, err := c.UpdateOne(nil, bson.M{
+			"foo": "bar",
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// update first documents
+		res2, err = c.UpdateOne(nil, bson.M{}, bson.M{
+			"$set": bson.M{
+				"foo": "quz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "quz",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
