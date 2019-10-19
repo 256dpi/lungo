@@ -447,7 +447,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
-		// assert.Len(t, res.InsertedIDs, 2)
+		// assert.Nli(t, res)  // TODO: mongo returns all ids in any case, bug?
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
