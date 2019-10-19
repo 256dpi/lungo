@@ -112,14 +112,14 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
-	// find documents
-	n, err := c.client.engine.delete(c.ns, query, 0)
+	// delete documents
+	list, err := c.client.engine.delete(c.ns, query, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(n),
+		DeletedCount: int64(len(list)),
 	}, nil
 }
 
@@ -141,14 +141,14 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
-	// find documents
-	n, err := c.client.engine.delete(c.ns, query, 1)
+	// delete document
+	list, err := c.client.engine.delete(c.ns, query, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(n),
+		DeletedCount: int64(len(list)),
 	}, nil
 }
 

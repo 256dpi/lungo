@@ -343,20 +343,20 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 	}, nil
 }
 
-func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
+func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return 0, nil
+		return nil, nil
 	}
 
 	// filter documents
 	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// clone data and namespace
@@ -374,11 +374,11 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 	// write data
 	err = e.store.Store(clone)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// set new data
 	e.data = clone
 
-	return len(list), nil
+	return list, nil
 }
