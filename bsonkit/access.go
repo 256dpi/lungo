@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type missing struct{}
+type MissingType struct{}
 
-var Missing = missing{}
+var Missing = MissingType{}
 
 func Get(doc Doc, path string) interface{} {
 	return get(doc, strings.Split(path, "."))
