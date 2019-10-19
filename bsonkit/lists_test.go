@@ -7,6 +7,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func TestSelect(t *testing.T) {
+	a := &bson.D{}
+	b := &bson.D{}
+
+	// select all matching
+	list, index := Select(List{a, nil, b, nil}, 0, func(doc Doc) (bool, bool) {
+		return doc != nil, false
+	})
+	assert.Equal(t, List{a, b}, list)
+	assert.Equal(t, []int{0, 2}, index)
+
+	// select all matching with exit
+	i := 0
+	list, index = Select(List{a, nil, b, nil}, 0, func(doc Doc) (bool, bool) {
+		i++
+		return doc != nil, i > 1
+	})
+	assert.Equal(t, List{a}, list)
+	assert.Equal(t, []int{0}, index)
+}
+
 func TestDifference(t *testing.T) {
 	a := &bson.D{}
 	b := &bson.D{}

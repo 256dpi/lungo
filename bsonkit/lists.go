@@ -2,9 +2,45 @@ package bsonkit
 
 import "sort"
 
+func Select(list List, limit int, fn func(Doc) (bool, bool)) (List, []int) {
+	// prepare result and index
+	result := make(List, 0, len(list))
+	index := make([]int, 0, len(list))
+
+	// select documents
+	for i, doc := range list {
+		// match document
+		matched, exit := fn(doc)
+		if !matched && exit {
+			break
+		}
+
+		// continue if document does not match
+		if !matched {
+			continue
+		}
+
+		// add to selection
+		result = append(result, doc)
+		index = append(index, i)
+
+		// check exit
+		if exit {
+			break
+		}
+
+		// check limit
+		if limit > 0 && len(result) >= limit {
+			break
+		}
+	}
+
+	return result, index
+}
+
 func Difference(a, b List) List {
 	// prepare result
-	result := make(List, 0, len(a) - len(b))
+	result := make(List, 0, len(a)-len(b))
 
 	// copy over items from a that are not in b
 	var j int
