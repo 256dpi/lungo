@@ -72,7 +72,7 @@ func (e *engine) listDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	list, _, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	list, _, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (int, error) {
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -208,7 +208,7 @@ func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, er
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
+	list, index, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -282,22 +282,16 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	clone := e.data.Clone()
 	clone.Namespaces[ns] = clone.Namespaces[ns].Clone()
 
-	// replace document
-	var oldDoc bsonkit.Doc
-	for i, doc := range clone.Namespaces[ns].Documents {
-		if doc == list[0] {
-			oldDoc = doc
-			clone.Namespaces[ns].Documents[i] = repl
-		}
-	}
-
 	// remove old doc from index
-	clone.Namespaces[ns].primaryIndex.Delete(oldDoc)
+	clone.Namespaces[ns].primaryIndex.Delete(list[0])
 
 	// check index
 	if clone.Namespaces[ns].primaryIndex.Has(repl) {
 		return nil, fmt.Errorf("document with same _id exists already")
 	}
+
+	// replace document
+	clone.Namespaces[ns].Documents[index[0]] = repl
 
 	// update primary index
 	clone.Namespaces[ns].primaryIndex.Set(repl)
@@ -312,7 +306,7 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	e.data = clone
 
 	return &result{
-		matched:  len(list),
+		matched:  1,
 		modified: 1,
 	}, nil
 }

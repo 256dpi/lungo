@@ -4,23 +4,26 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-func Filter(list bsonkit.List, query bsonkit.Doc, limit int) (bsonkit.List, error) {
-	// filter list based on query
-	var result bsonkit.List
-	for _, item := range list {
-		// match item
-		res, err := Match(item, query)
+func Filter(list bsonkit.List, query bsonkit.Doc, limit int) (bsonkit.List, []int, error) {
+	// prepare match error
+	var matchErr error
+
+	// select documents
+	result, index := bsonkit.Select(list, limit, func(doc bsonkit.Doc) (bool, bool) {
+		// match based on query
+		res, err := Match(doc, query)
 		if err != nil {
-			return nil, err
-		} else if res {
-			result = append(result, item)
+			matchErr = err
+			return false, true
 		}
 
-		// check limit
-		if limit > 0 && len(result) >= limit {
-			return result, nil
-		}
+		return res, false
+	})
+
+	// check error
+	if matchErr != nil {
+		return result, index, matchErr
 	}
 
-	return result, nil
+	return result, index, nil
 }
