@@ -113,13 +113,13 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	list, err := c.client.engine.delete(c.ns, query, 0)
+	res, err := c.client.engine.delete(c.ns, query, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(list)),
+		DeletedCount: int64(len(res.matched)),
 	}, nil
 }
 
@@ -142,13 +142,13 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	list, err := c.client.engine.delete(c.ns, query, 1)
+	res, err := c.client.engine.delete(c.ns, query, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(list)),
+		DeletedCount: int64(len(res.matched)),
 	}, nil
 }
 
@@ -322,17 +322,17 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	}
 
 	// delete documents
-	list, err := c.client.engine.delete(c.ns, query, 1)
+	res, err := c.client.engine.delete(c.ns, query, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if len(list) == 0 {
+	if len(res.matched) == 0 {
 		return &SingleResult{err: mongo.ErrNoDocuments}
 	}
 
-	return &SingleResult{doc: list[0]}
+	return &SingleResult{doc: res.matched[0]}
 }
 
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
@@ -533,9 +533,17 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		return nil, err
 	}
 
+	// check list
+	if res.replaced == nil {
+		return &mongo.UpdateResult{
+			MatchedCount:  0,
+			ModifiedCount: 0,
+		}, nil
+	}
+
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.matched)),
-		ModifiedCount: int64(len(res.updated)),
+		MatchedCount:  1,
+		ModifiedCount: 1,
 	}, nil
 }
 

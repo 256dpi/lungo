@@ -165,7 +165,7 @@ func (e *engine) find(ns string, query bsonkit.Doc, limit int) (*result, error) 
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return nil, nil
+		return &result{}, nil
 	}
 
 	// filter documents
@@ -344,7 +344,7 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 	}, nil
 }
 
-func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (bsonkit.List, error) {
+func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -381,5 +381,5 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (bsonkit.List, 
 	// set new data
 	e.data = clone
 
-	return list, nil
+	return &result{matched: list}, nil
 }
