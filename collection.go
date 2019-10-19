@@ -82,12 +82,12 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// find documents
-	list, err := c.client.engine.find(c.ns, query, limit)
+	res, err := c.client.engine.find(c.ns, query, limit)
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(len(list)), nil
+	return int64(len(res.matched)), nil
 }
 
 func (c *Collection) Database() IDatabase {
@@ -181,13 +181,13 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// find documents
-	list, err := c.client.engine.find(c.ns, query, 0)
+	res, err := c.client.engine.find(c.ns, query, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	// collect distinct values
-	values := bsonkit.Collect(list, field, true, true)
+	values := bsonkit.Collect(res.matched, field, true, true)
 
 	return values, nil
 }
@@ -250,12 +250,12 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// find documents
-	list, err := c.client.engine.find(c.ns, query, limit)
+	res, err := c.client.engine.find(c.ns, query, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return &staticCursor{list: list}, nil
+	return &staticCursor{list: res.matched}, nil
 }
 
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
@@ -288,17 +288,17 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// find documents
-	list, err := c.client.engine.find(c.ns, query, 1)
+	res, err := c.client.engine.find(c.ns, query, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if len(list) == 0 {
+	if len(res.matched) == 0 {
 		return &SingleResult{err: mongo.ErrNoDocuments}
 	}
 
-	return &SingleResult{doc: list[0]}
+	return &SingleResult{doc: res.matched[0]}
 }
 
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {

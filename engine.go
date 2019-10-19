@@ -158,7 +158,7 @@ func (e *engine) numDocuments(ns string) int {
 	return len(namespace.Documents)
 }
 
-func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, error) {
+func (e *engine) find(ns string, query bsonkit.Doc, limit int) (*result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -174,7 +174,7 @@ func (e *engine) find(ns string, query bsonkit.Doc, limit int) (bsonkit.List, er
 		return nil, err
 	}
 
-	return list, nil
+	return &result{matched: list}, nil
 }
 
 func (e *engine) insert(ns string, list bsonkit.List) error {
