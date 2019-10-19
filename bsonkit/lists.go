@@ -4,7 +4,7 @@ import "sort"
 
 func Difference(a, b List) List {
 	// prepare result
-	result := make(List, 0, len(a))
+	result := make(List, 0, len(a) - len(b))
 
 	// copy over items from a that are not in b
 	var j int
