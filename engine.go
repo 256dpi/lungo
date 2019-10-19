@@ -12,8 +12,9 @@ import (
 )
 
 type result struct {
-	matched  int
-	modified int
+	matched  bsonkit.List
+	replaced bsonkit.Doc
+	updated  bsonkit.List
 }
 
 type engine struct {
@@ -272,8 +273,8 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	e.data = clone
 
 	return &result{
-		matched:  1,
-		modified: 1,
+		matched:  list,
+		replaced: repl,
 	}, nil
 }
 
@@ -338,8 +339,8 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 	e.data = clone
 
 	return &result{
-		matched:  len(list),
-		modified: len(list),
+		matched: list,
+		updated: newList,
 	}, nil
 }
 

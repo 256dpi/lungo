@@ -485,8 +485,8 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(res.matched),
-		ModifiedCount: int64(res.modified),
+		MatchedCount:  int64(len(res.matched)),
+		ModifiedCount: int64(len(res.updated)),
 	}, nil
 }
 
@@ -524,8 +524,8 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(res.matched),
-		ModifiedCount: int64(res.modified),
+		MatchedCount:  int64(len(res.matched)),
+		ModifiedCount: int64(len(res.updated)),
 	}, nil
 }
 
@@ -563,8 +563,8 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(res.matched),
-		ModifiedCount: int64(res.modified),
+		MatchedCount:  int64(len(res.matched)),
+		ModifiedCount: int64(len(res.updated)),
 	}, nil
 }
 
