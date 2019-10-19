@@ -8,6 +8,10 @@ import (
 )
 
 func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
+	// copy list
+	docs := make(bsonkit.List, len(list))
+	copy(docs, list)
+
 	// prepare sort info
 	paths := make([]string, 0, len(*doc))
 	directions := make([]int, 0, len(*doc))
@@ -38,11 +42,11 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// sort slice by comparing values
-	sort.Slice(list, func(i, j int) bool {
+	sort.Slice(docs, func(i, j int) bool {
 		for dir, path := range paths {
 			// get values
-			a := bsonkit.Get(list[i], path)
-			b := bsonkit.Get(list[j], path)
+			a := bsonkit.Get(docs[i], path)
+			b := bsonkit.Get(docs[j], path)
 
 			// compare values
 			res := bsonkit.Compare(a, b)
@@ -63,5 +67,5 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 		return false
 	})
 
-	return list, nil
+	return docs, nil
 }
