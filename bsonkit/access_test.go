@@ -204,3 +204,71 @@ func TestUnset(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{}), doc)
 }
+
+func TestIncrement(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": int64(42),
+		"bar": "42",
+	})
+
+	// invalid field
+	err := Increment(doc, "bar", int64(2))
+	assert.Error(t, err)
+	assert.Equal(t, "increment: field is not a number", err.Error())
+
+	// invalid increment
+	err = Increment(doc, "foo", 2)
+	assert.Error(t, err)
+	assert.Equal(t, "increment: expected number", err.Error())
+
+	// increment existing field
+	err = Increment(doc, "foo", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": int64(44),
+		"bar": "42",
+	}), doc)
+
+	// increment missing field
+	err = Increment(doc, "quz", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": int64(44),
+		"bar": "42",
+		"quz": int64(2),
+	}), doc)
+}
+
+func TestMultiply(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": int64(42),
+		"bar": "42",
+	})
+
+	// invalid field
+	err := Multiply(doc, "bar", int64(2))
+	assert.Error(t, err)
+	assert.Equal(t, "multiply: field is not a number", err.Error())
+
+	// invalid multiplicand
+	err = Multiply(doc, "foo", 2)
+	assert.Error(t, err)
+	assert.Equal(t, "multiply: expected number", err.Error())
+
+	// multiply existing field
+	err = Multiply(doc, "foo", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": int64(84),
+		"bar": "42",
+	}), doc)
+
+	// multiply missing field
+	err = Multiply(doc, "quz", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": int64(84),
+		"bar": "42",
+		"quz": int64(0),
+	}), doc)
+}
