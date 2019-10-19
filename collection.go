@@ -293,7 +293,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		return &SingleResult{err: err}
 	}
 
-	// check length
+	// check list
 	if len(list) == 0 {
 		return &SingleResult{err: mongo.ErrNoDocuments}
 	}
@@ -301,8 +301,38 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	return &SingleResult{doc: list[0]}
 }
 
-func (c *Collection) FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) ISingleResult {
-	panic("not implemented")
+func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
+	// merge options
+	opt := options.MergeFindOneAndDeleteOptions(opts...)
+
+	// assert unsupported options
+	err := assertUnsupported(map[string]bool{
+		"FindOneAndDeleteOptions.Collation":  opt.Collation != nil,
+		"FindOneAndDeleteOptions.Projection": opt.Projection != nil,
+		"FindOneAndDeleteOptions.Sort":       opt.Sort != nil,
+	})
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// transform filter
+	query, err := bsonkit.Transform(filter)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// delete documents
+	list, err := c.client.engine.delete(c.ns, query, 1)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// check list
+	if len(list) == 0 {
+		return &SingleResult{err: mongo.ErrNoDocuments}
+	}
+
+	return &SingleResult{doc: list[0]}
 }
 
 func (c *Collection) FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) ISingleResult {

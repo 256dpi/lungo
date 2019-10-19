@@ -388,6 +388,47 @@ func TestCollectionFindOne(t *testing.T) {
 	})
 }
 
+func TestCollectionFindOneAndDelete(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		res1, err := c.InsertOne(nil, bson.M{
+			"_id": id,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+		assert.True(t, !res1.InsertedID.(primitive.ObjectID).IsZero())
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+
+		err = c.FindOneAndDelete(nil, bson.M{
+			"_id": "foo",
+		}).Err()
+		assert.Error(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+
+		var doc bson.M
+		err = c.FindOneAndDelete(nil, bson.M{
+			"_id": id,
+		}).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id,
+			"foo": "bar",
+		}, doc)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionInsertMany(t *testing.T) {
 	// generated id
 	collectionTest(t, func(t *testing.T, c ICollection) {
