@@ -369,7 +369,6 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		"FindOneAndReplaceOptions.Collation":                opt.Collation != nil,
 		"FindOneAndReplaceOptions.Projection":               opt.Projection != nil,
 		"FindOneAndReplaceOptions.ReturnDocument":           opt.ReturnDocument != nil,
-		"FindOneAndReplaceOptions.Sort":                     opt.Sort != nil,
 		"FindOneAndReplaceOptions.Upsert":                   opt.Upsert != nil,
 	})
 	if err != nil {
@@ -382,24 +381,23 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		return &SingleResult{err: err}
 	}
 
+	// get sort
+	var sort bsonkit.Doc
+	if opt.Sort != nil {
+		sort, err = bsonkit.Transform(opt.Sort)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// transform document
 	doc, err := bsonkit.Transform(replacement)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
-	// ensure object id
-	id := bsonkit.Get(doc, "_id")
-	if id == bsonkit.Missing {
-		id = primitive.NewObjectID()
-		err = bsonkit.Set(doc, "_id", id, true)
-		if err != nil {
-			return &SingleResult{err: err}
-		}
-	}
-
 	// insert document
-	res, err := c.client.engine.replace(c.ns, query, doc)
+	res, err := c.client.engine.replace(c.ns, query, sort, doc)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -600,7 +598,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}
 
 	// insert document
-	res, err := c.client.engine.replace(c.ns, query, doc)
+	res, err := c.client.engine.replace(c.ns, query, nil, doc)
 	if err != nil {
 		return nil, err
 	}

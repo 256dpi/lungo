@@ -240,7 +240,7 @@ func (e *engine) insert(ns string, list bsonkit.List) error {
 	return nil
 }
 
-func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
+func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -250,13 +250,20 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 		return &result{}, nil
 	}
 
-	// check id
-	if bsonkit.Get(repl, "_id") == bsonkit.Missing {
-		return nil, fmt.Errorf("document is missng the _id field")
+	// get documents
+	list := e.data.Namespaces[ns].Documents
+
+	// sort documents
+	var err error
+	if sort != nil && len(*sort) > 0 {
+		list, err = mongokit.Sort(list, sort)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
+	list, err = mongokit.Filter(list, query, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -264,6 +271,17 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	// check list
 	if len(list) == 0 {
 		return &result{}, nil
+	}
+
+	// add missing and check existing id
+	replID := bsonkit.Get(repl, "_id")
+	if replID == bsonkit.Missing {
+		err = bsonkit.Set(repl, "_id", bsonkit.Get(list[0], "_id"), true)
+		if err != nil {
+			return nil, err
+		}
+	} else if replID != bsonkit.Get(list[0], "_id") {
+		return nil, fmt.Errorf("document _id is immutable")
 	}
 
 	// clone data
