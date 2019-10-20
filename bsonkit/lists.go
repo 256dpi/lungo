@@ -2,12 +2,18 @@ package bsonkit
 
 import "sort"
 
-func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
+func Select(list List, skip, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
 	result := make(List, 0, len(list))
 
 	// select documents
 	for _, doc := range list {
+		// check skip
+		if skip > 0 {
+			skip--
+			continue
+		}
+
 		// run selector
 		selected, exit := selector(doc)
 		if !selected && exit {

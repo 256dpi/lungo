@@ -60,6 +60,11 @@ func TestCollectionCountDocuments(t *testing.T) {
 		num, err = c.CountDocuments(nil, bson.M{}, options.Count().SetLimit(1))
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), num)
+
+		// skip first
+		num, err = c.CountDocuments(nil, bson.M{}, options.Count().SetSkip(1))
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), num)
 	})
 }
 
@@ -336,6 +341,16 @@ func TestCollectionFind(t *testing.T) {
 				"foo": "bar",
 			},
 		}, readAll(csr))
+
+		// skip first
+		csr, err = c.Find(nil, bson.M{}, options.Find().SetSkip(1))
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, readAll(csr))
 	})
 }
 
@@ -394,6 +409,14 @@ func TestCollectionFindOne(t *testing.T) {
 		err = c.FindOne(nil, bson.M{}, options.FindOne().SetSort(bson.M{
 			"foo": -1,
 		})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"foo": "baz",
+		}, doc)
+
+		// skip first
+		err = c.FindOne(nil, bson.M{}, options.FindOne().SetSkip(1)).Decode(&doc)
 		assert.NoError(t, err)
 		assert.Equal(t, bson.M{
 			"_id": id2,

@@ -77,7 +77,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	list, err := mongokit.Filter(list, query, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	list, err := mongokit.Filter(list, query, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (e *Engine) NumDocuments(ns string) int {
 	return len(namespace.Documents)
 }
 
-func (e *Engine) Find(ns string, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -185,7 +185,7 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, limit int) (*Result, e
 	}
 
 	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
+	list, err = mongokit.Filter(list, query, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, err
 	}
 
 	// filter documents
-	list, err = mongokit.Filter(list, query, 1)
+	list, err = mongokit.Filter(list, query, 0, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,7 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (
 	}
 
 	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
+	list, err = mongokit.Filter(list, query, 0, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 	}
 
 	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
+	list, err = mongokit.Filter(list, query, 0, limit)
 	if err != nil {
 		return nil, err
 	}

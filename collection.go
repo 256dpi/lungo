@@ -50,6 +50,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	assertOptions(opt, map[string]string{
 		"Limit":   supported,
 		"MaxTime": ignored,
+		"Skip":    supported,
 	})
 
 	// check filer
@@ -63,6 +64,12 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		return 0, err
 	}
 
+	// get skip
+	var skip int
+	if opt.Skip != nil {
+		skip = int(*opt.Skip)
+	}
+
 	// get limit
 	var limit int
 	if opt.Limit != nil {
@@ -70,7 +77,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, nil, limit)
+	res, err := c.client.engine.Find(c.ns, query, nil, skip, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -166,7 +173,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, nil, 0)
+	res, err := c.client.engine.Find(c.ns, query, nil, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +221,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		"MaxAwaitTime":    ignored,
 		"MaxTime":         ignored,
 		"NoCursorTimeout": ignored,
+		"Skip":            supported,
 		"Sort":            supported,
 	})
 
@@ -237,6 +245,12 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		}
 	}
 
+	// get skip
+	var skip int
+	if opt.Skip != nil {
+		skip = int(*opt.Skip)
+	}
+
 	// get limit
 	var limit int
 	if opt.Limit != nil {
@@ -244,7 +258,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, sort, limit)
+	res, err := c.client.engine.Find(c.ns, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -263,6 +277,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		"MaxAwaitTime":    ignored,
 		"MaxTime":         ignored,
 		"NoCursorTimeout": ignored,
+		"Skip":            supported,
 		"Sort":            supported,
 	})
 
@@ -286,8 +301,14 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		}
 	}
 
+	// get skip
+	var skip int
+	if opt.Skip != nil {
+		skip = int(*opt.Skip)
+	}
+
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, sort, 1)
+	res, err := c.client.engine.Find(c.ns, query, sort, skip, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}

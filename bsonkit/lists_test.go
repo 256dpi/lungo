@@ -12,18 +12,30 @@ func TestSelect(t *testing.T) {
 	b := &bson.D{}
 
 	// select all matching
-	list := Select(List{a, nil, b, nil}, 0, func(doc Doc) (bool, bool) {
+	list := Select(List{a, nil, b, nil}, 0, 0, func(doc Doc) (bool, bool) {
 		return doc != nil, false
 	})
 	assert.Equal(t, List{a, b}, list)
 
 	// select all matching with exit
 	i := 0
-	list = Select(List{a, nil, b, nil}, 0, func(doc Doc) (bool, bool) {
+	list = Select(List{a, nil, b, nil}, 0, 0, func(doc Doc) (bool, bool) {
 		i++
 		return doc != nil, i > 1
 	})
 	assert.Equal(t, List{a}, list)
+
+	// select all matching with limit
+	list = Select(List{a, nil, b, nil}, 0, 1, func(doc Doc) (bool, bool) {
+		return doc != nil, false
+	})
+	assert.Equal(t, List{a}, list)
+
+	// select all matching with skip
+	list = Select(List{a, nil, b, nil}, 1, 0, func(doc Doc) (bool, bool) {
+		return doc != nil, false
+	})
+	assert.Equal(t, List{b}, list)
 }
 
 func TestSort(t *testing.T) {
