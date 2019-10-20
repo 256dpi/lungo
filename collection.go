@@ -32,15 +32,12 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	opt := options.MergeCollectionOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"CollectionOptions.ReadConcern":    opt.ReadConcern != nil,
 		"CollectionOptions.WriteConcern":   opt.WriteConcern != nil,
 		"CollectionOptions.ReadPreference": opt.ReadPreference != nil,
 		"CollectionOptions.Registry":       opt.Registry != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	return &Collection{
 		ns:     c.ns,
@@ -55,14 +52,11 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	opt := options.MergeCountOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"CountOptions.Collation": opt.Collation != nil,
 		"CountOptions.Hint":      opt.Hint != nil,
 		"CountOptions.Skip":      opt.Skip != nil,
 	})
-	if err != nil {
-		return 0, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -99,12 +93,9 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	opt := options.MergeDeleteOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"DeleteOptions.Collation": opt.Collation != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -133,12 +124,9 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	opt := options.MergeDeleteOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"DeleteOptions.Collation": opt.Collation != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -167,12 +155,9 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	opt := options.MergeDistinctOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"DistinctOptions.Collation": opt.Collation != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check field
 	if field == "" {
@@ -224,7 +209,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	opt := options.MergeFindOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"FindOptions.AllowPartialResults": opt.AllowPartialResults != nil,
 		"FindOptions.Collation":           opt.Collation != nil,
 		"FindOptions.CursorType":          opt.CursorType != nil,
@@ -237,9 +222,6 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		"FindOptions.Skip":                opt.Skip != nil,
 		"FindOptions.Snapshot":            opt.Snapshot != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -281,7 +263,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	opt := options.MergeFindOneOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"FindOneOptions.AllowPartialResults": opt.AllowPartialResults != nil,
 		"FindOneOptions.Collation":           opt.Collation != nil,
 		"FindOneOptions.CursorType":          opt.CursorType != nil,
@@ -294,9 +276,6 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		"FindOneOptions.Skip":                opt.Skip != nil,
 		"FindOneOptions.Snapshot":            opt.Snapshot != nil,
 	})
-	if err != nil {
-		return &SingleResult{err: err}
-	}
 
 	// check filer
 	if filter == nil {
@@ -337,13 +316,10 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	opt := options.MergeFindOneAndDeleteOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"FindOneAndDeleteOptions.Collation":  opt.Collation != nil,
 		"FindOneAndDeleteOptions.Projection": opt.Projection != nil,
 	})
-	if err != nil {
-		return &SingleResult{err: err}
-	}
 
 	// check filer
 	if filter == nil {
@@ -384,16 +360,13 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	opt := options.MergeFindOneAndReplaceOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"FindOneAndReplaceOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 		"FindOneAndReplaceOptions.Collation":                opt.Collation != nil,
 		"FindOneAndReplaceOptions.Projection":               opt.Projection != nil,
 		"FindOneAndReplaceOptions.ReturnDocument":           opt.ReturnDocument != nil,
 		"FindOneAndReplaceOptions.Upsert":                   opt.Upsert != nil,
 	})
-	if err != nil {
-		return &SingleResult{err: err}
-	}
 
 	// check filer
 	if filter == nil {
@@ -445,7 +418,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	opt := options.MergeFindOneAndUpdateOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"FindOneAndUpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
 		"FindOneAndUpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 		"FindOneAndUpdateOptions.Collation":                opt.Collation != nil,
@@ -453,9 +426,6 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		"FindOneAndUpdateOptions.ReturnDocument":           opt.ReturnDocument != nil,
 		"FindOneAndUpdateOptions.Upsert":                   opt.Upsert != nil,
 	})
-	if err != nil {
-		return &SingleResult{err: err}
-	}
 
 	// check filer
 	if filter == nil {
@@ -511,12 +481,9 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	opt := options.MergeInsertManyOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"InsertManyOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check documents
 	if len(documents) == 0 {
@@ -553,7 +520,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	// insert documents
-	err = c.client.engine.insert(c.ns, docs)
+	err := c.client.engine.insert(c.ns, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -568,12 +535,9 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	opt := options.MergeInsertOneOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"InsertOneOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check document
 	if document == nil {
@@ -616,14 +580,11 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	opt := options.MergeReplaceOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"ReplaceOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 		"ReplaceOptions.Collation":                opt.Collation != nil,
 		"ReplaceOptions.Upsert":                   opt.Upsert != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -672,15 +633,12 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	opt := options.MergeUpdateOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"UpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
 		"UpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 		"UpdateOptions.Collation":                opt.Collation != nil,
 		"UpdateOptions.Upsert":                   opt.Upsert != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
@@ -721,15 +679,12 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	opt := options.MergeUpdateOptions(opts...)
 
 	// assert unsupported options
-	err := assertUnsupported(map[string]bool{
+	assertUnsupported(map[string]bool{
 		"UpdateOptions.ArrayFilters":             opt.ArrayFilters != nil,
 		"UpdateOptions.BypassDocumentValidation": opt.BypassDocumentValidation != nil,
 		"UpdateOptions.Collation":                opt.Collation != nil,
 		"UpdateOptions.Upsert":                   opt.Upsert != nil,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	// check filer
 	if filter == nil {
