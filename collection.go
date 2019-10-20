@@ -113,7 +113,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	res, err := c.client.engine.delete(c.ns, query, 0)
+	res, err := c.client.engine.delete(c.ns, query, nil, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	res, err := c.client.engine.delete(c.ns, query, 1)
+	res, err := c.client.engine.delete(c.ns, query, nil, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,6 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	err := assertUnsupported(map[string]bool{
 		"FindOneAndDeleteOptions.Collation":  opt.Collation != nil,
 		"FindOneAndDeleteOptions.Projection": opt.Projection != nil,
-		"FindOneAndDeleteOptions.Sort":       opt.Sort != nil,
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -337,8 +336,17 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		return &SingleResult{err: err}
 	}
 
+	// get sort
+	var sort bsonkit.Doc
+	if opt.Sort != nil {
+		sort, err = bsonkit.Transform(opt.Sort)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// delete documents
-	res, err := c.client.engine.delete(c.ns, query, 1)
+	res, err := c.client.engine.delete(c.ns, query, sort, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}

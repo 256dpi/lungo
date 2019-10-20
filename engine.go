@@ -381,7 +381,7 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 	}, nil
 }
 
-func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error) {
+func (e *engine) delete(ns string, query, sort bsonkit.Doc, limit int) (*result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -391,8 +391,20 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error
 		return nil, nil
 	}
 
+	// get documents
+	list := e.data.Namespaces[ns].Documents
+
+	// sort documents
+	var err error
+	if sort != nil && len(*sort) > 0 {
+		list, err = mongokit.Sort(list, sort)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// filter documents
-	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, err = mongokit.Filter(list, query, limit)
 	if err != nil {
 		return nil, err
 	}
