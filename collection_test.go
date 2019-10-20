@@ -38,7 +38,7 @@ func TestCollectionCountDocuments(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -74,7 +74,7 @@ func TestCollectionDeleteMany(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -243,7 +243,7 @@ func TestCollectionEstimatedDocumentCount(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -284,7 +284,7 @@ func TestCollectionFind(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -359,7 +359,7 @@ func TestCollectionFindOne(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		_, err := c.InsertMany(nil, []interface{}{
+		_, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -558,7 +558,7 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 func TestCollectionInsertMany(t *testing.T) {
 	// generated id
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		res, err := c.InsertMany(nil, []interface{}{
+		res, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"foo": "bar",
 			},
@@ -583,7 +583,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res, err := c.InsertMany(nil, []interface{}{
+		res, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -607,7 +607,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// duplicate key
-		res, err = c.InsertMany(nil, []interface{}{
+		res, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -633,7 +633,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			"some-id": "a",
 		}
 
-		res, err := c.InsertMany(nil, []interface{}{
+		res, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -649,7 +649,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// duplicate key
-		res, err = c.InsertMany(nil, []interface{}{
+		res, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -737,7 +737,7 @@ func TestCollectionReplaceOne(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -827,7 +827,7 @@ func TestCollectionUpdateMany(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -899,7 +899,7 @@ func TestCollectionUpdateOne(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		res1, err := c.InsertMany(nil, []interface{}{
+		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
