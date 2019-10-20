@@ -11,21 +11,25 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
-type result struct {
-	matched  bsonkit.List
-	replaced bsonkit.Doc
-	updated  bsonkit.List
+// TODO: Combine ListDatabases(), ListCollections(), NumDocuments() into Info().
+
+// TODO: Combine DropDatabase() and DropCollection() into Drop().
+
+type Result struct {
+	Matched  bsonkit.List
+	Replaced bsonkit.Doc
+	Updated  bsonkit.List
 }
 
-type engine struct {
+type Engine struct {
 	store Store
 	data  *Data
 	mutex sync.Mutex
 }
 
-func createEngine(store Store) (*engine, error) {
+func CreateEngine(store Store) (*Engine, error) {
 	// create engine
-	e := &engine{
+	e := &Engine{
 		store: store,
 	}
 
@@ -41,7 +45,7 @@ func createEngine(store Store) (*engine, error) {
 	return e, nil
 }
 
-func (e *engine) listDatabases(query bsonkit.Doc) (bsonkit.List, error) {
+func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -81,7 +85,7 @@ func (e *engine) listDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	return list, nil
 }
 
-func (e *engine) dropDatabase(name string) error {
+func (e *Engine) DropDatabase(name string) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -96,7 +100,7 @@ func (e *engine) dropDatabase(name string) error {
 	return nil
 }
 
-func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
+func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -129,7 +133,7 @@ func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	return list, nil
 }
 
-func (e *engine) dropCollection(ns string) error {
+func (e *Engine) DropCollection(ns string) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -144,7 +148,7 @@ func (e *engine) dropCollection(ns string) error {
 	return nil
 }
 
-func (e *engine) numDocuments(ns string) int {
+func (e *Engine) NumDocuments(ns string) int {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -158,14 +162,14 @@ func (e *engine) numDocuments(ns string) int {
 	return len(namespace.Documents)
 }
 
-func (e *engine) find(ns string, query, sort bsonkit.Doc, limit int) (*result, error) {
+func (e *Engine) Find(ns string, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return &result{}, nil
+		return &Result{}, nil
 	}
 
 	// get documents
@@ -186,10 +190,10 @@ func (e *engine) find(ns string, query, sort bsonkit.Doc, limit int) (*result, e
 		return nil, err
 	}
 
-	return &result{matched: list}, nil
+	return &Result{Matched: list}, nil
 }
 
-func (e *engine) insert(ns string, list bsonkit.List) error {
+func (e *Engine) Insert(ns string, list bsonkit.List) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -240,14 +244,14 @@ func (e *engine) insert(ns string, list bsonkit.List) error {
 	return nil
 }
 
-func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, error) {
+func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return &result{}, nil
+		return &Result{}, nil
 	}
 
 	// get documents
@@ -270,7 +274,7 @@ func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, err
 
 	// check list
 	if len(list) == 0 {
-		return &result{}, nil
+		return &Result{}, nil
 	}
 
 	// set missing id or check existing id
@@ -314,20 +318,20 @@ func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, err
 	// set new data
 	e.data = clone
 
-	return &result{
-		matched:  list,
-		replaced: repl,
+	return &Result{
+		Matched:  list,
+		Replaced: repl,
 	}, nil
 }
 
-func (e *engine) update(ns string, query, sort, update bsonkit.Doc, limit int) (*result, error) {
+func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return &result{}, nil
+		return &Result{}, nil
 	}
 
 	// get documents
@@ -350,7 +354,7 @@ func (e *engine) update(ns string, query, sort, update bsonkit.Doc, limit int) (
 
 	// check list
 	if len(list) == 0 {
-		return &result{}, nil
+		return &Result{}, nil
 	}
 
 	// clone documents
@@ -403,13 +407,13 @@ func (e *engine) update(ns string, query, sort, update bsonkit.Doc, limit int) (
 	// set new data
 	e.data = clone
 
-	return &result{
-		matched: list,
-		updated: newList,
+	return &Result{
+		Matched: list,
+		Updated: newList,
 	}, nil
 }
 
-func (e *engine) delete(ns string, query, sort bsonkit.Doc, limit int) (*result, error) {
+func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -476,5 +480,5 @@ func (e *engine) delete(ns string, query, sort bsonkit.Doc, limit int) (*result,
 	// set new data
 	e.data = clone
 
-	return &result{matched: list}, nil
+	return &Result{Matched: list}, nil
 }

@@ -12,12 +12,12 @@ import (
 var _ IClient = &Client{}
 
 type Client struct {
-	engine *engine
+	engine *Engine
 }
 
 func Open(ctx context.Context, store Store) (IClient, error) {
 	// create engine
-	engine, err := createEngine(store)
+	engine, err := CreateEngine(store)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// list collections
-	list, err := c.engine.listDatabases(query)
+	list, err := c.engine.ListDatabases(query)
 	if err != nil {
 		return mongo.ListDatabasesResult{}, err
 	}

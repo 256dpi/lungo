@@ -44,7 +44,7 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 
 func (d *Database) Drop(context.Context) error {
 	// drop database
-	err := d.client.engine.dropDatabase(d.name)
+	err := d.client.engine.DropDatabase(d.name)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	}
 
 	// list collections
-	list, err := d.client.engine.listCollections(d.name, query)
+	list, err := d.client.engine.ListCollections(d.name, query)
 	if err != nil {
 		return nil, err
 	}

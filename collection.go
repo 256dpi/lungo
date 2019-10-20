@@ -70,12 +70,12 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// find documents
-	res, err := c.client.engine.find(c.ns, query, nil, limit)
+	res, err := c.client.engine.Find(c.ns, query, nil, limit)
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(len(res.matched)), nil
+	return int64(len(res.Matched)), nil
 }
 
 func (c *Collection) Database() IDatabase {
@@ -101,13 +101,13 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	res, err := c.client.engine.delete(c.ns, query, nil, 0)
+	res, err := c.client.engine.Delete(c.ns, query, nil, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(res.matched)),
+		DeletedCount: int64(len(res.Matched)),
 	}, nil
 }
 
@@ -130,13 +130,13 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	res, err := c.client.engine.delete(c.ns, query, nil, 1)
+	res, err := c.client.engine.Delete(c.ns, query, nil, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(res.matched)),
+		DeletedCount: int64(len(res.Matched)),
 	}, nil
 }
 
@@ -166,20 +166,20 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// find documents
-	res, err := c.client.engine.find(c.ns, query, nil, 0)
+	res, err := c.client.engine.Find(c.ns, query, nil, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	// collect distinct values
-	values := bsonkit.Collect(res.matched, field, true, true)
+	values := bsonkit.Collect(res.Matched, field, true, true)
 
 	return values, nil
 }
 
 func (c *Collection) Drop(context.Context) error {
 	// drop collection
-	err := c.client.engine.dropCollection(c.ns)
+	err := c.client.engine.DropCollection(c.ns)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (c *Collection) Drop(context.Context) error {
 
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// get num documents
-	num := c.client.engine.numDocuments(c.ns)
+	num := c.client.engine.NumDocuments(c.ns)
 
 	return int64(num), nil
 }
@@ -236,12 +236,12 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// find documents
-	res, err := c.client.engine.find(c.ns, query, sort, limit)
+	res, err := c.client.engine.Find(c.ns, query, sort, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return &staticCursor{list: res.matched}, nil
+	return &staticCursor{list: res.Matched}, nil
 }
 
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
@@ -279,17 +279,17 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// find documents
-	res, err := c.client.engine.find(c.ns, query, sort, 1)
+	res, err := c.client.engine.Find(c.ns, query, sort, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if len(res.matched) == 0 {
+	if len(res.Matched) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.matched[0]}
+	return &SingleResult{doc: res.Matched[0]}
 }
 
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
@@ -323,17 +323,17 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	}
 
 	// delete documents
-	res, err := c.client.engine.delete(c.ns, query, sort, 1)
+	res, err := c.client.engine.Delete(c.ns, query, sort, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if len(res.matched) == 0 {
+	if len(res.Matched) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.matched[0]}
+	return &SingleResult{doc: res.Matched[0]}
 }
 
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
@@ -378,17 +378,17 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	}
 
 	// insert document
-	res, err := c.client.engine.replace(c.ns, query, sort, doc)
+	res, err := c.client.engine.Replace(c.ns, query, sort, doc)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if res.replaced == nil {
+	if res.Replaced == nil {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.matched[0]}
+	return &SingleResult{doc: res.Matched[0]}
 }
 
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
@@ -433,17 +433,17 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, sort, doc, 1)
+	res, err := c.client.engine.Update(c.ns, query, sort, doc, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
 	// check list
-	if len(res.updated) == 0 {
+	if len(res.Updated) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.matched[0]}
+	return &SingleResult{doc: res.Matched[0]}
 }
 
 func (c *Collection) Indexes() mongo.IndexView {
@@ -492,7 +492,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	// insert documents
-	err := c.client.engine.insert(c.ns, docs)
+	err := c.client.engine.Insert(c.ns, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +531,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// insert document
-	err = c.client.engine.insert(c.ns, bsonkit.List{doc})
+	err = c.client.engine.Insert(c.ns, bsonkit.List{doc})
 	if err != nil {
 		return nil, err
 	}
@@ -575,13 +575,13 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}
 
 	// insert document
-	res, err := c.client.engine.replace(c.ns, query, nil, doc)
+	res, err := c.client.engine.Replace(c.ns, query, nil, doc)
 	if err != nil {
 		return nil, err
 	}
 
 	// check list
-	if res.replaced == nil {
+	if res.Replaced == nil {
 		return &mongo.UpdateResult{
 			MatchedCount:  0,
 			ModifiedCount: 0,
@@ -624,14 +624,14 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, nil, doc, 0)
+	res, err := c.client.engine.Update(c.ns, query, nil, doc, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.matched)),
-		ModifiedCount: int64(len(res.updated)),
+		MatchedCount:  int64(len(res.Matched)),
+		ModifiedCount: int64(len(res.Updated)),
 	}, nil
 }
 
@@ -665,14 +665,14 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, nil, doc, 1)
+	res, err := c.client.engine.Update(c.ns, query, nil, doc, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.matched)),
-		ModifiedCount: int64(len(res.updated)),
+		MatchedCount:  int64(len(res.Matched)),
+		ModifiedCount: int64(len(res.Updated)),
 	}, nil
 }
 
