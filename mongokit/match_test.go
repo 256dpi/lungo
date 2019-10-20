@@ -209,3 +209,29 @@ func TestMatchIn(t *testing.T) {
 		}, true)
 	})
 }
+
+func TestMatchNin(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// missing list
+		fn(bson.M{
+			"foo": bson.M{"$nin": ""},
+		}, "match: $nin: expected list")
+
+		// empty list
+		fn(bson.M{
+			"foo": bson.M{"$nin": bson.A{}},
+		}, true)
+
+		// matching list
+		fn(bson.M{
+			"foo": bson.M{"$nin": bson.A{"bar"}},
+		}, false)
+
+		// missing field
+		fn(bson.M{
+			"bar": bson.M{"$nin": bson.A{"bar"}},
+		}, true)
+	})
+}
