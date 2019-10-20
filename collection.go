@@ -587,16 +587,6 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		return nil, err
 	}
 
-	// ensure object id
-	id := bsonkit.Get(doc, "_id")
-	if id == bsonkit.Missing {
-		id = primitive.NewObjectID()
-		err = bsonkit.Set(doc, "_id", id, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// insert document
 	res, err := c.client.engine.replace(c.ns, query, nil, doc)
 	if err != nil {
