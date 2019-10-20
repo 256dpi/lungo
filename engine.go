@@ -273,7 +273,7 @@ func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, err
 		return &result{}, nil
 	}
 
-	// add missing and check existing id
+	// set missing id or check existing id
 	replID := bsonkit.Get(repl, "_id")
 	if replID == bsonkit.Missing {
 		err = bsonkit.Set(repl, "_id", bsonkit.Get(list[0], "_id"), true)
@@ -294,17 +294,15 @@ func (e *engine) replace(ns string, query, sort, repl bsonkit.Doc) (*result, err
 	// get document position
 	position := namespace.listIndex[list[0]]
 
-	// remove old doc from list and primary index
+	// remove old document from list and primary index
 	namespace.primaryIndex.Delete(list[0])
 	delete(namespace.listIndex, list[0])
 
-	// add document to primary index
-	if !namespace.primaryIndex.Set(repl) {
-		return nil, fmt.Errorf("document with same _id exists already")
-	}
-
-	// replace document and update list index
+	// replace document
 	namespace.Documents[position] = repl
+
+	// add new document to list and primary index
+	namespace.primaryIndex.Set(repl)
 	namespace.listIndex[repl] = position
 
 	// write data
