@@ -2,19 +2,17 @@ package mongokit
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
 
 func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 	// copy list
-	docs := make(bsonkit.List, len(list))
-	copy(docs, list)
+	result := make(bsonkit.List, len(list))
+	copy(result, list)
 
-	// prepare sort info
-	paths := make([]string, 0, len(*doc))
-	directions := make([]int, 0, len(*doc))
+	// prepare orders
+	orders := make([]bsonkit.SortOrder, 0, len(*doc))
 
 	// parse sort document
 	for _, exp := range *doc {
@@ -37,35 +35,14 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 		}
 
 		// add to info
-		paths = append(paths, exp.Key)
-		directions = append(directions, direction)
+		orders = append(orders, bsonkit.SortOrder{
+			Path:    exp.Key,
+			Reverse: direction == -1,
+		})
 	}
 
-	// sort slice by comparing values
-	sort.Slice(docs, func(i, j int) bool {
-		for dir, path := range paths {
-			// get values
-			a := bsonkit.Get(docs[i], path)
-			b := bsonkit.Get(docs[j], path)
+	// sort list
+	bsonkit.Sort(result, orders)
 
-			// compare values
-			res := bsonkit.Compare(a, b)
-
-			// continue if equal
-			if res == 0 {
-				continue
-			}
-
-			// check reverse
-			if directions[dir] == -1 {
-				return res > 0
-			}
-
-			return res < 0
-		}
-
-		return false
-	})
-
-	return docs, nil
+	return result, nil
 }

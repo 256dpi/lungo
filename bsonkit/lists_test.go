@@ -27,25 +27,47 @@ func TestSelect(t *testing.T) {
 }
 
 func TestSort(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1"})
-	a2 := Convert(bson.M{"a": "2"})
-	a3 := Convert(bson.M{"a": "3"})
+	a1 := Convert(bson.M{"a": "1", "b": true})
+	a2 := Convert(bson.M{"a": "2", "b": false})
+	a3 := Convert(bson.M{"a": "3", "b": true})
 
-	list := Sort(List{a3, a1, a2}, "a", false)
+	// sort forwards single
+	list := List{a3, a1, a2}
+	Sort(list, []SortOrder{
+		{Path: "a", Reverse: false},
+	})
 	assert.Equal(t, List{a1, a2, a3}, list)
 
-	list = Sort(List{a3, a1, a2}, "a", true)
+	// sort backwards single
+	list = List{a3, a1, a2}
+	Sort(list, []SortOrder{
+		{Path: "a", Reverse: true},
+	})
 	assert.Equal(t, List{a3, a2, a1}, list)
 
-	b1 := Convert(bson.M{"b": true})
-	b2 := Convert(bson.M{"b": "foo"})
-	b3 := Convert(bson.M{"b": 4.2})
+	// sort forwards multiple
+	list = List{a3, a1, a2}
+	Sort(list, []SortOrder{
+		{Path: "b", Reverse: false},
+		{Path: "a", Reverse: false},
+	})
+	assert.Equal(t, List{a2, a1, a3}, list)
 
-	list = Sort(List{b1, b2, b3}, "b", false)
-	assert.Equal(t, List{b3, b2, b1}, list)
+	// sort backwards multiple
+	list = List{a3, a1, a2}
+	Sort(list, []SortOrder{
+		{Path: "b", Reverse: true},
+		{Path: "a", Reverse: true},
+	})
+	assert.Equal(t, List{a3, a1, a2}, list)
 
-	list = Sort(List{b1, b2, b3}, "b", true)
-	assert.Equal(t, List{b1, b2, b3}, list)
+	// sort mixed
+	list = List{a3, a1, a2}
+	Sort(list, []SortOrder{
+		{Path: "b", Reverse: false},
+		{Path: "a", Reverse: true},
+	})
+	assert.Equal(t, List{a2, a3, a1}, list)
 }
 
 func TestCollect(t *testing.T) {
