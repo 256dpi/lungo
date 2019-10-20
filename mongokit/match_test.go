@@ -9,8 +9,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Properly test all operators.
-
 func matchTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))) {
 	t.Run("Mongo", func(t *testing.T) {
 		coll := testCollection()
