@@ -2,13 +2,12 @@ package bsonkit
 
 import "sort"
 
-func Select(list List, limit int, fn func(Doc) (bool, bool)) (List, []int) {
-	// prepare result and index
+func Select(list List, limit int, fn func(Doc) (bool, bool)) List {
+	// prepare result
 	result := make(List, 0, len(list))
-	index := make([]int, 0, len(list))
 
 	// select documents
-	for i, doc := range list {
+	for _, doc := range list {
 		// match document
 		matched, exit := fn(doc)
 		if !matched && exit {
@@ -22,7 +21,6 @@ func Select(list List, limit int, fn func(Doc) (bool, bool)) (List, []int) {
 
 		// add to selection
 		result = append(result, doc)
-		index = append(index, i)
 
 		// check exit
 		if exit {
@@ -35,7 +33,7 @@ func Select(list List, limit int, fn func(Doc) (bool, bool)) (List, []int) {
 		}
 	}
 
-	return result, index
+	return result
 }
 
 func Difference(a, b List) List {

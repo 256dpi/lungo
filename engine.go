@@ -73,7 +73,7 @@ func (e *engine) listDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// filter list
-	list, _, err := mongokit.Filter(list, query, 0)
+	list, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (e *engine) listCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	}
 
 	// filter list
-	list, _, err := mongokit.Filter(list, query, 0)
+	list, err := mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (e *engine) find(ns string, query, sort bsonkit.Doc, limit int) (*result, e
 	}
 
 	// filter documents
-	list, _, err = mongokit.Filter(list, query, limit)
+	list, err = mongokit.Filter(list, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (e *engine) replace(ns string, query, repl bsonkit.Doc) (*result, error) {
 	}
 
 	// filter documents
-	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (e *engine) update(ns string, query, update bsonkit.Doc, limit int) (*resul
 	}
 
 	// filter documents
-	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error
 	}
 
 	// filter documents
-	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
 	if err != nil {
 		return nil, err
 	}
