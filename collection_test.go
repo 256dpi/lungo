@@ -51,10 +51,12 @@ func TestCollectionCountDocuments(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, res1.InsertedIDs, 2)
 
+		// count all
 		num, err := c.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, int64(2), num)
 
+		// count first
 		num, err = c.CountDocuments(nil, bson.M{}, options.Count().SetLimit(1))
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), num)
@@ -95,6 +97,7 @@ func TestCollectionDeleteMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// delete none
 		res2, err := c.DeleteMany(nil, bson.M{
 			"_id": "foo",
 		})
@@ -111,6 +114,7 @@ func TestCollectionDeleteMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// delete matching
 		res2, err = c.DeleteMany(nil, bson.M{
 			"_id": bson.M{"$in": bson.A{id1, id2}},
 		})
@@ -137,6 +141,7 @@ func TestCollectionDeleteOne(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// delete none
 		res2, err := c.DeleteOne(nil, bson.M{
 			"_id": "foo",
 		})
@@ -149,6 +154,7 @@ func TestCollectionDeleteOne(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// delete one
 		res2, err = c.DeleteOne(nil, bson.M{
 			"_id": id,
 		})
@@ -413,10 +419,12 @@ func TestCollectionFindOneAndDelete(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// missing
 		err = c.FindOneAndDelete(nil, bson.M{
 			"_id": "foo",
 		}).Err()
 		assert.Error(t, err)
+		assert.Equal(t, mongo.ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -424,6 +432,7 @@ func TestCollectionFindOneAndDelete(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// specific
 		var doc bson.M
 		err = c.FindOneAndDelete(nil, bson.M{
 			"_id": id,
@@ -454,10 +463,12 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// missing
 		err = c.FindOneAndReplace(nil, bson.M{
 			"_id": "foo",
 		}, bson.M{}).Err()
 		assert.Error(t, err)
+		assert.Equal(t, mongo.ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -465,6 +476,7 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// specific
 		var doc bson.M
 		err = c.FindOneAndReplace(nil, bson.M{
 			"_id": id,
@@ -503,10 +515,16 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// missing
 		err = c.FindOneAndUpdate(nil, bson.M{
 			"_id": "foo",
-		}, bson.M{}).Err()
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "baz",
+			},
+		}).Err()
 		assert.Error(t, err)
+		assert.Equal(t, mongo.ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -514,6 +532,7 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
+		// specific
 		var doc bson.M
 		err = c.FindOneAndUpdate(nil, bson.M{
 			"_id": id,
