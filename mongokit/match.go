@@ -10,10 +10,10 @@ import (
 
 // https://github.com/mongodb/mongo/blob/master/src/mongo/db/matcher/expression_leaf.cpp
 
-type Operator func(bsonkit.Doc, string, interface{}) (bool, error)
+type QueryOperator func(bsonkit.Doc, string, interface{}) (bool, error)
 
-var TopLevelQueryOperators = map[string]Operator{}
-var ExpressionQueryOperators = map[string]Operator{}
+var TopLevelQueryOperators = map[string]QueryOperator{}
+var ExpressionQueryOperators = map[string]QueryOperator{}
 
 func init() {
 	// TODO: Add more operators.
@@ -232,7 +232,7 @@ func matchOr(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	return false, nil
 }
 
-func matchComp(op string) Operator {
+func matchComp(op string) QueryOperator {
 	return func(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 		// get field value
 		field := bsonkit.Get(doc, path)
