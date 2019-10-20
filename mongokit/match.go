@@ -281,8 +281,7 @@ func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 
 	// check if field is in list
 	for _, item := range list {
-		res := bsonkit.Compare(field, item)
-		if res == 0 {
+		if bsonkit.Compare(field, item) == 0 {
 			return true, nil
 		}
 	}
@@ -313,8 +312,7 @@ func matchNin(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 
 	// check if field is not in list
 	for _, item := range list {
-		res := bsonkit.Compare(field, item)
-		if res == 0 {
+		if bsonkit.Compare(field, item) == 0 {
 			return false, nil
 		}
 	}
