@@ -20,31 +20,31 @@ func init() {
 
 	// register top level query operators matchers
 	TopLevelQueryOperators["$and"] = matchAnd
-	TopLevelQueryOperators["$not"] = matchNot
 	TopLevelQueryOperators["$nor"] = matchNor
 	TopLevelQueryOperators["$or"] = matchOr
 
 	// register expression query operators
 	ExpressionQueryOperators[""] = matchComp("$eq")
-	ExpressionQueryOperators["$and"] = matchAnd
-	ExpressionQueryOperators["$not"] = matchNot
-	ExpressionQueryOperators["$nor"] = matchNor
-	ExpressionQueryOperators["$or"] = matchOr
 	ExpressionQueryOperators["$eq"] = matchComp("$eq")
 	ExpressionQueryOperators["$gt"] = matchComp("$gt")
 	ExpressionQueryOperators["$lt"] = matchComp("$lt")
 	ExpressionQueryOperators["$gte"] = matchComp("$gte")
 	ExpressionQueryOperators["$lte"] = matchComp("$lte")
 	ExpressionQueryOperators["$ne"] = matchComp("$ne")
+	ExpressionQueryOperators["$not"] = matchNot
 	ExpressionQueryOperators["$in"] = matchIn
 	ExpressionQueryOperators["$nin"] = matchNin
 	ExpressionQueryOperators["$exists"] = matchExists
 }
 
 func Match(doc, query bsonkit.Doc) (bool, error) {
+	return matchAll(doc, *query, true)
+}
+
+func matchAll(doc bsonkit.Doc, query bson.D, root bool) (bool, error) {
 	// match all expressions (implicit and)
-	for _, exp := range *query {
-		ok, err := matchQueryPair(doc, exp)
+	for _, exp := range query {
+		ok, err := matchExpression(doc, exp, root)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -55,12 +55,17 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	return true, nil
 }
 
-func matchQueryPair(doc bsonkit.Doc, pair bson.E) (bool, error) {
+func matchExpression(doc bsonkit.Doc, pair bson.E, root bool) (bool, error) {
 	// check for top level query operators which may appear together with field
 	// expressions in the query filter document
 	if len(pair.Key) > 0 && pair.Key[0] == '$' {
 		// lookup top level operator
-		operator := TopLevelQueryOperators[pair.Key]
+		var operator QueryOperator
+		if root {
+			operator = TopLevelQueryOperators[pair.Key]
+		} else {
+			operator = ExpressionQueryOperators[pair.Key]
+		}
 		if operator == nil {
 			return false, fmt.Errorf("match: unknown top level operator %q", pair.Key)
 		}
@@ -141,7 +146,7 @@ func matchAnd(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(doc, &query)
+		ok, err := matchAll(doc, query, false)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -150,22 +155,6 @@ func matchAnd(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
-	// coerce item
-	query, ok := v.(bson.D)
-	if !ok {
-		return false, fmt.Errorf("match: $not: expected document")
-	}
-
-	// match document
-	ok, err := Match(doc, &query)
-	if err != nil {
-		return false, err
-	}
-
-	return !ok, nil
 }
 
 func matchNor(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
@@ -189,7 +178,7 @@ func matchNor(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(doc, &query)
+		ok, err := matchAll(doc, query, false)
 		if err != nil {
 			return false, err
 		} else if ok {
@@ -221,7 +210,7 @@ func matchOr(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 		}
 
 		// match document
-		ok, err := Match(doc, &query)
+		ok, err := matchAll(doc, query, false)
 		if err != nil {
 			return false, err
 		} else if ok {
@@ -267,6 +256,22 @@ func matchComp(op string) QueryOperator {
 			return false, fmt.Errorf("match: unkown comparison operator %q", op)
 		}
 	}
+}
+
+func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
+	// coerce item
+	query, ok := v.(bson.D)
+	if !ok {
+		return false, fmt.Errorf("match: $not: expected document")
+	}
+
+	// match document
+	ok, err := matchAll(doc, query, false)
+	if err != nil {
+		return false, err
+	}
+
+	return !ok, nil
 }
 
 func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {

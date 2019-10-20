@@ -63,7 +63,6 @@ func TestMatchQueryComposition(t *testing.T) {
 		}, true)
 
 		// unknown top level operator
-		// top level operator with field condition
 		fn(bson.M{
 			"$cool": bson.A{
 				bson.M{"foo": "bar"},
@@ -128,6 +127,15 @@ func TestMatchQueryComposition(t *testing.T) {
 				bson.E{Key: "$cool", Value: "bar"},
 			},
 		}, `match: unknown operator "$cool"`)
+
+		// nested top level operator
+		fn(bson.M{
+			"foo": bson.M{
+				"$and": bson.A{
+					bson.M{},
+				},
+			},
+		}, `match: unknown operator "$and"`)
 	})
 }
 
