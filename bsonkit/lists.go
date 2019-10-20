@@ -2,24 +2,24 @@ package bsonkit
 
 import "sort"
 
-func Select(list List, limit int, fn func(Doc) (bool, bool)) List {
+func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
 	result := make(List, 0, len(list))
 
 	// select documents
 	for _, doc := range list {
-		// match document
-		matched, exit := fn(doc)
-		if !matched && exit {
+		// run selector
+		selected, exit := selector(doc)
+		if !selected && exit {
 			break
 		}
 
-		// continue if document does not match
-		if !matched {
+		// continue if document has not been selected
+		if !selected {
 			continue
 		}
 
-		// add to selection
+		// add to result
 		result = append(result, doc)
 
 		// check exit
