@@ -319,6 +319,17 @@ func matchNin(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 		}
 	}
 
+	// check array elements
+	if array, ok := field.(bson.A); ok {
+		for _, entry := range array {
+			for _, item := range list {
+				if bsonkit.Compare(entry, item) == 0 {
+					return false, nil
+				}
+			}
+		}
+	}
+
 	return true, nil
 }
 

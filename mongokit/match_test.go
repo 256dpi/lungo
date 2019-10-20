@@ -245,6 +245,7 @@ func TestMatchIn(t *testing.T) {
 func TestMatchNin(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
+		"bar": bson.A{"foo", "bar"},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
 		fn(bson.M{
@@ -263,7 +264,12 @@ func TestMatchNin(t *testing.T) {
 
 		// missing field
 		fn(bson.M{
-			"bar": bson.M{"$nin": bson.A{"bar"}},
+			"baz": bson.M{"$nin": bson.A{"bar"}},
 		}, true)
+
+		// array item
+		fn(bson.M{
+			"bar": bson.M{"$nin": bson.A{"bar"}},
+		}, false)
 	})
 }
