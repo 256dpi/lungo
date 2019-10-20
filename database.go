@@ -20,7 +20,7 @@ type Database struct {
 }
 
 func (d *Database) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (d *Database) Client() IClient {
@@ -113,15 +113,15 @@ func (d *Database) ReadPreference() *readpref.ReadPref {
 }
 
 func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (d *Database) WriteConcern() *writeconcern.WriteConcern {

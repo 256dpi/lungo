@@ -20,11 +20,11 @@ type Collection struct {
 }
 
 func (c *Collection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Collection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, error) {
@@ -473,7 +473,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 }
 
 func (c *Collection) Indexes() mongo.IndexView {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
@@ -721,5 +721,5 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 }
 
 func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }

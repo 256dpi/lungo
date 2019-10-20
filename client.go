@@ -105,17 +105,17 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 }
 
 func (c *Client) StartSession(...*options.SessionOptions) (mongo.Session, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Client) UseSession(context.Context, func(mongo.SessionContext) error) error {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
 
 func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
-	panic("not implemented")
+	panic("lungo: not implemented")
 }
