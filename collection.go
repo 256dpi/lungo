@@ -3,7 +3,6 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -509,11 +508,10 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		panic("lungo: missing documents")
 	}
 
-	// prepare lists
-	docs := make(bsonkit.List, 0, len(documents))
-	ids := make([]interface{}, 0, len(documents))
+	// prepare list
+	list := make(bsonkit.List, 0, len(documents))
 
-	// process documents
+	// transform documents
 	for _, document := range documents {
 		// transform document
 		doc, err := bsonkit.Transform(document)
@@ -521,26 +519,18 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 			return nil, err
 		}
 
-		// ensure object id
-		id := bsonkit.Get(doc, "_id")
-		if id == bsonkit.Missing {
-			id = primitive.NewObjectID()
-			err = bsonkit.Set(doc, "_id", id, true)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// add to lists
-		docs = append(docs, doc)
-		ids = append(ids, id)
+		// add to list
+		list = append(list, doc)
 	}
 
 	// insert documents
-	err := c.client.engine.Insert(c.ns, docs)
+	res, err := c.client.engine.Insert(c.ns, list)
 	if err != nil {
 		return nil, err
 	}
+
+	// collect ids
+	ids := bsonkit.Collect(res.Inserted, "_id", false, false)
 
 	return &mongo.InsertManyResult{
 		InsertedIDs: ids,
@@ -565,21 +555,14 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
-	// ensure object id
-	id := bsonkit.Get(doc, "_id")
-	if id == bsonkit.Missing {
-		id = primitive.NewObjectID()
-		err = bsonkit.Set(doc, "_id", id, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// insert document
-	err = c.client.engine.Insert(c.ns, bsonkit.List{doc})
+	res, err := c.client.engine.Insert(c.ns, bsonkit.List{doc})
 	if err != nil {
 		return nil, err
 	}
+
+	// get id
+	id := bsonkit.Get(res.Inserted[0], "_id")
 
 	return &mongo.InsertOneResult{
 		InsertedID: id,

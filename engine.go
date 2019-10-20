@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -17,6 +18,7 @@ import (
 
 type Result struct {
 	Matched  bsonkit.List
+	Inserted bsonkit.List
 	Replaced bsonkit.Doc
 	Updated  bsonkit.List
 }
@@ -193,15 +195,19 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Res
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Insert(ns string, list bsonkit.List) error {
+func (e *Engine) Insert(ns string, list bsonkit.List) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	// check ids
+	// ensure ids
 	for _, doc := range list {
+		// ensure object id
 		if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-			return fmt.Errorf("document is missng the _id field")
+			err := bsonkit.Set(doc, "_id", primitive.NewObjectID(), true)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -222,7 +228,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List) error {
 	for _, doc := range list {
 		// add document to primary index
 		if !namespace.primaryIndex.Set(doc) {
-			return fmt.Errorf("document with same _id exists already")
+			return nil, fmt.Errorf("document with same _id exists already")
 		}
 
 		// add document
@@ -235,13 +241,15 @@ func (e *Engine) Insert(ns string, list bsonkit.List) error {
 	// write data
 	err := e.store.Store(clone)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set new data
 	e.data = clone
 
-	return nil
+	return &Result{
+		Inserted: list,
+	}, nil
 }
 
 func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, error) {
