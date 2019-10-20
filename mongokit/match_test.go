@@ -218,6 +218,7 @@ func TestMatchEq(t *testing.T) {
 func TestMatchIn(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
+		"bar": bson.A{"foo", "bar"},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
 		fn(bson.M{
@@ -232,6 +233,11 @@ func TestMatchIn(t *testing.T) {
 		// matching list
 		fn(bson.M{
 			"foo": bson.M{"$in": bson.A{"bar"}},
+		}, true)
+
+		// array item
+		fn(bson.M{
+			"bar": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 	})
 }
