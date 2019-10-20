@@ -187,6 +187,32 @@ func TestMatchEq(t *testing.T) {
 			},
 		}, true)
 	})
+
+	// array field
+	matchTest(t, bson.M{
+		"foo": bson.A{
+			"bar", "baz",
+		},
+		"bar": bson.A{
+			bson.A{"foo", "bar"}, bson.A{"bar", "baz"},
+		},
+	}, func(fn func(bson.M, interface{})) {
+		fn(bson.M{
+			"foo": bson.M{
+				"$eq": bson.A{
+					"bar", "baz",
+				},
+			},
+		}, true)
+
+		fn(bson.M{
+			"bar": bson.M{
+				"$eq": bson.A{
+					"bar", "baz",
+				},
+			},
+		}, true)
+	})
 }
 
 func TestMatchIn(t *testing.T) {

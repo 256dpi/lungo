@@ -240,6 +240,15 @@ func matchComp(op string) Operator {
 		// compare field with value
 		res := bsonkit.Compare(field, v)
 
+		// handle special array field equality
+		if array, ok := field.(bson.A); ok && op == "$eq" && res != 0 {
+			for _, item := range array {
+				if bsonkit.Compare(item, v) == 0 {
+					return true, nil
+				}
+			}
+		}
+
 		// check operator
 		switch op {
 		case "$eq":
