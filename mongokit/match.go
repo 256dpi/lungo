@@ -265,13 +265,22 @@ func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 		return false, fmt.Errorf("match: $not: expected document")
 	}
 
-	// match document
-	ok, err := matchAll(doc, query, false)
-	if err != nil {
-		return false, err
+	// check document
+	if len(query) == 0 {
+		return false, fmt.Errorf("match: $not: empty document")
 	}
 
-	return !ok, nil
+	// match all expressions (implicit and)
+	for _, exp := range query {
+		ok, err := matchExpression(doc, exp, false)
+		if err != nil {
+			return false, err
+		} else if ok {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {

@@ -223,6 +223,41 @@ func TestMatchEq(t *testing.T) {
 	})
 }
 
+func TestMatchNot(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// no document
+		fn(bson.M{
+			"foo": bson.M{"$not": ""},
+		}, "match: $not: expected document")
+
+		// empty document
+		fn(bson.M{
+			"foo": bson.M{"$not": bson.M{}},
+		}, "match: $not: empty document")
+
+		// empty list
+		fn(bson.M{
+			"foo": bson.M{
+				"$not": bson.M{
+					"$eq": "baz",
+				},
+			},
+		}, true)
+
+		// empty list
+		fn(bson.M{
+			"foo": bson.M{
+				"$not": bson.M{
+					"$eq": "bar",
+					"$ne": "foo",
+				},
+			},
+		}, false)
+	})
+}
+
 func TestMatchIn(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
