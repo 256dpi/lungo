@@ -397,6 +397,12 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error
 		return nil, err
 	}
 
+	// build list index
+	listIndex := map[bsonkit.Doc]bool{}
+	for _, doc := range list {
+		listIndex[doc] = true
+	}
+
 	// clone data
 	clone := e.data.Clone()
 
@@ -404,8 +410,16 @@ func (e *engine) delete(ns string, query bsonkit.Doc, limit int) (*result, error
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// remove documents
-	namespace.Documents = bsonkit.Difference(clone.Namespaces[ns].Documents, list)
+	// copy documents to keep
+	documents := make(bsonkit.List, 0, len(namespace.Documents)-len(list))
+	for _, doc := range namespace.Documents {
+		if !listIndex[doc] {
+			documents = append(documents, doc)
+		}
+	}
+
+	// set new documents
+	namespace.Documents = documents
 
 	// update list and primary index
 	for _, doc := range list {
