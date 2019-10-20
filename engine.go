@@ -158,7 +158,7 @@ func (e *engine) numDocuments(ns string) int {
 	return len(namespace.Documents)
 }
 
-func (e *engine) find(ns string, query bsonkit.Doc, limit int) (*result, error) {
+func (e *engine) find(ns string, query, sort bsonkit.Doc, limit int) (*result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -168,8 +168,20 @@ func (e *engine) find(ns string, query bsonkit.Doc, limit int) (*result, error) 
 		return &result{}, nil
 	}
 
+	// get documents
+	list := e.data.Namespaces[ns].Documents
+
+	// sort documents
+	var err error
+	if sort != nil && len(*sort) > 0 {
+		list, err = mongokit.Sort(list, sort)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// filter documents
-	list, _, err := mongokit.Filter(e.data.Namespaces[ns].Documents, query, limit)
+	list, _, err = mongokit.Filter(list, query, limit)
 	if err != nil {
 		return nil, err
 	}

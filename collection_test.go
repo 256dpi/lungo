@@ -285,7 +285,7 @@ func TestCollectionFind(t *testing.T) {
 			},
 			bson.M{
 				"_id": id2,
-				"bar": "baz",
+				"foo": "baz",
 			},
 		})
 		assert.NoError(t, err)
@@ -301,14 +301,30 @@ func TestCollectionFind(t *testing.T) {
 			},
 			{
 				"_id": id2,
-				"bar": "baz",
+				"foo": "baz",
 			},
 		}, readAll(csr))
 
-		// find, limit 1
+		// find first
 		csr, err = c.Find(nil, bson.M{}, options.Find().SetLimit(1))
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+		}, readAll(csr))
+
+		// sort all
+		csr, err = c.Find(nil, bson.M{}, options.Find().SetSort(bson.M{
+			"foo": -1,
+		}))
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
 			{
 				"_id": id1,
 				"foo": "bar",
@@ -333,7 +349,6 @@ func TestCollectionFindOne(t *testing.T) {
 		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
 	})
 
-	// fine one by id
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
@@ -345,11 +360,12 @@ func TestCollectionFindOne(t *testing.T) {
 			},
 			bson.M{
 				"_id": id2,
-				"bar": "baz",
+				"foo": "baz",
 			},
 		})
 		assert.NoError(t, err)
 
+		// fine one by id
 		var doc bson.M
 		err = c.FindOne(nil, bson.M{
 			"_id": id1,
@@ -359,31 +375,23 @@ func TestCollectionFindOne(t *testing.T) {
 			"_id": id1,
 			"foo": "bar",
 		}, doc)
-	})
 
-	// first from multiple results
-	collectionTest(t, func(t *testing.T, c ICollection) {
-		id1 := primitive.NewObjectID()
-		id2 := primitive.NewObjectID()
-
-		_, err := c.InsertMany(nil, []interface{}{
-			bson.M{
-				"_id": id1,
-				"foo": "bar",
-			},
-			bson.M{
-				"_id": id2,
-				"bar": "baz",
-			},
-		})
-		assert.NoError(t, err)
-
-		var doc bson.M
+		// find first
 		err = c.FindOne(nil, bson.M{}).Decode(&doc)
 		assert.NoError(t, err)
 		assert.Equal(t, bson.M{
 			"_id": id1,
 			"foo": "bar",
+		}, doc)
+
+		// find first, sorted
+		err = c.FindOne(nil, bson.M{}, options.FindOne().SetSort(bson.M{
+			"foo": -1,
+		})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"foo": "baz",
 		}, doc)
 	})
 }
