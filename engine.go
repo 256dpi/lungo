@@ -15,8 +15,6 @@ import (
 
 // TODO: Combine ListDatabases(), ListCollections(), NumDocuments() into Info().
 
-// TODO: Combine DropDatabase() and DropCollection() into Drop().
-
 type Result struct {
 	Matched  bsonkit.List
 	Inserted bsonkit.List
@@ -100,7 +98,7 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 
 	// add documents
 	for ns := range e.data.Namespaces {
-		if strings.HasPrefix(ns, db) {
+		if strings.HasPrefix(ns, db+".") {
 			list = append(list, &bson.D{
 				bson.E{Key: "name", Value: strings.TrimPrefix(ns, db)[1:]},
 				bson.E{Key: "type", Value: "collection"},
@@ -158,9 +156,11 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Res
 	}
 
 	// filter documents
-	list, err = mongokit.Filter(list, query, skip, limit)
-	if err != nil {
-		return nil, err
+	if query != nil && len(*query) > 0 {
+		list, err = mongokit.Filter(list, query, skip, limit)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Result{Matched: list}, nil
