@@ -5,6 +5,11 @@ import (
 	"reflect"
 )
 
+const (
+	supported = "supported"
+	ignored   = "ignored"
+)
+
 func assertOptions(opts interface{}, fields map[string]string) {
 	// get value
 	value := reflect.ValueOf(opts).Elem()
@@ -16,7 +21,7 @@ func assertOptions(opts interface{}, fields map[string]string) {
 
 		// check if field is supported
 		support := fields[name]
-		if support == "supported" || support == "ignored" {
+		if support == supported || support == ignored {
 			continue
 		}
 

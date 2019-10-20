@@ -48,8 +48,8 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"Limit":   "supported",
-		"MaxTime": "ignored",
+		"Limit":   supported,
+		"MaxTime": ignored,
 	})
 
 	// check filer
@@ -146,7 +146,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": "ignored",
+		"MaxTime": ignored,
 	})
 
 	// check field
@@ -188,6 +188,14 @@ func (c *Collection) Drop(context.Context) error {
 }
 
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
+	// merge options
+	opt := options.MergeEstimatedDocumentCountOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"MaxTime": ignored,
+	})
+
 	// get num documents
 	num := c.client.engine.NumDocuments(c.ns)
 
@@ -200,13 +208,13 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSize":       "ignored",
-		"Comment":         "ignored",
-		"Limit":           "supported",
-		"MaxAwaitTime":    "ignored",
-		"MaxTime":         "ignored",
-		"NoCursorTimeout": "ignored",
-		"Sort":            "supported",
+		"BatchSize":       ignored,
+		"Comment":         ignored,
+		"Limit":           supported,
+		"MaxAwaitTime":    ignored,
+		"MaxTime":         ignored,
+		"NoCursorTimeout": ignored,
+		"Sort":            supported,
 	})
 
 	// check filer
@@ -250,12 +258,12 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSize":       "ignored",
-		"Comment":         "ignored",
-		"MaxAwaitTime":    "ignored",
-		"MaxTime":         "ignored",
-		"NoCursorTimeout": "ignored",
-		"Sort":            "supported",
+		"BatchSize":       ignored,
+		"Comment":         ignored,
+		"MaxAwaitTime":    ignored,
+		"MaxTime":         ignored,
+		"NoCursorTimeout": ignored,
+		"Sort":            supported,
 	})
 
 	// check filer
@@ -298,8 +306,8 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": "ignored",
-		"Sort":    "supported",
+		"MaxTime": ignored,
+		"Sort":    supported,
 	})
 
 	// check filer
@@ -342,8 +350,8 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": "ignored",
-		"Sort":    "supported",
+		"MaxTime": ignored,
+		"Sort":    supported,
 	})
 
 	// check filer
@@ -397,8 +405,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": "ignored",
-		"Sort":    "supported",
+		"MaxTime": ignored,
+		"Sort":    supported,
 	})
 
 	// check filer
@@ -456,7 +464,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"Ordered": "ignored",
+		"Ordered": ignored,
 	})
 
 	// check documents
