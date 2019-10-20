@@ -44,7 +44,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 func matchAll(doc bsonkit.Doc, query bson.D, root bool) (bool, error) {
 	// match all expressions (implicit and)
 	for _, exp := range query {
-		ok, err := matchExpression(doc, exp, root)
+		ok, err := matchExpression(doc, "", exp, root)
 		if err != nil {
 			return false, err
 		} else if !ok {
@@ -55,7 +55,7 @@ func matchAll(doc bsonkit.Doc, query bson.D, root bool) (bool, error) {
 	return true, nil
 }
 
-func matchExpression(doc bsonkit.Doc, pair bson.E, root bool) (bool, error) {
+func matchExpression(doc bsonkit.Doc, prefix string, pair bson.E, root bool) (bool, error) {
 	// check for top level query operators which may appear together with field
 	// expressions in the query filter document
 	if len(pair.Key) > 0 && pair.Key[0] == '$' {
@@ -71,7 +71,13 @@ func matchExpression(doc bsonkit.Doc, pair bson.E, root bool) (bool, error) {
 		}
 
 		// call operator
-		return operator(doc, "", pair.Value)
+		return operator(doc, prefix, pair.Value)
+	}
+
+	// get path
+	path := pair.Key
+	if prefix != "" {
+		path = prefix + "." + path
 	}
 
 	// check for field expressions with a document which may contain either
@@ -97,7 +103,7 @@ func matchExpression(doc bsonkit.Doc, pair bson.E, root bool) (bool, error) {
 			}
 
 			// call matcher
-			ok, err := operator(doc, pair.Key, exp.Value)
+			ok, err := operator(doc, path, exp.Value)
 			if err != nil {
 				return false, err
 			} else if !ok {
@@ -120,7 +126,7 @@ func matchExpression(doc bsonkit.Doc, pair bson.E, root bool) (bool, error) {
 	}
 
 	// call equality query operator
-	res, err := operator(doc, pair.Key, pair.Value)
+	res, err := operator(doc, path, pair.Value)
 
 	return res, err
 }
@@ -263,7 +269,7 @@ func matchComp(op string) QueryOperator {
 	}
 }
 
-func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
+func matchNot(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 	// coerce item
 	query, ok := v.(bson.D)
 	if !ok {
@@ -275,19 +281,19 @@ func matchNot(doc bsonkit.Doc, _ string, v interface{}) (bool, error) {
 		return false, fmt.Errorf("match: $not: empty document")
 	}
 
-	// match all expressions (implicit and)
+	// match all expressions
 	for _, exp := range query {
-		ok, err := matchExpression(doc, exp, false)
+		ok, err := matchExpression(doc, path, exp, false)
 		if err != nil {
 			return false, err
-		} else if ok {
-			return false, nil
+		} else if !ok {
+			return true, nil
 		}
 	}
 
 	// TODO: Support regular expressions.
 
-	return true, nil
+	return false, nil
 }
 
 func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
