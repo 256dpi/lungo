@@ -35,12 +35,6 @@ func newUniqueIndex(path string) *uniqueIndex {
 	}
 }
 
-func (i *uniqueIndex) Fill(list bsonkit.List) {
-	for _, doc := range list {
-		i.Set(doc)
-	}
-}
-
 func (i *uniqueIndex) Set(doc bsonkit.Doc) bool {
 	return i.btree.ReplaceOrInsert(&uniqueIndexItem{doc: doc}) == nil
 }

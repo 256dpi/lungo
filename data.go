@@ -47,7 +47,8 @@ type Namespace struct {
 	Documents bsonkit.List `bson:"documents"`
 	Indexes   []Index      `bson:"indexes"`
 
-	primaryIndex *uniqueIndex `bson:"-"`
+	listIndex    map[bsonkit.Doc]int `bson:"-"`
+	primaryIndex *uniqueIndex        `bson:"-"`
 }
 
 func NewNamespace(name string) *Namespace {
@@ -55,9 +56,15 @@ func NewNamespace(name string) *Namespace {
 }
 
 func (n *Namespace) Prepare() *Namespace {
-	// create and fill primary index
+	// create indexes
+	n.listIndex = map[bsonkit.Doc]int{}
 	n.primaryIndex = newUniqueIndex("_id")
-	n.primaryIndex.Fill(n.Documents)
+
+	// fill indexes
+	for i, doc := range n.Documents {
+		n.listIndex[doc] = i
+		n.primaryIndex.Set(doc)
+	}
 
 	return n
 }
@@ -75,6 +82,12 @@ func (n *Namespace) Clone() *Namespace {
 	// copy indexes
 	clone.Indexes = make([]Index, len(n.Indexes))
 	copy(clone.Indexes, n.Indexes)
+
+	// copy list index
+	clone.listIndex = map[bsonkit.Doc]int{}
+	for doc, i := range n.listIndex {
+		clone.listIndex[doc] = i
+	}
 
 	// clone primary index
 	clone.primaryIndex = n.primaryIndex.Clone()
