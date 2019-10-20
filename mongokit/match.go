@@ -297,6 +297,8 @@ func matchIn(doc bsonkit.Doc, path string, v interface{}) (bool, error) {
 		}
 	}
 
+	// TODO: Support regular expressions.
+
 	return false, nil
 }
 
