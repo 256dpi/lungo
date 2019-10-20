@@ -598,6 +598,59 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, bson.A{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// first from end
+		var doc bson.M
+		err = c.FindOneAndUpdate(nil, bson.M{}, bson.M{
+			"$set": bson.M{
+				"foo": "quz",
+			},
+		}, options.FindOneAndUpdate().SetSort(bson.M{
+			"foo": -1,
+		})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"foo": "baz",
+		}, doc)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
 }
 
 func TestCollectionInsertMany(t *testing.T) {

@@ -423,7 +423,6 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		"FindOneAndUpdateOptions.Collation":                opt.Collation != nil,
 		"FindOneAndUpdateOptions.Projection":               opt.Projection != nil,
 		"FindOneAndUpdateOptions.ReturnDocument":           opt.ReturnDocument != nil,
-		"FindOneAndUpdateOptions.Sort":                     opt.Sort != nil,
 		"FindOneAndUpdateOptions.Upsert":                   opt.Upsert != nil,
 	})
 	if err != nil {
@@ -436,6 +435,15 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		return &SingleResult{err: err}
 	}
 
+	// get sort
+	var sort bsonkit.Doc
+	if opt.Sort != nil {
+		sort, err = bsonkit.Transform(opt.Sort)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// transform document
 	doc, err := bsonkit.Transform(update)
 	if err != nil {
@@ -443,7 +451,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, doc, 1)
+	res, err := c.client.engine.update(c.ns, query, sort, doc, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -639,7 +647,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, doc, 0)
+	res, err := c.client.engine.update(c.ns, query, nil, doc, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +686,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}
 
 	// update documents
-	res, err := c.client.engine.update(c.ns, query, doc, 1)
+	res, err := c.client.engine.update(c.ns, query, nil, doc, 1)
 	if err != nil {
 		return nil, err
 	}
