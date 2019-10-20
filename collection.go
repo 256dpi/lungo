@@ -106,6 +106,11 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
@@ -133,6 +138,11 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
 	}
 
 	// transform filter
@@ -166,7 +176,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 	// check field
 	if field == "" {
-		panic("lungo: empty field path")
+		panic("lungo: missing field path")
 	}
 
 	// check filer
@@ -288,6 +298,11 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		return &SingleResult{err: err}
 	}
 
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
@@ -328,6 +343,11 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	})
 	if err != nil {
 		return &SingleResult{err: err}
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
 	}
 
 	// transform filter
@@ -373,6 +393,16 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	})
 	if err != nil {
 		return &SingleResult{err: err}
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// check replacement
+	if replacement == nil {
+		panic("lungo: missing replacement document")
 	}
 
 	// transform filter
@@ -427,6 +457,16 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		return &SingleResult{err: err}
 	}
 
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// check update
+	if update == nil {
+		panic("lungo: missing update document")
+	}
+
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
@@ -476,6 +516,11 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// check documents
+	if len(documents) == 0 {
+		panic("lungo: missing documents")
 	}
 
 	// TODO: Handle unordered.
@@ -530,6 +575,11 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
+	// check document
+	if document == nil {
+		panic("lungo: missing document")
+	}
+
 	// transform document
 	doc, err := bsonkit.Transform(document)
 	if err != nil {
@@ -573,6 +623,16 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// check replacement
+	if replacement == nil {
+		panic("lungo: missing replacement document")
 	}
 
 	// transform filter
@@ -622,6 +682,16 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		return nil, err
 	}
 
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// check update
+	if update == nil {
+		panic("lungo: missing update document")
+	}
+
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
@@ -659,6 +729,16 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// check filer
+	if filter == nil {
+		panic("lungo: missing filter document")
+	}
+
+	// check update
+	if update == nil {
+		panic("lungo: missing update document")
 	}
 
 	// transform filter
