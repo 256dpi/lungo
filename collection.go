@@ -215,14 +215,16 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSize":       ignored,
-		"Comment":         ignored,
-		"Limit":           supported,
-		"MaxAwaitTime":    ignored,
-		"MaxTime":         ignored,
-		"NoCursorTimeout": ignored,
-		"Skip":            supported,
-		"Sort":            supported,
+		"AllowPartialResults": ignored,
+		"BatchSize":           ignored,
+		"Comment":             ignored,
+		"Limit":               supported,
+		"MaxAwaitTime":        ignored,
+		"MaxTime":             ignored,
+		"NoCursorTimeout":     ignored,
+		"Skip":                supported,
+		"Snapshot":            ignored,
+		"Sort":                supported,
 	})
 
 	// check filer
@@ -272,13 +274,15 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSize":       ignored,
-		"Comment":         ignored,
-		"MaxAwaitTime":    ignored,
-		"MaxTime":         ignored,
-		"NoCursorTimeout": ignored,
-		"Skip":            supported,
-		"Sort":            supported,
+		"AllowPartialResults": ignored,
+		"BatchSize":           ignored,
+		"Comment":             ignored,
+		"MaxAwaitTime":        ignored,
+		"MaxTime":             ignored,
+		"NoCursorTimeout":     ignored,
+		"Skip":                supported,
+		"Snapshot":            ignored,
+		"Sort":                supported,
 	})
 
 	// check filer
