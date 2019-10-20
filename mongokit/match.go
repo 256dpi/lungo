@@ -226,6 +226,11 @@ func matchComp(op string) QueryOperator {
 		// get field value
 		field := bsonkit.Get(doc, path)
 
+		// check types (type bracketing)
+		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
+			return false, nil
+		}
+
 		// compare field with value
 		res := bsonkit.Compare(field, v)
 

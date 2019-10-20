@@ -223,6 +223,32 @@ func TestMatchEq(t *testing.T) {
 	})
 }
 
+func TestMatchComp(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// greater than (wrong type)
+		fn(bson.M{
+			"foo": bson.M{"$gt": int64(0)},
+		}, false)
+
+		// lesser field (wrong type)
+		fn(bson.M{
+			"foo": bson.M{"$lt": int64(0)},
+		}, false)
+
+		// greater than
+		fn(bson.M{
+			"foo": bson.M{"$gt": "a"},
+		}, true)
+
+		// lesser field
+		fn(bson.M{
+			"foo": bson.M{"$lt": "z"},
+		}, true)
+	})
+}
+
 func TestMatchNot(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
