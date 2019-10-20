@@ -316,3 +316,29 @@ func TestMatchNin(t *testing.T) {
 		}, false)
 	})
 }
+
+func TestMatchExists(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// present field
+		fn(bson.M{
+			"foo": bson.M{"$exists": true},
+		}, true)
+
+		// present field
+		fn(bson.M{
+			"foo": bson.M{"$exists": false},
+		}, false)
+
+		// missing field
+		fn(bson.M{
+			"bar": bson.M{"$exists": true},
+		}, false)
+
+		// missing field
+		fn(bson.M{
+			"bar": bson.M{"$exists": false},
+		}, true)
+	})
+}
