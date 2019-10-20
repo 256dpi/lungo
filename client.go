@@ -31,13 +31,8 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 	// merge options
 	opt := options.MergeDatabaseOptions(opts...)
 
-	// assert unsupported options
-	assertUnsupported(map[string]bool{
-		"DatabaseOptions.ReadConcern":    opt.ReadConcern != nil,
-		"DatabaseOptions.WriteConcern":   opt.WriteConcern != nil,
-		"DatabaseOptions.ReadPreference": opt.ReadPreference != nil,
-		"DatabaseOptions.Registry":       opt.Registry != nil,
-	})
+	// assert supported options
+	assertOptions(opt, map[string]string{})
 
 	return &Database{
 		name:   name,
@@ -65,10 +60,8 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	// merge options
 	opt := options.MergeListDatabasesOptions(opts...)
 
-	// assert unsupported options
-	assertUnsupported(map[string]bool{
-		"ListDatabasesOptions.NameOnly": opt.NameOnly != nil,
-	})
+	// assert supported options
+	assertOptions(opt, map[string]string{})
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)

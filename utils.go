@@ -1,13 +1,28 @@
 package lungo
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
-// TODO: Add reflect based test to catch also added options.
+func assertOptions(opts interface{}, fields map[string]string) {
+	// get value
+	value := reflect.ValueOf(opts).Elem()
 
-func assertUnsupported(features map[string]bool) {
-	for name, unsupported := range features {
-		if unsupported {
-			panic(fmt.Sprintf("lungo: unsupported feature: %s", name))
+	// check fields
+	for i := 0; i < value.NumField(); i++ {
+		// get name
+		name := value.Type().Field(i).Name
+
+		// check if field is supported
+		support := fields[name]
+		if support == "supported" || support == "ignored" {
+			continue
+		}
+
+		// otherwise assert field is nil
+		if !value.Field(i).IsNil() {
+			panic(fmt.Sprintf("lungo: unsupported option: %s", name))
 		}
 	}
 }
