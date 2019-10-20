@@ -375,8 +375,9 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": ignored,
-		"Sort":    supported,
+		"MaxTime":        ignored,
+		"ReturnDocument": supported,
+		"Sort":           supported,
 	})
 
 	// check filer
@@ -421,6 +422,11 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		return &SingleResult{}
 	}
 
+	// check return document
+	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+		return &SingleResult{doc: res.Replaced}
+	}
+
 	return &SingleResult{doc: res.Matched[0]}
 }
 
@@ -430,8 +436,9 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": ignored,
-		"Sort":    supported,
+		"MaxTime":        ignored,
+		"ReturnDocument": supported,
+		"Sort":           supported,
 	})
 
 	// check filer
@@ -474,6 +481,11 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	// check list
 	if len(res.Updated) == 0 {
 		return &SingleResult{}
+	}
+
+	// check return document
+	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+		return &SingleResult{doc: res.Updated[0]}
 	}
 
 	return &SingleResult{doc: res.Matched[0]}

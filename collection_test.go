@@ -563,6 +563,25 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 				"foo": "baz",
 			},
 		}, dumpCollection(c, false))
+
+		// specific after
+		err = c.FindOneAndReplace(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"_id": id,
+			"foo": "quz",
+		}, options.FindOneAndReplace().SetReturnDocument(options.After)).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id,
+			"foo": "quz",
+		}, doc)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
 	})
 
 	collectionTest(t, func(t *testing.T, c ICollection) {
@@ -669,6 +688,26 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			{
 				"_id": id,
 				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// specific after
+		err = c.FindOneAndUpdate(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "quz",
+			},
+		}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id,
+			"foo": "quz",
+		}, doc)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"foo": "quz",
 			},
 		}, dumpCollection(c, false))
 	})
