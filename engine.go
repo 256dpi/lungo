@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -87,21 +88,6 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	return list, nil
 }
 
-func (e *Engine) DropDatabase(name string) error {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// drop all namespaces
-	for ns := range e.data.Namespaces {
-		if strings.Split(ns, ".")[0] == name {
-			delete(e.data.Namespaces, ns)
-		}
-	}
-
-	return nil
-}
-
 func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -133,21 +119,6 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	}
 
 	return list, nil
-}
-
-func (e *Engine) DropCollection(ns string) error {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// drop all namespaces
-	for name := range e.data.Namespaces {
-		if name == ns {
-			delete(e.data.Namespaces, name)
-		}
-	}
-
-	return nil
 }
 
 func (e *Engine) NumDocuments(ns string) int {
@@ -489,4 +460,28 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 	e.data = clone
 
 	return &Result{Matched: list}, nil
+}
+
+func (e *Engine) Drop(ns string) error {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// quote all meta characters
+	pattern := regexp.QuoteMeta(ns)
+
+	// replace wildcards
+	pattern = strings.ReplaceAll(pattern, `\*`, ".*")
+
+	// compile regexp
+	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
+
+	// drop all matching namespaces
+	for name := range e.data.Namespaces {
+		if regex.MatchString(name) {
+			delete(e.data.Namespaces, name)
+		}
+	}
+
+	return nil
 }

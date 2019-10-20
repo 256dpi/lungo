@@ -184,8 +184,8 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 }
 
 func (c *Collection) Drop(context.Context) error {
-	// drop collection
-	err := c.client.engine.DropCollection(c.ns)
+	// drop namespace
+	err := c.client.engine.Drop(c.ns)
 	if err != nil {
 		return err
 	}

@@ -43,8 +43,8 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 }
 
 func (d *Database) Drop(context.Context) error {
-	// drop database
-	err := d.client.engine.DropDatabase(d.name)
+	// drop all namespaces with database prefix
+	err := d.client.engine.Drop(d.name + ".*")
 	if err != nil {
 		return err
 	}
