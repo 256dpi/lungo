@@ -176,6 +176,9 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// clone list
+	list = bsonkit.CloneList(list)
+
 	// ensure ids
 	for _, doc := range list {
 		// ensure object id
@@ -250,6 +253,9 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, err
 	if e.data.Namespaces[ns] == nil {
 		return &Result{}, nil
 	}
+
+	// clone replacement
+	repl = bsonkit.Clone(repl)
 
 	// get documents
 	list := e.data.Namespaces[ns].Documents
