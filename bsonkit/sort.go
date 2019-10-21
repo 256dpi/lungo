@@ -30,7 +30,7 @@ func Order(l, r Doc, columns []Column) int {
 
 		// check if reverse
 		if column.Reverse {
-			return res *-1
+			return res * -1
 		}
 
 		return res
