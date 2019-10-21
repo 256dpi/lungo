@@ -573,12 +573,12 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 	// insert documents
 	res, err := c.client.engine.Insert(c.ns, list, ordered)
-
-	// collect ids
-	ids := bsonkit.Collect(res.Modified, "_id", false, false)
+	if res == nil {
+		return &mongo.InsertManyResult{}, err
+	}
 
 	return &mongo.InsertManyResult{
-		InsertedIDs: ids,
+		InsertedIDs: bsonkit.Collect(res.Modified, "_id", false, false),
 	}, err
 }
 
@@ -606,11 +606,8 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
-	// get id
-	id := bsonkit.Get(res.Modified[0], "_id")
-
 	return &mongo.InsertOneResult{
-		InsertedID: id,
+		InsertedID: bsonkit.Get(res.Modified[0], "_id"),
 	}, nil
 }
 
