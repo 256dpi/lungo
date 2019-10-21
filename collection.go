@@ -417,6 +417,12 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		upsert = *opt.Upsert
 	}
 
+	// get return after
+	var returnAfter bool
+	if opt.ReturnDocument != nil {
+		returnAfter = *opt.ReturnDocument == options.After
+	}
+
 	// insert document
 	res, err := c.client.engine.Replace(c.ns, query, sort, doc, upsert)
 	if err != nil {
@@ -425,24 +431,23 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// check if upserted
 	if res.Upserted != nil {
-		if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+		if returnAfter {
 			return &SingleResult{doc: res.Upserted}
 		}
 
 		return &SingleResult{}
 	}
 
-	// check list
-	if len(res.Modified) == 0 {
-		return &SingleResult{}
+	// check if replaced
+	if len(res.Modified) > 0 {
+		if returnAfter {
+			return &SingleResult{doc: res.Modified[0]}
+		}
+
+		return &SingleResult{doc: res.Matched[0]}
 	}
 
-	// check return document
-	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
-		return &SingleResult{doc: res.Modified[0]}
-	}
-
-	return &SingleResult{doc: res.Matched[0]}
+	return &SingleResult{}
 }
 
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
@@ -494,6 +499,12 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		upsert = *opt.Upsert
 	}
 
+	// get return after
+	var returnAfter bool
+	if opt.ReturnDocument != nil {
+		returnAfter = *opt.ReturnDocument == options.After
+	}
+
 	// update documents
 	res, err := c.client.engine.Update(c.ns, query, sort, doc, 1, upsert)
 	if err != nil {
@@ -502,7 +513,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// check if upserted
 	if res.Upserted != nil {
-		if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+		if returnAfter {
 			return &SingleResult{doc: res.Upserted}
 		}
 
@@ -510,16 +521,15 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// check list
-	if len(res.Modified) == 0 {
-		return &SingleResult{}
+	if len(res.Modified) > 0 {
+		if returnAfter {
+			return &SingleResult{doc: res.Modified[0]}
+		}
+
+		return &SingleResult{doc: res.Matched[0]}
 	}
 
-	// check return document
-	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
-		return &SingleResult{doc: res.Modified[0]}
-	}
-
-	return &SingleResult{doc: res.Matched[0]}
+	return &SingleResult{}
 }
 
 func (c *Collection) Indexes() mongo.IndexView {
