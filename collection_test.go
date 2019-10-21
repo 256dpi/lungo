@@ -1011,7 +1011,7 @@ func TestCollectionReplaceOne(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
-		// duplicate key
+		// invalid _id mutation
 		res2, err = c.ReplaceOne(nil, bson.M{
 			"_id": id2,
 		}, bson.M{
