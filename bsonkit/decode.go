@@ -53,7 +53,7 @@ func DecodeList(list List, out interface{}) error {
 		}
 	}
 
-	// re-slice and set result
+	// re-slice and put result
 	outValue.Elem().Set(sliceVal.Slice(0, len(list)))
 
 	return nil

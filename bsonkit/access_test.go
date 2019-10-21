@@ -48,21 +48,21 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, 42, res)
 }
 
-func TestSet(t *testing.T) {
+func TestPut(t *testing.T) {
 	doc := Convert(bson.M{
 		"foo": "bar",
 	})
 
 	// replace final value
 
-	err := Set(doc, "foo", "baz", false)
+	err := Put(doc, "foo", "baz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": "baz",
 	}), doc)
 
 	// append field
-	err = Set(doc, "bar", "baz", false)
+	err = Put(doc, "bar", "baz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, &bson.D{
 		bson.E{Key: "foo", Value: "baz"},
@@ -70,7 +70,7 @@ func TestSet(t *testing.T) {
 	}, doc)
 
 	// prepend field
-	err = Set(doc, "baz", "quz", true)
+	err = Put(doc, "baz", "quz", true)
 	assert.NoError(t, err)
 	assert.Equal(t, &bson.D{
 		bson.E{Key: "baz", Value: "quz"},
@@ -88,7 +88,7 @@ func TestSet(t *testing.T) {
 
 	// replace nested final value
 
-	err = Set(doc, "foo.bar.baz", 7, false)
+	err = Put(doc, "foo.bar.baz", 7, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -100,7 +100,7 @@ func TestSet(t *testing.T) {
 
 	// append nested field
 
-	err = Set(doc, "foo.bar.quz", 42, false)
+	err = Put(doc, "foo.bar.quz", 42, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -113,7 +113,7 @@ func TestSet(t *testing.T) {
 
 	// prepend nested field
 
-	err = Set(doc, "foo.bar.qux", 42, true)
+	err = Put(doc, "foo.bar.qux", 42, true)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -127,7 +127,7 @@ func TestSet(t *testing.T) {
 
 	// replace tree
 
-	err = Set(doc, "foo.bar", 42, false)
+	err = Put(doc, "foo.bar", 42, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -137,9 +137,9 @@ func TestSet(t *testing.T) {
 
 	// invalid type error
 
-	err = Set(doc, "foo.bar.baz", 42, false)
+	err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
-	assert.Equal(t, "set: cannot set field in 42", err.Error())
+	assert.Equal(t, "put: cannot put field in 42", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
@@ -149,7 +149,7 @@ func TestSet(t *testing.T) {
 	// intermediary object creation
 
 	doc = &bson.D{}
-	err = Set(doc, "baz.bar.foo", 42, false)
+	err = Put(doc, "baz.bar.foo", 42, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"baz": bson.M{

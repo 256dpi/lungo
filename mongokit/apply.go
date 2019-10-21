@@ -62,12 +62,12 @@ func Apply(doc, update bsonkit.Doc, upsert bool) error {
 }
 
 func applySet(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
-	return bsonkit.Set(doc, path, v, false)
+	return bsonkit.Put(doc, path, v, false)
 }
 
 func applySetOnInsert(doc bsonkit.Doc, path string, v interface{}, upsert bool) error {
 	if upsert {
-		return bsonkit.Set(doc, path, v, false)
+		return bsonkit.Put(doc, path, v, false)
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func applyRename(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	}
 
 	// set new value
-	err = bsonkit.Set(doc, newPath, value, false)
+	err = bsonkit.Put(doc, newPath, value, false)
 	if err != nil {
 		return err
 	}
@@ -114,12 +114,12 @@ func applyMax(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
-		return bsonkit.Set(doc, path, v, false)
+		return bsonkit.Put(doc, path, v, false)
 	}
 
 	// replace value if smaller
 	if bsonkit.Compare(value, v) < 0 {
-		err := bsonkit.Set(doc, path, v, false)
+		err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
@@ -132,12 +132,12 @@ func applyMin(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
-		return bsonkit.Set(doc, path, v, false)
+		return bsonkit.Put(doc, path, v, false)
 	}
 
 	// replace value if bigger
 	if bsonkit.Compare(value, v) > 0 {
-		err := bsonkit.Set(doc, path, v, false)
+		err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func applyCurrentDate(doc bsonkit.Doc, path string, v interface{}, _ bool) error
 	if ok {
 		// set to time if true
 		if value {
-			return bsonkit.Set(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+			return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
 		}
 
 		return nil
@@ -172,9 +172,9 @@ func applyCurrentDate(doc bsonkit.Doc, path string, v interface{}, _ bool) error
 	// set date or timestamp
 	switch obj[0].Value {
 	case "date":
-		return bsonkit.Set(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+		return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
 	case "timestamp":
-		return bsonkit.Set(doc, path, bsonkit.Generate(), false)
+		return bsonkit.Put(doc, path, bsonkit.Generate(), false)
 	default:
 		return fmt.Errorf("apply: $currentDate: expected $type 'date' or 'timestamp'")
 	}

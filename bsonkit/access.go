@@ -35,11 +35,11 @@ func get(doc Doc, path []string) interface{} {
 	return Missing
 }
 
-func Set(doc Doc, path string, value interface{}, prepend bool) error {
-	return set(doc, strings.Split(path, "."), value, prepend)
+func Put(doc Doc, path string, value interface{}, prepend bool) error {
+	return put(doc, strings.Split(path, "."), value, prepend)
 }
 
-func set(doc Doc, path []string, value interface{}, prepend bool) error {
+func put(doc Doc, path []string, value interface{}, prepend bool) error {
 	// search for element
 	for i, el := range *doc {
 		if el.Key == path[0] {
@@ -51,7 +51,7 @@ func set(doc Doc, path []string, value interface{}, prepend bool) error {
 
 			// check if doc
 			if d, ok := el.Value.(bson.D); ok {
-				err := set(&d, path[1:], value, prepend)
+				err := put(&d, path[1:], value, prepend)
 				if err != nil {
 					return err
 				}
@@ -62,7 +62,7 @@ func set(doc Doc, path []string, value interface{}, prepend bool) error {
 				return nil
 			}
 
-			return fmt.Errorf("set: cannot set field in %+v", el.Value)
+			return fmt.Errorf("put: cannot put field in %+v", el.Value)
 		}
 	}
 
@@ -70,7 +70,7 @@ func set(doc Doc, path []string, value interface{}, prepend bool) error {
 	if len(path) > 1 {
 		// prepare object
 		d := bson.D{}
-		err := set(&d, path[1:], value, prepend)
+		err := put(&d, path[1:], value, prepend)
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 	}
 
 	// update field
-	err := Set(doc, path, field, false)
+	err := Put(doc, path, field, false)
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func Multiply(doc Doc, path string, multiplicand interface{}) error {
 	}
 
 	// update field
-	err := Set(doc, path, field, false)
+	err := Put(doc, path, field, false)
 	if err != nil {
 		return err
 	}

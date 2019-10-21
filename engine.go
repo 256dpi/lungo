@@ -182,7 +182,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	for _, doc := range list {
 		// ensure object id
 		if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-			err := bsonkit.Set(doc, "_id", primitive.NewObjectID(), true)
+			err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 			if err != nil {
 				return nil, err
 			}
@@ -285,7 +285,7 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	// set missing id or check existing id
 	replID := bsonkit.Get(repl, "_id")
 	if replID == bsonkit.Missing {
-		err = bsonkit.Set(repl, "_id", bsonkit.Get(list[0], "_id"), true)
+		err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id"), true)
 		if err != nil {
 			return nil, err
 		}
@@ -453,12 +453,12 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 
 		// add repl or query id if present
 		if replID != bsonkit.Missing {
-			err = bsonkit.Set(doc, "_id", replID, true)
+			err = bsonkit.Put(doc, "_id", replID, true)
 			if err != nil {
 				return nil, err
 			}
 		} else if queryID != bsonkit.Missing {
-			err = bsonkit.Set(doc, "_id", queryID, true)
+			err = bsonkit.Put(doc, "_id", queryID, true)
 			if err != nil {
 				return nil, err
 			}
@@ -475,7 +475,7 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 
 	// generate object id if missing
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		err := bsonkit.Set(doc, "_id", primitive.NewObjectID(), true)
+		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 		if err != nil {
 			return nil, err
 		}

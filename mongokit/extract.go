@@ -191,7 +191,7 @@ func extractOr(doc bsonkit.Doc, _ string, v interface{}) error {
 }
 
 func extractEq(doc bsonkit.Doc, path string, v interface{}) error {
-	return bsonkit.Set(doc, path, v, false)
+	return bsonkit.Put(doc, path, v, false)
 }
 
 func extractIn(doc bsonkit.Doc, path string, v interface{}) error {
@@ -203,7 +203,7 @@ func extractIn(doc bsonkit.Doc, path string, v interface{}) error {
 
 	// check list
 	if len(list) == 1 {
-		return bsonkit.Set(doc, path, list[0], false)
+		return bsonkit.Put(doc, path, list[0], false)
 	}
 
 	return nil
