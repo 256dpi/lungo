@@ -44,11 +44,10 @@ func (d *Data) Clone() *Data {
 
 type Namespace struct {
 	Name      string       `bson:"name"`
-	Documents bsonkit.List `bson:"documents"`
+	Documents *bsonkit.Set `bson:"documents"`
 	Indexes   []Index      `bson:"indexes"`
 
-	listIndex    map[bsonkit.Doc]int `bson:"-"`
-	primaryIndex *uniqueIndex        `bson:"-"`
+	primaryIndex *uniqueIndex `bson:"-"`
 }
 
 func NewNamespace(name string) *Namespace {
@@ -56,15 +55,18 @@ func NewNamespace(name string) *Namespace {
 }
 
 func (n *Namespace) Prepare() *Namespace {
+	// initialize set
+	if n.Documents == nil || n.Documents.Index == nil {
+		n.Documents = bsonkit.NewSet(nil)
+	}
+
 	// create indexes
-	n.listIndex = map[bsonkit.Doc]int{}
 	n.primaryIndex = newUniqueIndex([]bsonkit.Column{
 		{Path: "_id"},
 	})
 
 	// fill indexes
-	for i, doc := range n.Documents {
-		n.listIndex[doc] = i
+	for _, doc := range n.Documents.List {
 		n.primaryIndex.Set(doc)
 	}
 
@@ -78,18 +80,11 @@ func (n *Namespace) Clone() *Namespace {
 	}
 
 	// copy documents
-	clone.Documents = make(bsonkit.List, len(n.Documents))
-	copy(clone.Documents, n.Documents)
+	clone.Documents = n.Documents.Clone()
 
 	// copy indexes
 	clone.Indexes = make([]Index, len(n.Indexes))
 	copy(clone.Indexes, n.Indexes)
-
-	// copy list index
-	clone.listIndex = map[bsonkit.Doc]int{}
-	for doc, i := range n.listIndex {
-		clone.listIndex[doc] = i
-	}
 
 	// clone primary index
 	clone.primaryIndex = n.primaryIndex.Clone()

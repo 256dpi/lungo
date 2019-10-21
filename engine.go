@@ -63,7 +63,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 		// check emptiness
 		empty := true
 		for _, ns := range nss {
-			if len(ns.Documents) > 0 {
+			if len(ns.Documents.List) > 0 {
 				empty = false
 			}
 		}
@@ -129,7 +129,7 @@ func (e *Engine) NumDocuments(ns string) int {
 		return 0
 	}
 
-	return len(namespace.Documents)
+	return len(namespace.Documents.List)
 }
 
 func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
@@ -143,7 +143,7 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Res
 	}
 
 	// get documents
-	list := e.data.Namespaces[ns].Documents
+	list := e.data.Namespaces[ns].Documents.List
 
 	// sort documents
 	var err error
@@ -219,10 +219,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 		}
 
 		// add document
-		namespace.Documents = append(namespace.Documents, doc)
-
-		// add to list index
-		namespace.listIndex[doc] = len(namespace.Documents) - 1
+		namespace.Documents.Add(doc)
 
 		// add to list
 		result.Modified = append(result.Modified, doc)
@@ -254,7 +251,7 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	// get documents
 	var list bsonkit.List
 	if e.data.Namespaces[ns] != nil {
-		list = e.data.Namespaces[ns].Documents
+		list = e.data.Namespaces[ns].Documents.List
 	}
 
 	// sort documents
@@ -300,19 +297,14 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// get document position
-	position := namespace.listIndex[list[0]]
-
-	// remove old document from list and primary index
+	// update primary index
 	namespace.primaryIndex.Delete(list[0])
-	delete(namespace.listIndex, list[0])
+	if !namespace.primaryIndex.Set(repl) {
+		return nil, fmt.Errorf("document with same _id exists already")
+	}
 
 	// replace document
-	namespace.Documents[position] = repl
-
-	// add new document to list and primary index
-	namespace.primaryIndex.Set(repl)
-	namespace.listIndex[repl] = position
+	namespace.Documents.Replace(list[0], repl)
 
 	// write data
 	err = e.store.Store(clone)
@@ -337,7 +329,7 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 	// get documents
 	var list bsonkit.List
 	if e.data.Namespaces[ns] != nil {
-		list = e.data.Namespaces[ns].Documents
+		list = e.data.Namespaces[ns].Documents.List
 	}
 
 	// sort documents
@@ -388,15 +380,8 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// get document positions
-	positions := make([]int, 0, len(list))
+	// remove old docs from primary index
 	for _, doc := range list {
-		positions = append(positions, namespace.listIndex[doc])
-	}
-
-	// remove old docs from list and primary index
-	for _, doc := range list {
-		delete(namespace.listIndex, doc)
 		namespace.primaryIndex.Delete(doc)
 	}
 
@@ -407,10 +392,9 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 		}
 	}
 
-	// replace documents and update list index
+	// replace documents
 	for i, doc := range newList {
-		namespace.Documents[positions[i]] = doc
-		namespace.listIndex[doc] = positions[i]
+		namespace.Documents.Replace(list[i], doc)
 	}
 
 	// write data
@@ -500,10 +484,7 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 	}
 
 	// add document
-	namespace.Documents = append(namespace.Documents, doc)
-
-	// add to list index
-	namespace.listIndex[doc] = len(namespace.Documents) - 1
+	namespace.Documents.Add(doc)
 
 	// write data
 	err = e.store.Store(clone)
@@ -530,7 +511,7 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 	}
 
 	// get documents
-	list := e.data.Namespaces[ns].Documents
+	list := e.data.Namespaces[ns].Documents.List
 
 	// sort documents
 	var err error
@@ -560,20 +541,13 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// copy documents to keep
-	documents := make(bsonkit.List, 0, len(namespace.Documents)-len(list))
-	for _, doc := range namespace.Documents {
-		if !listIndex[doc] {
-			documents = append(documents, doc)
-		}
+	// remove documents
+	for _, doc := range list {
+		namespace.Documents.Remove(doc)
 	}
 
-	// set new documents
-	namespace.Documents = documents
-
-	// update list and primary index
+	// update primary index
 	for _, doc := range list {
-		delete(namespace.listIndex, doc)
 		namespace.primaryIndex.Delete(doc)
 	}
 
