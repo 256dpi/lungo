@@ -817,7 +817,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
-		// duplicate key
+		// existing _id
 		res, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
@@ -859,7 +859,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 
-		// duplicate key
+		// existing _id
 		res, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
@@ -876,7 +876,67 @@ func TestCollectionInsertMany(t *testing.T) {
 		}, dumpCollection(c, false))
 	})
 
-	// TODO: Test duplicate ids in request.
+	// duplicate_id ordered
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		_, err := c.InsertMany(nil, bson.A{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		})
+		assert.Error(t, err)
+		// assert.Len(t, res.InsertedIDs, 1) // TODO: mongo returns all ids in any case, bug?
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+	})
+
+	// duplicate_id unordered
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		_, err := c.InsertMany(nil, bson.A{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, options.InsertMany().SetOrdered(false))
+		assert.Error(t, err)
+		// assert.Len(t, res.InsertedIDs, 1) // TODO: mongo returns all ids in any case, bug?
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
 }
 
 func TestCollectionInsertOne(t *testing.T) {

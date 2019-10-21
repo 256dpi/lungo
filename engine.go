@@ -171,7 +171,7 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Res
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Insert(ns string, list bsonkit.List) (*Result, error) {
+func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -200,11 +200,20 @@ func (e *Engine) Insert(ns string, list bsonkit.List) (*Result, error) {
 		clone.Namespaces[ns] = namespace
 	}
 
-	// add documents
+	// prepare result
+	var err error
+	result := &Result{}
+
+	// insert documents
 	for _, doc := range list {
 		// add document to primary index
 		if !namespace.primaryIndex.Set(doc) {
-			return nil, fmt.Errorf("document with same _id exists already")
+			err = fmt.Errorf("document with same _id exists already")
+			if ordered {
+				break
+			} else {
+				continue
+			}
 		}
 
 		// add document
@@ -212,20 +221,24 @@ func (e *Engine) Insert(ns string, list bsonkit.List) (*Result, error) {
 
 		// add to list index
 		namespace.listIndex[doc] = len(namespace.Documents) - 1
+
+		// add to list
+		result.Inserted = append(result.Inserted, doc)
 	}
 
-	// write data
-	err := e.store.Store(clone)
-	if err != nil {
-		return nil, err
+	// check if documents have been inserted
+	if len(result.Inserted) > 0 {
+		// write data
+		err := e.store.Store(clone)
+		if err != nil {
+			return nil, err
+		}
+
+		// set new data
+		e.data = clone
 	}
 
-	// set new data
-	e.data = clone
-
-	return &Result{
-		Inserted: list,
-	}, nil
+	return result, err
 }
 
 func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, error) {

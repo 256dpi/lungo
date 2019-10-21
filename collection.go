@@ -500,7 +500,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"Ordered": ignored,
+		"Ordered": supported,
 	})
 
 	// check documents
@@ -523,18 +523,21 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		list = append(list, doc)
 	}
 
-	// insert documents
-	res, err := c.client.engine.Insert(c.ns, list)
-	if err != nil {
-		return nil, err
+	// get ordered
+	var ordered bool
+	if opt.Ordered != nil {
+		ordered = *opt.Ordered
 	}
+
+	// insert documents
+	res, err := c.client.engine.Insert(c.ns, list, ordered)
 
 	// collect ids
 	ids := bsonkit.Collect(res.Inserted, "_id", false, false)
 
 	return &mongo.InsertManyResult{
 		InsertedIDs: ids,
-	}, nil
+	}, err
 }
 
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
@@ -556,7 +559,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// insert document
-	res, err := c.client.engine.Insert(c.ns, bsonkit.List{doc})
+	res, err := c.client.engine.Insert(c.ns, bsonkit.List{doc}, true)
 	if err != nil {
 		return nil, err
 	}
