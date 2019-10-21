@@ -36,39 +36,6 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	return result
 }
 
-type SortOrder struct {
-	Path    string
-	Reverse bool
-}
-
-func Sort(list List, orders []SortOrder) {
-	// sort slice by comparing values
-	sort.Slice(list, func(i, j int) bool {
-		for _, order := range orders {
-			// get values
-			a := Get(list[i], order.Path)
-			b := Get(list[j], order.Path)
-
-			// compare values
-			res := Compare(a, b)
-
-			// continue if equal
-			if res == 0 {
-				continue
-			}
-
-			// check if reverse
-			if order.Reverse {
-				return res > 0
-			}
-
-			return res < 0
-		}
-
-		return false
-	})
-}
-
 func Collect(list List, path string, compact, distinct bool) []interface{} {
 	// prepare result
 	result := make([]interface{}, 0, len(list))

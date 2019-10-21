@@ -11,8 +11,8 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 	result := make(bsonkit.List, len(list))
 	copy(result, list)
 
-	// prepare orders
-	orders := make([]bsonkit.SortOrder, 0, len(*doc))
+	// prepare columns
+	columns := make([]bsonkit.Column, 0, len(*doc))
 
 	// parse sort document
 	for _, exp := range *doc {
@@ -34,15 +34,15 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 			return nil, fmt.Errorf("sort: expected 1 or -1 as direction")
 		}
 
-		// add to info
-		orders = append(orders, bsonkit.SortOrder{
+		// add column
+		columns = append(columns, bsonkit.Column{
 			Path:    exp.Key,
 			Reverse: direction == -1,
 		})
 	}
 
 	// sort list
-	bsonkit.Sort(result, orders)
+	bsonkit.Sort(result, columns)
 
 	return result, nil
 }
