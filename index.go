@@ -11,27 +11,25 @@ type uniqueIndexItem struct {
 }
 
 func (i *uniqueIndexItem) Less(item btree.Item, ctx interface{}) bool {
-	// coerce item and context
+	// coerce item
 	j := item.(*uniqueIndexItem)
-	path := ctx.(string)
 
-	// get values
-	v1 := bsonkit.Get(i.doc, path)
-	v2 := bsonkit.Get(j.doc, path)
+	// coerce columns
+	columns := ctx.([]bsonkit.Column)
 
-	// compare values
-	ret := bsonkit.Compare(v1, v2)
+	// get order
+	order := bsonkit.Order(i.doc, j.doc, columns)
 
-	return ret < 0
+	return order < 0
 }
 
 type uniqueIndex struct {
 	btree *btree.BTree
 }
 
-func newUniqueIndex(path string) *uniqueIndex {
+func newUniqueIndex(columns []bsonkit.Column) *uniqueIndex {
 	return &uniqueIndex{
-		btree: btree.New(64, path),
+		btree: btree.New(64, columns),
 	}
 }
 

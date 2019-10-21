@@ -58,7 +58,9 @@ func NewNamespace(name string) *Namespace {
 func (n *Namespace) Prepare() *Namespace {
 	// create indexes
 	n.listIndex = map[bsonkit.Doc]int{}
-	n.primaryIndex = newUniqueIndex("_id")
+	n.primaryIndex = newUniqueIndex([]bsonkit.Column{
+		{Path: "_id"},
+	})
 
 	// fill indexes
 	for i, doc := range n.Documents {
