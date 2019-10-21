@@ -1102,6 +1102,27 @@ func TestCollectionUpdateMany(t *testing.T) {
 				"foo": "quz",
 			},
 		}, dumpCollection(c, false))
+
+		// invalid _id mutation
+		res2, err = c.UpdateMany(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"$set": bson.M{
+				"_id": id2,
+			},
+		})
+		assert.Error(t, err)
+		// assert.Nil(t, res2) <-- mongo returns result as well
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "quz",
+			},
+			{
+				"_id": id2,
+				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
 	})
 }
 
@@ -1164,6 +1185,27 @@ func TestCollectionUpdateOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), res2.MatchedCount)
 		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "quz",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// invalid _id mutation
+		res2, err = c.UpdateOne(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"$set": bson.M{
+				"_id": id2,
+			},
+		})
+		assert.Error(t, err)
+		assert.Nil(t, res2)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,

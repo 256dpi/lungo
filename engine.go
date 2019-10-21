@@ -350,6 +350,13 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (
 		return nil, err
 	}
 
+	// check ids
+	for i, doc := range newList {
+		if bsonkit.Get(doc, "_id") != bsonkit.Get(list[i], "_id") {
+			return nil, fmt.Errorf("document _id is immutable")
+		}
+	}
+
 	// clone data
 	clone := e.data.Clone()
 
