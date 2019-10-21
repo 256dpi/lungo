@@ -377,6 +377,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		"MaxTime":        ignored,
 		"ReturnDocument": supported,
 		"Sort":           supported,
+		"Upsert":         supported,
 	})
 
 	// check filer
@@ -410,20 +411,35 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		return &SingleResult{err: err}
 	}
 
+	// get upsert
+	var upsert bool
+	if opt.Upsert != nil {
+		upsert = *opt.Upsert
+	}
+
 	// insert document
-	res, err := c.client.engine.Replace(c.ns, query, sort, doc)
+	res, err := c.client.engine.Replace(c.ns, query, sort, doc, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
+	// check if upserted
+	if res.Upserted != nil {
+		if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+			return &SingleResult{doc: res.Upserted}
+		}
+
+		return &SingleResult{}
+	}
+
 	// check list
-	if res.Replaced == nil {
+	if len(res.Modified) == 0 {
 		return &SingleResult{}
 	}
 
 	// check return document
 	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
-		return &SingleResult{doc: res.Replaced}
+		return &SingleResult{doc: res.Modified[0]}
 	}
 
 	return &SingleResult{doc: res.Matched[0]}
@@ -438,6 +454,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		"MaxTime":        ignored,
 		"ReturnDocument": supported,
 		"Sort":           supported,
+		"Upsert":         supported,
 	})
 
 	// check filer
@@ -471,20 +488,35 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		return &SingleResult{err: err}
 	}
 
+	// get upsert
+	var upsert bool
+	if opt.Upsert != nil {
+		upsert = *opt.Upsert
+	}
+
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, sort, doc, 1)
+	res, err := c.client.engine.Update(c.ns, query, sort, doc, 1, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
+	// check if upserted
+	if res.Upserted != nil {
+		if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
+			return &SingleResult{doc: res.Upserted}
+		}
+
+		return &SingleResult{}
+	}
+
 	// check list
-	if len(res.Updated) == 0 {
+	if len(res.Modified) == 0 {
 		return &SingleResult{}
 	}
 
 	// check return document
 	if opt.ReturnDocument != nil && *opt.ReturnDocument == options.After {
-		return &SingleResult{doc: res.Updated[0]}
+		return &SingleResult{doc: res.Modified[0]}
 	}
 
 	return &SingleResult{doc: res.Matched[0]}
@@ -533,7 +565,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	res, err := c.client.engine.Insert(c.ns, list, ordered)
 
 	// collect ids
-	ids := bsonkit.Collect(res.Inserted, "_id", false, false)
+	ids := bsonkit.Collect(res.Modified, "_id", false, false)
 
 	return &mongo.InsertManyResult{
 		InsertedIDs: ids,
@@ -565,7 +597,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// get id
-	id := bsonkit.Get(res.Inserted[0], "_id")
+	id := bsonkit.Get(res.Modified[0], "_id")
 
 	return &mongo.InsertOneResult{
 		InsertedID: id,
@@ -581,7 +613,9 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	opt := options.MergeReplaceOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"Upsert": supported,
+	})
 
 	// check filer
 	if filter == nil {
@@ -605,23 +639,29 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		return nil, err
 	}
 
+	// get upsert
+	var upsert bool
+	if opt.Upsert != nil {
+		upsert = *opt.Upsert
+	}
+
 	// insert document
-	res, err := c.client.engine.Replace(c.ns, query, nil, doc)
+	res, err := c.client.engine.Replace(c.ns, query, nil, doc, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	// check list
-	if res.Replaced == nil {
+	// check if upserted
+	if res.Upserted != nil {
 		return &mongo.UpdateResult{
-			MatchedCount:  0,
-			ModifiedCount: 0,
+			UpsertedCount: 1,
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
 		}, nil
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  1,
-		ModifiedCount: 1,
+		MatchedCount:  int64(len(res.Matched)),
+		ModifiedCount: int64(len(res.Modified)),
 	}, nil
 }
 
@@ -630,7 +670,9 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	opt := options.MergeUpdateOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"Upsert": supported,
+	})
 
 	// check filer
 	if filter == nil {
@@ -654,15 +696,29 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		return nil, err
 	}
 
+	// get upsert
+	var upsert bool
+	if opt.Upsert != nil {
+		upsert = *opt.Upsert
+	}
+
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, nil, doc, 0)
+	res, err := c.client.engine.Update(c.ns, query, nil, doc, 0, upsert)
 	if err != nil {
 		return nil, err
 	}
 
+	// check if upserted
+	if res.Upserted != nil {
+		return &mongo.UpdateResult{
+			UpsertedCount: 1,
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+		}, nil
+	}
+
 	return &mongo.UpdateResult{
 		MatchedCount:  int64(len(res.Matched)),
-		ModifiedCount: int64(len(res.Updated)),
+		ModifiedCount: int64(len(res.Modified)),
 	}, nil
 }
 
@@ -671,7 +727,9 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	opt := options.MergeUpdateOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"Upsert": supported,
+	})
 
 	// check filer
 	if filter == nil {
@@ -695,15 +753,29 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 		return nil, err
 	}
 
+	// get upsert
+	var upsert bool
+	if opt.Upsert != nil {
+		upsert = *opt.Upsert
+	}
+
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, nil, doc, 1)
+	res, err := c.client.engine.Update(c.ns, query, nil, doc, 1, upsert)
 	if err != nil {
 		return nil, err
 	}
 
+	// check if upserted
+	if res.Upserted != nil {
+		return &mongo.UpdateResult{
+			UpsertedCount: 1,
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+		}, nil
+	}
+
 	return &mongo.UpdateResult{
 		MatchedCount:  int64(len(res.Matched)),
-		ModifiedCount: int64(len(res.Updated)),
+		ModifiedCount: int64(len(res.Modified)),
 	}, nil
 }
 

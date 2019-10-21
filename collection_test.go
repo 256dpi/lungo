@@ -636,6 +636,54 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 	})
 }
 
+func TestCollectionFindOneAndReplaceUpsert(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		// generated id before
+		var out bson.M
+		err := c.FindOneAndReplace(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"_id": id1,
+			"bar": "baz",
+		}, options.FindOneAndReplace().SetUpsert(true)).Decode(&out)
+		assert.Error(t, err)
+		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Nil(t, out)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// generated id after
+		err = c.FindOneAndReplace(nil, bson.M{
+			"_id": id2,
+		}, bson.M{
+			"_id": id2,
+			"bar": "baz",
+		}, options.FindOneAndReplace().SetUpsert(true).SetReturnDocument(options.After)).Decode(&out)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"bar": "baz",
+		}, out)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"bar": "baz",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionFindOneAndUpdate(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
@@ -761,6 +809,66 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			{
 				"_id": id2,
 				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionFindOneAndUpdateUpsert(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		// generated id before
+		var out bson.M
+		err := c.FindOneAndUpdate(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"$set": bson.M{
+				"bar": "baz",
+			},
+			"$setOnInsert": bson.M{
+				"baz": "quz",
+			},
+		}, options.FindOneAndUpdate().SetUpsert(true)).Decode(&out)
+		assert.Error(t, err)
+		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Nil(t, out)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"bar": "baz",
+				"baz": "quz",
+			},
+		}, dumpCollection(c, false))
+
+		// generated id after
+		err = c.FindOneAndUpdate(nil, bson.M{
+			"_id": id2,
+		}, bson.M{
+			"$set": bson.M{
+				"bar": "baz",
+			},
+			"$setOnInsert": bson.M{
+				"baz": "quz",
+			},
+		}, options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)).Decode(&out)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"bar": "baz",
+			"baz": "quz",
+		}, out)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"bar": "baz",
+				"baz": "quz",
+			},
+			{
+				"_id": id2,
+				"bar": "baz",
+				"baz": "quz",
 			},
 		}, dumpCollection(c, false))
 	})
@@ -1093,6 +1201,31 @@ func TestCollectionReplaceOne(t *testing.T) {
 	})
 }
 
+func TestCollectionReplaceOneUpsert(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		// generated id
+		res, err := c.ReplaceOne(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"_id": id,
+			"bar": "baz",
+		}, options.Replace().SetUpsert(true))
+		assert.NoError(t, err)
+		assert.Equal(t, &mongo.UpdateResult{
+			UpsertedCount: 1,
+			UpsertedID:    id,
+		}, res)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"bar": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionUpdateMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
@@ -1189,6 +1322,36 @@ func TestCollectionUpdateMany(t *testing.T) {
 	//  selection fails to an index constraint.
 }
 
+func TestCollectionUpdateManyUpsert(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		// generated id
+		res, err := c.UpdateMany(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"$set": bson.M{
+				"bar": "baz",
+			},
+			"$setOnInsert": bson.M{
+				"baz": "quz",
+			},
+		}, options.Update().SetUpsert(true))
+		assert.NoError(t, err)
+		assert.Equal(t, &mongo.UpdateResult{
+			UpsertedCount: 1,
+			UpsertedID:    id,
+		}, res)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"bar": "baz",
+				"baz": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionUpdateOne(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
@@ -1277,6 +1440,36 @@ func TestCollectionUpdateOne(t *testing.T) {
 			{
 				"_id": id2,
 				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
+func TestCollectionUpdateOneUpsert(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		// generated id
+		res, err := c.UpdateOne(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"$set": bson.M{
+				"bar": "baz",
+			},
+			"$setOnInsert": bson.M{
+				"baz": "quz",
+			},
+		}, options.Update().SetUpsert(true))
+		assert.NoError(t, err)
+		assert.Equal(t, &mongo.UpdateResult{
+			UpsertedCount: 1,
+			UpsertedID:    id,
+		}, res)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
+				"bar": "baz",
+				"baz": "quz",
 			},
 		}, dumpCollection(c, false))
 	})

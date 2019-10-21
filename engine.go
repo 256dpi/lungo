@@ -17,9 +17,8 @@ import (
 
 type Result struct {
 	Matched  bsonkit.List
-	Inserted bsonkit.List
-	Replaced bsonkit.Doc
-	Updated  bsonkit.List
+	Modified bsonkit.List
+	Upserted bsonkit.Doc
 }
 
 type Engine struct {
@@ -226,11 +225,11 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 		namespace.listIndex[doc] = len(namespace.Documents) - 1
 
 		// add to list
-		result.Inserted = append(result.Inserted, doc)
+		result.Modified = append(result.Modified, doc)
 	}
 
 	// check if documents have been inserted
-	if len(result.Inserted) > 0 {
+	if len(result.Modified) > 0 {
 		// write data
 		err := e.store.Store(clone)
 		if err != nil {
@@ -244,21 +243,19 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	return result, err
 }
 
-func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, error) {
+func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-
-	// check namespace
-	if e.data.Namespaces[ns] == nil {
-		return &Result{}, nil
-	}
 
 	// clone replacement
 	repl = bsonkit.Clone(repl)
 
 	// get documents
-	list := e.data.Namespaces[ns].Documents
+	var list bsonkit.List
+	if e.data.Namespaces[ns] != nil {
+		list = e.data.Namespaces[ns].Documents
+	}
 
 	// sort documents
 	var err error
@@ -277,6 +274,11 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, err
 
 	// check list
 	if len(list) == 0 {
+		// handle upsert
+		if upsert {
+			return e.upsert(ns, query, repl, nil)
+		}
+
 		return &Result{}, nil
 	}
 
@@ -323,22 +325,20 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc) (*Result, err
 
 	return &Result{
 		Matched:  list,
-		Replaced: repl,
+		Modified: bsonkit.List{repl},
 	}, nil
 }
 
-func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (*Result, error) {
+func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	// check namespace
-	if e.data.Namespaces[ns] == nil {
-		return &Result{}, nil
-	}
-
 	// get documents
-	list := e.data.Namespaces[ns].Documents
+	var list bsonkit.List
+	if e.data.Namespaces[ns] != nil {
+		list = e.data.Namespaces[ns].Documents
+	}
 
 	// sort documents
 	var err error
@@ -357,6 +357,11 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (
 
 	// check list
 	if len(list) == 0 {
+		// handle upsert
+		if upsert {
+			return e.upsert(ns, query, nil, update)
+		}
+
 		return &Result{}, nil
 	}
 
@@ -418,8 +423,99 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int) (
 	e.data = clone
 
 	return &Result{
-		Matched: list,
-		Updated: newList,
+		Matched:  list,
+		Modified: newList,
+	}, nil
+}
+
+func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, error) {
+	// extract query
+	doc, err := mongokit.Extract(query)
+	if err != nil {
+		return nil, err
+	}
+
+	// set replacement if present
+	if repl != nil {
+		// get ids
+		queryID := bsonkit.Get(doc, "_id")
+		replID := bsonkit.Get(repl, "_id")
+
+		// check ids
+		if queryID != bsonkit.Missing && replID != bsonkit.Missing {
+			if bsonkit.Compare(replID, queryID) != 0 {
+				return nil, fmt.Errorf("query _id and replacement _id must match")
+			}
+		}
+
+		// clone replacement
+		doc = bsonkit.Clone(repl)
+
+		// add repl or query id if present
+		if replID != bsonkit.Missing {
+			err = bsonkit.Set(doc, "_id", replID, true)
+			if err != nil {
+				return nil, err
+			}
+		} else if queryID != bsonkit.Missing {
+			err = bsonkit.Set(doc, "_id", queryID, true)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// apply update if present
+	if update != nil {
+		err = mongokit.Apply(doc, update, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// generate object id if missing
+	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
+		err := bsonkit.Set(doc, "_id", primitive.NewObjectID(), true)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// clone data
+	clone := e.data.Clone()
+
+	// create or clone namespace
+	var namespace *Namespace
+	if clone.Namespaces[ns] == nil {
+		namespace = NewNamespace(ns)
+		clone.Namespaces[ns] = namespace
+	} else {
+		namespace = clone.Namespaces[ns].Clone()
+		clone.Namespaces[ns] = namespace
+	}
+
+	// add document to primary index
+	if !namespace.primaryIndex.Set(doc) {
+		return nil, fmt.Errorf("document with same _id exists already")
+	}
+
+	// add document
+	namespace.Documents = append(namespace.Documents, doc)
+
+	// add to list index
+	namespace.listIndex[doc] = len(namespace.Documents) - 1
+
+	// write data
+	err = e.store.Store(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	// set new data
+	e.data = clone
+
+	return &Result{
+		Upserted: doc,
 	}, nil
 }
 
