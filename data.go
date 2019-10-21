@@ -4,6 +4,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/mongokit"
 )
 
 type Data struct {
@@ -47,7 +48,7 @@ type Namespace struct {
 	Documents *bsonkit.Set `bson:"documents"`
 	Indexes   []Index      `bson:"indexes"`
 
-	primaryIndex *uniqueIndex `bson:"-"`
+	primaryIndex *mongokit.Index `bson:"-"`
 }
 
 func NewNamespace(name string) *Namespace {
@@ -61,13 +62,13 @@ func (n *Namespace) Prepare() *Namespace {
 	}
 
 	// create indexes
-	n.primaryIndex = newUniqueIndex([]bsonkit.Column{
+	n.primaryIndex = mongokit.NewIndex(true, []bsonkit.Column{
 		{Path: "_id"},
 	})
 
 	// fill indexes
 	for _, doc := range n.Documents.List {
-		n.primaryIndex.Set(doc)
+		n.primaryIndex.Add(doc)
 	}
 
 	return n

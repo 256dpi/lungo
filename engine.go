@@ -209,7 +209,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	// insert documents
 	for _, doc := range list {
 		// add document to primary index
-		if !namespace.primaryIndex.Set(doc) {
+		if !namespace.primaryIndex.Add(doc) {
 			err = fmt.Errorf("document with same _id exists already")
 			if ordered {
 				break
@@ -298,8 +298,8 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	clone.Namespaces[ns] = namespace
 
 	// update primary index
-	namespace.primaryIndex.Delete(list[0])
-	if !namespace.primaryIndex.Set(repl) {
+	namespace.primaryIndex.Remove(list[0])
+	if !namespace.primaryIndex.Add(repl) {
 		return nil, fmt.Errorf("document with same _id exists already")
 	}
 
@@ -382,12 +382,12 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 
 	// remove old docs from primary index
 	for _, doc := range list {
-		namespace.primaryIndex.Delete(doc)
+		namespace.primaryIndex.Remove(doc)
 	}
 
 	// add new docs to primary index
 	for _, doc := range newList {
-		if !namespace.primaryIndex.Set(doc) {
+		if !namespace.primaryIndex.Add(doc) {
 			return nil, fmt.Errorf("document with same _id exists already")
 		}
 	}
@@ -479,7 +479,7 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 	}
 
 	// add document to primary index
-	if !namespace.primaryIndex.Set(doc) {
+	if !namespace.primaryIndex.Add(doc) {
 		return nil, fmt.Errorf("document with same _id exists already")
 	}
 
@@ -548,7 +548,7 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 
 	// update primary index
 	for _, doc := range list {
-		namespace.primaryIndex.Delete(doc)
+		namespace.primaryIndex.Remove(doc)
 	}
 
 	// write data
