@@ -20,31 +20,34 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	index := ctx.(*Index)
 
 	// get order
-	order := Order(i.set.List[0], j.set.List[0], index.columns)
+	order := Order(i.set.List[0], j.set.List[0], index.Columns)
 
 	return order < 0
 }
 
 type Index struct {
-	unique   bool
-	columns  []Column
-	btree    *btree.BTree
-	sentinel *entry
-	mutex    sync.Mutex
+	Unique  bool     `bson:"unique"`
+	Columns []Column `bson:"columns"`
+
+	btree    *btree.BTree `bson:"-"`
+	sentinel *entry       `bson:"-"`
+	mutex    sync.Mutex   `bson:"-"`
 }
 
 func NewIndex(unique bool, columns []Column) *Index {
 	// create index
 	index := &Index{
-		unique:  unique,
-		columns: columns,
-		sentinel: &entry{
-			set: NewSet(make(List, 1)),
-		},
+		Unique:  unique,
+		Columns: columns,
 	}
 
 	// create btree
 	index.btree = btree.New(64, index)
+
+	// create sentinel
+	index.sentinel = &entry{
+		set: NewSet(make(List, 1)),
+	}
 
 	return index
 }
@@ -69,7 +72,7 @@ func (i *Index) Add(doc Doc) bool {
 	}
 
 	// return false if index is unique
-	if i.unique {
+	if i.Unique {
 		return false
 	}
 
@@ -99,7 +102,7 @@ func (i *Index) Has(doc Doc) bool {
 	}
 
 	// do not check identify if unique
-	if i.unique {
+	if i.Unique {
 		return true
 	}
 
@@ -152,19 +155,16 @@ func (i *Index) Clone() *Index {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	// create new index
-	index := NewIndex(i.unique, i.columns)
+	// create clone
+	clone := NewIndex(i.Unique, i.Columns)
 
-	// copy over items
+	// copy entries
 	i.btree.Ascend(func(i btree.Item) bool {
-		// clone entry
-		clone := &entry{set: i.(*entry).set.Clone()}
-
-		// add clone
-		index.btree.ReplaceOrInsert(clone)
-
+		clone.btree.ReplaceOrInsert(&entry{
+			set: i.(*entry).set.Clone(),
+		})
 		return true
 	})
 
-	return index
+	return clone
 }
