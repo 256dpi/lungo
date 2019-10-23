@@ -61,6 +61,6 @@ func cloneValue(v interface{}) interface{} {
 
 		return a
 	default:
-		panic(fmt.Sprintf("clone: unsupported type: %T", v))
+		panic(fmt.Sprintf("bsonkit: cannot clone: %T", v))
 	}
 }

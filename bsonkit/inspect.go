@@ -50,6 +50,6 @@ func Inspect(v interface{}) Type {
 	case primitive.Regex:
 		return Regex
 	default:
-		panic(fmt.Sprintf("inspect: unsupported type: %T", v))
+		panic(fmt.Sprintf("bsonkit: cannot inspect: %T", v))
 	}
 }

@@ -46,7 +46,7 @@ func Compare(lv, rv interface{}) int {
 	case Regex:
 		return compareRegexes(lv, rv)
 	default:
-		panic("compare: unreachable")
+		panic("bsonkit: unreachable")
 	}
 }
 
@@ -81,7 +81,7 @@ func compareNumbers(lv, rv interface{}) int {
 		}
 	}
 
-	panic("compare: unreachable")
+	panic("bsonkit: unreachable")
 }
 
 func compareStrings(lv, rv interface{}) int {
