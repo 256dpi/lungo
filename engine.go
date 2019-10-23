@@ -71,7 +71,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 		// add specification
 		list = append(list, &bson.D{
 			bson.E{Key: "name", Value: name},
-			bson.E{Key: "sizeOnDisk", Value: 42},
+			bson.E{Key: "sizeOnDisk", Value: 0},
 			bson.E{Key: "empty", Value: empty},
 		})
 	}
