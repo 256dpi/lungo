@@ -8,6 +8,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -19,6 +20,7 @@ type Result struct {
 	Matched  bsonkit.List
 	Modified bsonkit.List
 	Upserted bsonkit.Doc
+	Errors   []error
 }
 
 type Engine struct {
@@ -210,14 +212,29 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	}
 
 	// prepare result
-	var err error
 	result := &Result{}
 
 	// insert documents
 	for _, doc := range list {
-		// add document to primary index
-		if !namespace.PrimaryIndex.Add(doc) {
-			err = fmt.Errorf("document with same _id exists already")
+		// list uniqueness pre-check
+		if _, ok := namespace.Documents.Index[doc]; ok {
+			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", namespace.Name))
+			if ordered {
+				break
+			} else {
+				continue
+			}
+		}
+
+		// add document to all indexes
+		var duplicateIndex string
+		for name, index := range namespace.Indexes {
+			if !index.Add(doc) {
+				duplicateIndex = name
+			}
+		}
+		if duplicateIndex != "" {
+			result.Errors = append(result.Errors, fmt.Errorf("duplicate document for index %q", duplicateIndex))
 			if ordered {
 				break
 			} else {
@@ -244,7 +261,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 		e.data = clone
 	}
 
-	return result, err
+	return result, nil
 }
 
 func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
@@ -304,10 +321,15 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// update primary index
-	namespace.PrimaryIndex.Remove(list[0])
-	if !namespace.PrimaryIndex.Add(repl) {
-		return nil, fmt.Errorf("document with same _id exists already")
+	// update indexes
+	for name, index := range namespace.Indexes {
+		// remove old document
+		index.Remove(list[0])
+
+		// add replacement
+		if !index.Add(repl) {
+			return nil, fmt.Errorf("duplicate document for index %q", name)
+		}
 	}
 
 	// replace document
@@ -387,15 +409,19 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 	namespace := clone.Namespaces[ns].Clone()
 	clone.Namespaces[ns] = namespace
 
-	// remove old docs from primary index
+	// remove old docs from indexes
 	for _, doc := range list {
-		namespace.PrimaryIndex.Remove(doc)
+		for _, index := range namespace.Indexes {
+			index.Remove(doc)
+		}
 	}
 
-	// add new docs to primary index
+	// add new docs to indexes
 	for _, doc := range newList {
-		if !namespace.PrimaryIndex.Add(doc) {
-			return nil, fmt.Errorf("document with same _id exists already")
+		for name, index := range namespace.Indexes {
+			if !index.Add(doc) {
+				return nil, fmt.Errorf("duplicate document for index %q", name)
+			}
 		}
 	}
 
@@ -485,9 +511,11 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 		clone.Namespaces[ns] = namespace
 	}
 
-	// add document to primary index
-	if !namespace.PrimaryIndex.Add(doc) {
-		return nil, fmt.Errorf("document with same _id exists already")
+	// add document to indexes
+	for name, index := range namespace.Indexes {
+		if !index.Add(doc) {
+			return nil, fmt.Errorf("duplicate document for index %q", name)
+		}
 	}
 
 	// add document
@@ -553,9 +581,11 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 		namespace.Documents.Remove(doc)
 	}
 
-	// update primary index
+	// update indexes
 	for _, doc := range list {
-		namespace.PrimaryIndex.Remove(doc)
+		for _, index := range namespace.Indexes {
+			index.Remove(doc)
+		}
 	}
 
 	// write data
@@ -590,6 +620,30 @@ func (e *Engine) Drop(ns string) error {
 			delete(e.data.Namespaces, name)
 		}
 	}
+
+	return nil
+}
+
+func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	return nil, nil
+}
+
+func (e *Engine) CreateIndex(ns string, model mongo.IndexModel) (string, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	return "", nil
+}
+
+func (e *Engine) DropIndex(ns, name string) error {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	return nil
 }
