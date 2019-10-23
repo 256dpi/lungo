@@ -614,12 +614,24 @@ func (e *Engine) Drop(ns string) error {
 	// compile regexp
 	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
 
+	// clone data
+	clone := e.data.Clone()
+
 	// drop all matching namespaces
-	for name := range e.data.Namespaces {
+	for name := range clone.Namespaces {
 		if regex.MatchString(name) {
-			delete(e.data.Namespaces, name)
+			delete(clone.Namespaces, name)
 		}
 	}
+
+	// write data
+	err := e.store.Store(clone)
+	if err != nil {
+		return err
+	}
+
+	// set new data
+	e.data = clone
 
 	return nil
 }
