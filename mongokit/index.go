@@ -43,8 +43,6 @@ func NewIndex(unique bool, columns []bsonkit.Column) *Index {
 		},
 	}
 
-	// TODO: What degree to use?
-
 	// create btree
 	index.btree = btree.New(64, index)
 
