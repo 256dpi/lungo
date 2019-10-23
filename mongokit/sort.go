@@ -24,12 +24,12 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 		case float64:
 			direction = int(value)
 		default:
-			return nil, fmt.Errorf("sort: expected number as direction")
+			return nil, fmt.Errorf("expected number as direction")
 		}
 
 		// check direction
 		if direction != -1 && direction != 1 {
-			return nil, fmt.Errorf("sort: expected 1 or -1 as direction")
+			return nil, fmt.Errorf("expected 1 or -1 as direction")
 		}
 
 		// add column

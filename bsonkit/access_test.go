@@ -139,7 +139,7 @@ func TestPut(t *testing.T) {
 
 	err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
-	assert.Equal(t, "put: cannot put value at bar.baz", err.Error())
+	assert.Equal(t, "cannot put value at bar.baz", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
@@ -172,7 +172,7 @@ func TestUnset(t *testing.T) {
 	// leaf field
 	err := Unset(doc, "foo.bar.baz.quz")
 	assert.Error(t, err)
-	assert.Equal(t, "unset: cannot unset field in 42", err.Error())
+	assert.Equal(t, "cannot unset field in 42", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -214,12 +214,12 @@ func TestIncrement(t *testing.T) {
 	// invalid field
 	err := Increment(doc, "bar", int64(2))
 	assert.Error(t, err)
-	assert.Equal(t, "increment: field is not a number", err.Error())
+	assert.Equal(t, `incrementee "bar" is not a number`, err.Error())
 
 	// invalid increment
-	err = Increment(doc, "foo", 2)
+	err = Increment(doc, "foo", "2")
 	assert.Error(t, err)
-	assert.Equal(t, "increment: expected number", err.Error())
+	assert.Equal(t, "increment is not a number", err.Error())
 
 	// increment existing field
 	err = Increment(doc, "foo", int64(2))
@@ -248,12 +248,12 @@ func TestMultiply(t *testing.T) {
 	// invalid field
 	err := Multiply(doc, "bar", int64(2))
 	assert.Error(t, err)
-	assert.Equal(t, "multiply: field is not a number", err.Error())
+	assert.Equal(t, `multiplicand "bar" is not a number`, err.Error())
 
 	// invalid multiplicand
 	err = Multiply(doc, "foo", 2)
 	assert.Error(t, err)
-	assert.Equal(t, "multiply: expected number", err.Error())
+	assert.Equal(t, "multiplier is not a number", err.Error())
 
 	// multiply existing field
 	err = Multiply(doc, "foo", int64(2))
