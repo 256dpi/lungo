@@ -1,15 +1,15 @@
-package mongokit
+package bsonkit
 
 import (
 	"sync"
 
 	"github.com/tidwall/btree"
-
-	"github.com/256dpi/lungo/bsonkit"
 )
 
+// TODO: Add a fast build method.
+
 type entry struct {
-	set *bsonkit.Set
+	set *Set
 }
 
 func (i *entry) Less(item btree.Item, ctx interface{}) bool {
@@ -20,26 +20,26 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	index := ctx.(*Index)
 
 	// get order
-	order := bsonkit.Order(i.set.List[0], j.set.List[0], index.columns)
+	order := Order(i.set.List[0], j.set.List[0], index.columns)
 
 	return order < 0
 }
 
 type Index struct {
 	unique   bool
-	columns  []bsonkit.Column
+	columns  []Column
 	btree    *btree.BTree
 	sentinel *entry
 	mutex    sync.Mutex
 }
 
-func NewIndex(unique bool, columns []bsonkit.Column) *Index {
+func NewIndex(unique bool, columns []Column) *Index {
 	// create index
 	index := &Index{
 		unique:  unique,
 		columns: columns,
 		sentinel: &entry{
-			set: bsonkit.NewSet(make(bsonkit.List, 1)),
+			set: NewSet(make(List, 1)),
 		},
 	}
 
@@ -49,7 +49,7 @@ func NewIndex(unique bool, columns []bsonkit.Column) *Index {
 	return index
 }
 
-func (i *Index) Add(doc bsonkit.Doc) bool {
+func (i *Index) Add(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
@@ -63,7 +63,7 @@ func (i *Index) Add(doc bsonkit.Doc) bool {
 	// just add a new entry if missing
 	if item == nil {
 		i.btree.ReplaceOrInsert(&entry{
-			set: bsonkit.NewSet(bsonkit.List{doc}),
+			set: NewSet(List{doc}),
 		})
 		return true
 	}
@@ -82,7 +82,7 @@ func (i *Index) Add(doc bsonkit.Doc) bool {
 	return true
 }
 
-func (i *Index) Has(doc bsonkit.Doc) bool {
+func (i *Index) Has(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
@@ -112,7 +112,7 @@ func (i *Index) Has(doc bsonkit.Doc) bool {
 	return ok
 }
 
-func (i *Index) Remove(doc bsonkit.Doc) {
+func (i *Index) Remove(doc Doc) {
 	// acquire mutex
 	i.mutex.Lock()
 	defer i.mutex.Unlock()

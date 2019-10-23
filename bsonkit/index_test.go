@@ -1,20 +1,18 @@
-package mongokit
+package bsonkit
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/256dpi/lungo/bsonkit"
 )
 
 func TestIndex(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "2"})
-	d3 := bsonkit.Convert(bson.M{"a": "2"})
+	d1 := Convert(bson.M{"a": "1"})
+	d2 := Convert(bson.M{"a": "2"})
+	d3 := Convert(bson.M{"a": "2"})
 
-	index := NewIndex(false, []bsonkit.Column{
+	index := NewIndex(false, []Column{
 		{Path: "a"},
 	})
 	assert.False(t, index.Has(d1))
@@ -53,11 +51,11 @@ func TestIndex(t *testing.T) {
 }
 
 func TestCompoundIndex(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	d2 := bsonkit.Convert(bson.M{"a": "2", "b": true})
-	d3 := bsonkit.Convert(bson.M{"a": "2", "b": true})
+	d1 := Convert(bson.M{"a": "1", "b": true})
+	d2 := Convert(bson.M{"a": "2", "b": true})
+	d3 := Convert(bson.M{"a": "2", "b": true})
 
-	index := NewIndex(false, []bsonkit.Column{
+	index := NewIndex(false, []Column{
 		{Path: "a"},
 		{Path: "b"},
 	})
@@ -97,11 +95,11 @@ func TestCompoundIndex(t *testing.T) {
 }
 
 func TestUniqueIndex(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "2"})
-	d3 := bsonkit.Convert(bson.M{"a": "2"})
+	d1 := Convert(bson.M{"a": "1"})
+	d2 := Convert(bson.M{"a": "2"})
+	d3 := Convert(bson.M{"a": "2"})
 
-	index := NewIndex(true, []bsonkit.Column{
+	index := NewIndex(true, []Column{
 		{Path: "a"},
 	})
 	assert.False(t, index.Has(d1))
@@ -140,11 +138,11 @@ func TestUniqueIndex(t *testing.T) {
 }
 
 func TestUniqueCompoundIndex(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	d2 := bsonkit.Convert(bson.M{"a": "2", "b": true})
-	d3 := bsonkit.Convert(bson.M{"a": "2", "b": true})
+	d1 := Convert(bson.M{"a": "1", "b": true})
+	d2 := Convert(bson.M{"a": "2", "b": true})
+	d3 := Convert(bson.M{"a": "2", "b": true})
 
-	index := NewIndex(true, []bsonkit.Column{
+	index := NewIndex(true, []Column{
 		{Path: "a"},
 		{Path: "b"},
 	})
@@ -184,11 +182,11 @@ func TestUniqueCompoundIndex(t *testing.T) {
 }
 
 func TestIndexClone(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "2"})
-	d3 := bsonkit.Convert(bson.M{"a": "2"})
+	d1 := Convert(bson.M{"a": "1"})
+	d2 := Convert(bson.M{"a": "2"})
+	d3 := Convert(bson.M{"a": "2"})
 
-	index1 := NewIndex(false, []bsonkit.Column{
+	index1 := NewIndex(false, []Column{
 		{Path: "a"},
 	})
 
