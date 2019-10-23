@@ -2,7 +2,6 @@ package bsonkit
 
 import (
 	"fmt"
-	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -51,6 +50,6 @@ func Inspect(v interface{}) Type {
 	case primitive.Regex:
 		return Regex
 	default:
-		panic(fmt.Sprintf("inspect: unsupported type: %q", reflect.TypeOf(v).String()))
+		panic(fmt.Sprintf("inspect: unsupported type: %T", v))
 	}
 }
