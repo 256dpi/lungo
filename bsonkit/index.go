@@ -86,7 +86,10 @@ func (i *Index) Add(doc Doc) bool {
 	entry := item.(*entry)
 
 	// add document to existing entry
-	entry.set.Add(doc)
+	ok := entry.set.Add(doc)
+	if !ok {
+		return false
+	}
 
 	return true
 }
@@ -121,7 +124,7 @@ func (i *Index) Has(doc Doc) bool {
 	return ok
 }
 
-func (i *Index) Remove(doc Doc) {
+func (i *Index) Remove(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
@@ -134,7 +137,7 @@ func (i *Index) Remove(doc Doc) {
 
 	// return if there is no item
 	if item == nil {
-		return
+		return false
 	}
 
 	// get entry
@@ -143,17 +146,22 @@ func (i *Index) Remove(doc Doc) {
 	// check existence
 	_, ok := entry.set.Index[doc]
 	if !ok {
-		return
+		return false
 	}
 
 	// remove entry if last in list
 	if len(entry.set.List) == 1 {
 		i.btree.Delete(entry)
-		return
+		return true
 	}
 
 	// remove from set
-	entry.set.Remove(doc)
+	ok = entry.set.Remove(doc)
+	if !ok {
+		return false
+	}
+
+	return true
 }
 
 func (i *Index) Clone() *Index {
