@@ -139,7 +139,7 @@ func TestPut(t *testing.T) {
 
 	err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
-	assert.Equal(t, "put: cannot put field in 42", err.Error())
+	assert.Equal(t, "put: cannot put value at bar.baz", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,

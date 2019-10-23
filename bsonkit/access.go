@@ -62,7 +62,7 @@ func put(doc Doc, path []string, value interface{}, prepend bool) error {
 				return nil
 			}
 
-			return fmt.Errorf("put: cannot put field in %+v", el.Value)
+			return fmt.Errorf("put: cannot put value at %s", strings.Join(path, "."))
 		}
 	}
 
