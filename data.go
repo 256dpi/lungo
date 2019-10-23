@@ -48,7 +48,7 @@ type Namespace struct {
 	Documents *bsonkit.Set `bson:"documents"`
 	Indexes   []Index      `bson:"indexes"`
 
-	primaryIndex *mongokit.Index `bson:"-"`
+	PrimaryIndex *mongokit.Index `bson:"-"`
 }
 
 func NewNamespace(name string) *Namespace {
@@ -61,14 +61,14 @@ func (n *Namespace) Prepare() *Namespace {
 		n.Documents = bsonkit.NewSet(nil)
 	}
 
-	// create indexes
-	n.primaryIndex = mongokit.NewIndex(true, []bsonkit.Column{
+	// create index
+	n.PrimaryIndex = mongokit.NewIndex(true, []bsonkit.Column{
 		{Path: "_id"},
 	})
 
 	// fill indexes
 	for _, doc := range n.Documents.List {
-		n.primaryIndex.Add(doc)
+		n.PrimaryIndex.Add(doc)
 	}
 
 	return n
@@ -88,7 +88,7 @@ func (n *Namespace) Clone() *Namespace {
 	copy(clone.Indexes, n.Indexes)
 
 	// clone primary index
-	clone.primaryIndex = n.primaryIndex.Clone()
+	clone.PrimaryIndex = n.PrimaryIndex.Clone()
 
 	return clone
 }
