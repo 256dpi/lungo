@@ -2,7 +2,6 @@ package bsonkit
 
 import (
 	"fmt"
-	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -62,6 +61,6 @@ func cloneValue(v interface{}) interface{} {
 
 		return a
 	default:
-		panic(fmt.Sprintf("clone: unsupported type: %q", reflect.TypeOf(v).String()))
+		panic(fmt.Sprintf("clone: unsupported type: %T", v))
 	}
 }
