@@ -6,11 +6,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
-	// copy list
-	result := make(bsonkit.List, len(list))
-	copy(result, list)
-
+func Columns(doc bsonkit.Doc) ([]bsonkit.Column, error) {
 	// prepare columns
 	columns := make([]bsonkit.Column, 0, len(*doc))
 	for _, exp := range *doc {
@@ -37,6 +33,20 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 			Path:    exp.Key,
 			Reverse: direction == -1,
 		})
+	}
+
+	return columns, nil
+}
+
+func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
+	// copy list
+	result := make(bsonkit.List, len(list))
+	copy(result, list)
+
+	// prepare columns
+	columns, err := Columns(doc)
+	if err != nil {
+		return nil, err
 	}
 
 	// sort list
