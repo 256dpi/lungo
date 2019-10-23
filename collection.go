@@ -532,7 +532,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	return &SingleResult{}
 }
 
-func (c *Collection) Indexes() mongo.IndexView {
+func (c *Collection) Indexes() IIndexView {
 	panic("lungo: not implemented")
 }
 

@@ -102,3 +102,18 @@ func (c *MongoCollection) FindOneAndReplace(ctx context.Context, filter, replace
 func (c *MongoCollection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
 	return c.Collection.FindOneAndUpdate(ctx, filter, update, opts...)
 }
+
+func (c *MongoCollection) Indexes() IIndexView {
+	i := c.Collection.Indexes()
+	return &MongoIndexView{
+		IndexView: &i,
+	}
+}
+
+type MongoIndexView struct {
+	*mongo.IndexView
+}
+
+func (m *MongoIndexView) List(ctx context.Context, opts ...*options.ListIndexesOptions) (ICursor, error) {
+	return m.IndexView.List(ctx, opts...)
+}

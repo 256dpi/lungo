@@ -53,7 +53,7 @@ type ICollection interface {
 	FindOneAndDelete(context.Context, interface{}, ...*options.FindOneAndDeleteOptions) ISingleResult
 	FindOneAndReplace(context.Context, interface{}, interface{}, ...*options.FindOneAndReplaceOptions) ISingleResult
 	FindOneAndUpdate(context.Context, interface{}, interface{}, ...*options.FindOneAndUpdateOptions) ISingleResult
-	Indexes() mongo.IndexView
+	Indexes() IIndexView
 	InsertMany(context.Context, []interface{}, ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
 	InsertOne(context.Context, interface{}, ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	Name() string
@@ -76,4 +76,12 @@ type ISingleResult interface {
 	Decode(interface{}) error
 	DecodeBytes() (bson.Raw, error)
 	Err() error
+}
+
+type IIndexView interface {
+	CreateMany(context.Context, []mongo.IndexModel, ...*options.CreateIndexesOptions) ([]string, error)
+	CreateOne(context.Context, mongo.IndexModel, ...*options.CreateIndexesOptions) (string, error)
+	DropAll(context.Context, ...*options.DropIndexesOptions) (bson.Raw, error)
+	DropOne(context.Context, string, ...*options.DropIndexesOptions) (bson.Raw, error)
+	List(context.Context, ...*options.ListIndexesOptions) (ICursor, error)
 }
