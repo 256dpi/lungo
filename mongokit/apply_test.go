@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -15,12 +16,16 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, in
 		coll := testCollection()
 
 		fn(func(update bson.M, result interface{}) {
-			res, err := coll.InsertOne(nil, doc)
-			assert.NoError(t, err)
+			var query bson.M
+			if !upsert {
+				res, err := coll.InsertOne(nil, doc)
+				assert.NoError(t, err)
+				query = bson.M{
+					"_id": res.InsertedID,
+				}
+			}
 
-			n, err := coll.UpdateOne(nil, bson.M{
-				"_id": res.InsertedID,
-			}, update)
+			n, err := coll.UpdateOne(nil, query, update, options.Update().SetUpsert(upsert))
 			if _, ok := result.(string); ok {
 				assert.Error(t, err, update)
 				assert.Nil(t, n, update)
@@ -28,9 +33,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, in
 			}
 
 			var d bson.D
-			err = coll.FindOne(nil, bson.M{
-				"_id": res.InsertedID,
-			}).Decode(&d)
+			err = coll.FindOne(nil, query).Decode(&d)
 			assert.NoError(t, err)
 			err = bsonkit.Unset(&d, "_id")
 			assert.NoError(t, err)
@@ -137,7 +140,60 @@ func TestApplySet(t *testing.T) {
 	})
 }
 
-// TODO: Test $setOnInsert
+func TestApplySetOnInsert(t *testing.T) {
+	// update
+	applyTest(t, false, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// replace value
+		fn(bson.M{
+			"$setOnInsert": bson.M{
+				"foo": "baz",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": "bar",
+		}))
+
+		// add value
+		fn(bson.M{
+			"$setOnInsert": bson.M{
+				"quz": bson.M{
+					"qux": int32(42),
+				},
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": "bar",
+		}))
+	})
+
+	// upsert
+	applyTest(t, true, nil, func(fn func(bson.M, interface{})) {
+		// replace value
+		fn(bson.M{
+			"$setOnInsert": bson.M{
+				"foo": "baz",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": "baz",
+		}))
+	})
+
+	// upsert
+	applyTest(t, true, nil, func(fn func(bson.M, interface{})) {
+		// add value
+		fn(bson.M{
+			"$setOnInsert": bson.M{
+				"quz": bson.M{
+					"qux": int32(42),
+				},
+			},
+		}, bsonkit.Convert(bson.M{
+			"quz": bson.M{
+				"qux": int32(42),
+			},
+		}))
+	})
+}
 
 func TestApplyUnset(t *testing.T) {
 	applyTest(t, false, bson.M{
