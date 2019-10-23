@@ -29,12 +29,10 @@ func Process(ctx *Context, doc bsonkit.Doc, query bson.D, root bool) error {
 }
 
 func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E, root bool) error {
-	// force top level operators if there are no expression operators
-	force := len(ctx.Expression) == 0
-
 	// check for top level operators which may appear together with field
-	// expressions in the document
-	if force || (len(pair.Key) > 0 && pair.Key[0] == '$') {
+	// expressions in the document, or force top level operators if there are
+	// no expression operators
+	if (len(pair.Key) > 0 && pair.Key[0] == '$') || len(ctx.Expression) == 0 {
 		// lookup top level operator
 		var operator Operator
 		if root {
