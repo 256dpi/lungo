@@ -319,6 +319,8 @@ const maxPreciseFloat64 = int64(1 << 53)
 const maxMagnitude = float64(2 << 63)
 
 func compareInt64ToFloat64(l int64, r float64) int {
+	// TODO: Check algorithm.
+
 	// NaN value are always smaller
 	if math.IsNaN(r) {
 		return 1
