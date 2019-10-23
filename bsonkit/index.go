@@ -35,21 +35,27 @@ type Index struct {
 }
 
 func NewIndex(unique bool, columns []Column) *Index {
-	// create index
-	index := &Index{
+	return (&Index{
 		Unique:  unique,
 		Columns: columns,
-	}
+	}).Prepare(nil)
+}
 
+func (i *Index) Prepare(list List) *Index {
 	// create btree
-	index.btree = btree.New(64, index)
+	i.btree = btree.New(64, i)
 
 	// create sentinel
-	index.sentinel = &entry{
+	i.sentinel = &entry{
 		set: NewSet(make(List, 1)),
 	}
 
-	return index
+	// add documents
+	for _, doc := range list {
+		i.Add(doc)
+	}
+
+	return i
 }
 
 func (i *Index) Add(doc Doc) bool {
