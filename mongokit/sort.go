@@ -13,8 +13,6 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 
 	// prepare columns
 	columns := make([]bsonkit.Column, 0, len(*doc))
-
-	// parse sort document
 	for _, exp := range *doc {
 		// get direction
 		var direction int
