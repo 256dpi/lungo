@@ -93,17 +93,24 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	// prepare list
 	list := make(bsonkit.List, 0, len(e.data.Namespaces))
 
-	// TODO: Add more collection infos.
-
 	// add documents
-	for ns := range e.data.Namespaces {
-		if strings.HasPrefix(ns, db+".") {
+	for _, ns := range e.data.Namespaces {
+		if strings.HasPrefix(ns.Name, db+".") {
 			list = append(list, &bson.D{
-				bson.E{Key: "name", Value: strings.TrimPrefix(ns, db)[1:]},
+				bson.E{Key: "name", Value: strings.TrimPrefix(ns.Name, db)[1:]},
 				bson.E{Key: "type", Value: "collection"},
 				bson.E{Key: "options", Value: bson.D{}},
 				bson.E{Key: "info", Value: bson.D{
+					bson.E{Key: "uuid", Value: ns.Name},
 					bson.E{Key: "readOnly", Value: false},
+				}},
+				bson.E{Key: "idIndex", Value: bson.D{
+					bson.E{Key: "v", Value: 2},
+					bson.E{Key: "key", Value: bson.D{
+						bson.E{Key: "_id", Value: 1},
+					}},
+					bson.E{Key: "name", Value: "_id_"},
+					bson.E{Key: "ns", Value: ns.Name},
 				}},
 			})
 		}
