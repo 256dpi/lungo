@@ -6,6 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 type IndexView struct {
@@ -67,8 +69,26 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 		// TODO: Support PartialFilterExpression.
 	}
 
+	// transform keys
+	keys, err := bsonkit.Transform(index.Keys)
+	if err != nil {
+		return "", err
+	}
+
+	// get name
+	var name string
+	if index.Options != nil && index.Options.Name != nil {
+		name = *index.Options.Name
+	}
+
+	// get unique
+	var unique bool
+	if index.Options != nil && index.Options.Unique != nil {
+		unique = *index.Options.Unique
+	}
+
 	// create index
-	name, err := v.client.engine.CreateIndex(v.ns, index)
+	name, err = v.client.engine.CreateIndex(v.ns, keys, name, unique)
 	if err != nil {
 		return "", err
 	}

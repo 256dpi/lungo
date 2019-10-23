@@ -3,12 +3,12 @@ package lungo
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -641,21 +641,165 @@ func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	return nil, nil
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return nil, fmt.Errorf("missing namespace %q", ns)
+	}
+
+	// get namespace
+	namespace := e.data.Namespaces[ns]
+
+	// prepare list
+	var list bsonkit.List
+	for name, index := range namespace.Indexes {
+		// prepare key
+		var key bson.D
+		for _, column := range index.Columns {
+			// get direction
+			direction := 1
+			if column.Reverse {
+				direction = -1
+			}
+
+			// add element
+			key = append(key, bson.E{
+				Key:   column.Path,
+				Value: direction,
+			})
+		}
+
+		// create spec
+		spec := bson.D{
+			bson.E{Key: "v", Value: 2},
+			bson.E{Key: "key", Value: key},
+			bson.E{Key: "name", Value: name},
+			bson.E{Key: "ns", Value: ns},
+		}
+
+		// add uniqueness
+		if index.Unique && name != "_id_" {
+			spec = append(spec, bson.E{Key: "unique", Value: true})
+		}
+
+		// add specification
+		list = append(list, &spec)
+	}
+
+	// sort list
+	bsonkit.Sort(list, []bsonkit.Column{
+		{Path: "name"},
+	})
+
+	return list, nil
 }
 
-func (e *Engine) CreateIndex(ns string, model mongo.IndexModel) (string, error) {
+func (e *Engine) CreateIndex(ns string, keys bsonkit.Doc, name string, unique bool) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	return "", nil
+	// get columns
+	columns, err := mongokit.Columns(keys)
+	if err != nil {
+		return "", err
+	}
+
+	// generate name if missing
+	if name == "" {
+		segments := make([]string, 0, len(columns)*2)
+		for _, column := range columns {
+			var dir = 1
+			if column.Reverse {
+				dir = -1
+			}
+			segments = append(segments, column.Path, strconv.Itoa(dir))
+		}
+		name = strings.Join(segments, "_")
+	}
+
+	// clone data
+	clone := e.data.Clone()
+
+	// TODO: Prevent other indexes from being cloned?
+
+	// create or clone namespace
+	var namespace *Namespace
+	if clone.Namespaces[ns] == nil {
+		namespace = NewNamespace(ns)
+		clone.Namespaces[ns] = namespace
+	} else {
+		namespace = clone.Namespaces[ns].Clone()
+		clone.Namespaces[ns] = namespace
+	}
+
+	// create index
+	index := bsonkit.NewIndex(unique, columns)
+	namespace.Indexes[name] = index
+
+	// fill index
+	for _, doc := range namespace.Documents.List {
+		if !index.Add(doc) {
+			return "", fmt.Errorf("duplicate document for index %q", name)
+		}
+	}
+
+	// write data
+	err = e.store.Store(clone)
+	if err != nil {
+		return "", err
+	}
+
+	// set new data
+	e.data = clone
+
+	return name, nil
 }
 
 func (e *Engine) DropIndex(ns, name string) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check namespace
+	if e.data.Namespaces[ns] == nil {
+		return fmt.Errorf("missing namespace %q", ns)
+	}
+
+	// clone data
+	clone := e.data.Clone()
+
+	// clone namespace
+	namespace := clone.Namespaces[ns].Clone()
+	clone.Namespaces[ns] = namespace
+
+	// delete single index
+	if name != "*" {
+		// check existence
+		if _, ok := namespace.Indexes[name]; !ok {
+			return fmt.Errorf("missing index %q", ns)
+		}
+
+		// drop index
+		delete(namespace.Indexes, name)
+	}
+
+	// delete all indexes
+	if name == "*" {
+		for name := range namespace.Indexes {
+			if name != "_id_" {
+				delete(namespace.Indexes, name)
+			}
+		}
+	}
+
+	// write data
+	err := e.store.Store(clone)
+	if err != nil {
+		return err
+	}
+
+	// set new data
+	e.data = clone
 
 	return nil
 }

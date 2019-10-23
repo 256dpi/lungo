@@ -533,7 +533,12 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 }
 
 func (c *Collection) Indexes() IIndexView {
-	panic("lungo: not implemented")
+	return &IndexView{
+		ns:     c.ns,
+		coll:   c,
+		db:     c.db,
+		client: c.client,
+	}
 }
 
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
