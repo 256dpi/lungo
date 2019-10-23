@@ -9,9 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bsonelement.cpp
-// https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bsonobj.cpp
-
 func Compare(lv, rv interface{}) int {
 	// get types
 	lt := Inspect(lv)
@@ -272,8 +269,6 @@ func compareRegexes(lv, rv interface{}) int {
 	return ret
 }
 
-// https://github.com/mongodb/mongo/blob/master/src/mongo/base/compare_numbers.h
-
 func compareInt32s(l int32, r int32) int {
 	if l == r {
 		return 0
@@ -315,13 +310,15 @@ func compareFloat64s(l float64, r float64) int {
 	return 1
 }
 
-const maxPreciseFloat64 = int64(1 << 53)
-const maxMagnitude = float64(2 << 63)
-
 func compareInt64ToFloat64(l int64, r float64) int {
-	// TODO: Check algorithm.
+	// see the official mongodb implementation for details:
+	// https://github.com/mongodb/mongo/blob/master/src/mongo/base/compare_numbers.h#L79
 
-	// NaN value are always smaller
+	// define constants
+	const maxPreciseFloat64 = int64(1 << 53)
+	const boundOfLongRange = float64(2 << 63)
+
+	// non-numbers are always smaller
 	if math.IsNaN(r) {
 		return 1
 	}
@@ -331,10 +328,10 @@ func compareInt64ToFloat64(l int64, r float64) int {
 		return compareFloat64s(float64(l), r)
 	}
 
-	// large magnitude doubles (including +/- Inf) are strictly > or < all Longs.
-	if r >= maxMagnitude {
+	// large doubles (including +/- Inf) are strictly > or < all Longs.
+	if r >= boundOfLongRange {
 		return -1
-	} else if r < -maxMagnitude {
+	} else if r < -boundOfLongRange {
 		return 1
 	}
 
