@@ -3,8 +3,8 @@ package bsonkit
 import "sort"
 
 type Column struct {
-	Path    string
-	Reverse bool
+	Path    string `bson:"path"`
+	Reverse bool   `bson:"reverse"`
 }
 
 func Sort(list List, columns []Column) {
