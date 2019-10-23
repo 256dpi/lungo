@@ -12,9 +12,7 @@ import (
 
 // TODO: Support array update operators.
 
-type UpdateOperator func(bsonkit.Doc, string, interface{}, bool) error
-
-var FieldUpdateOperators = map[string]UpdateOperator{}
+var FieldUpdateOperators = map[string]Operator{}
 
 func init() {
 	// register field update operators
@@ -27,61 +25,62 @@ func init() {
 	FieldUpdateOperators["$max"] = applyMax
 	FieldUpdateOperators["$min"] = applyMin
 	FieldUpdateOperators["$currentDate"] = applyCurrentDate
+
+	// wrap all operators
+	for name, operator := range FieldUpdateOperators {
+		FieldUpdateOperators[name] = applyAll(name, operator)
+	}
 }
 
 func Apply(doc, update bsonkit.Doc, upsert bool) error {
-	// process all expressions
-	for _, exp := range *update {
-		// check operator validity
-		if len(exp.Key) == 0 || exp.Key[0] != '$' {
-			return fmt.Errorf("apply: expected operator, got %q", exp.Key)
-		}
+	// update document according to update
+	return Process(&Context{
+		Upsert:   upsert,
+		TopLevel: FieldUpdateOperators,
+	}, doc, *update, true)
+}
 
-		// lookup operator
-		operator := FieldUpdateOperators[exp.Key]
-		if operator == nil {
-			return fmt.Errorf("apply: unknown operator %q", exp.Key)
-		}
-
+func applyAll(name string, operator Operator) Operator {
+	return func(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 		// get object
-		obj, ok := exp.Value.(bson.D)
+		obj, ok := v.(bson.D)
 		if !ok {
-			return fmt.Errorf("apply: operator expected document")
+			return fmt.Errorf("%s: expected document", name)
 		}
 
 		// call operator for each pair
 		for _, pair := range obj {
-			err := operator(doc, pair.Key, pair.Value, upsert)
+			err := operator(ctx, doc, pair.Key, pair.Value)
 			if err != nil {
 				return err
 			}
 		}
-	}
 
-	return nil
+		return nil
+	}
 }
 
-func applySet(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applySet(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func applySetOnInsert(doc bsonkit.Doc, path string, v interface{}, upsert bool) error {
-	if upsert {
+func applySetOnInsert(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+	if ctx.Upsert {
 		return bsonkit.Put(doc, path, v, false)
 	}
 
 	return nil
 }
 
-func applyUnset(doc bsonkit.Doc, path string, _ interface{}, _ bool) error {
+func applyUnset(ctx *Context, doc bsonkit.Doc, path string, _ interface{}) error {
 	return bsonkit.Unset(doc, path)
 }
 
-func applyRename(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyRename(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	// get new path
 	newPath, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("apply: $rename: expected string")
+		return fmt.Errorf("$rename: expected string")
 	}
 
 	// get old value
@@ -102,15 +101,15 @@ func applyRename(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	return nil
 }
 
-func applyInc(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyInc(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return bsonkit.Increment(doc, path, v)
 }
 
-func applyMul(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyMul(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return bsonkit.Multiply(doc, path, v)
 }
 
-func applyMax(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyMax(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
@@ -128,7 +127,7 @@ func applyMax(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	return nil
 }
 
-func applyMin(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyMin(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
@@ -146,7 +145,7 @@ func applyMin(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
 	return nil
 }
 
-func applyCurrentDate(doc bsonkit.Doc, path string, v interface{}, _ bool) error {
+func applyCurrentDate(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	// check if boolean
 	value, ok := v.(bool)
 	if ok {
@@ -161,12 +160,12 @@ func applyCurrentDate(doc bsonkit.Doc, path string, v interface{}, _ bool) error
 	// coerce object
 	obj, ok := v.(bson.D)
 	if !ok {
-		return fmt.Errorf("apply: $currentDate: expected boolean or document")
+		return fmt.Errorf("$currentDate: expected boolean or document")
 	}
 
 	// check object
 	if len(obj) > 1 || obj[0].Key != "$type" {
-		return fmt.Errorf("apply: $currentDate: expected document with a single $type field")
+		return fmt.Errorf("$currentDate: expected document with a single $type field")
 	}
 
 	// set date or timestamp
@@ -176,6 +175,6 @@ func applyCurrentDate(doc bsonkit.Doc, path string, v interface{}, _ bool) error
 	case "timestamp":
 		return bsonkit.Put(doc, path, bsonkit.Generate(), false)
 	default:
-		return fmt.Errorf("apply: $currentDate: expected $type 'date' or 'timestamp'")
+		return fmt.Errorf("$currentDate: expected $type 'date' or 'timestamp'")
 	}
 }

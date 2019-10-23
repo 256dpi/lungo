@@ -78,17 +78,17 @@ func TestApplyUpdateComposition(t *testing.T) {
 		// not an operator
 		fn(bson.M{
 			"foo": "bar",
-		}, `apply: expected operator, got "foo"`)
+		}, `unknown top level operator "foo"`)
 
 		// unknown operator
 		fn(bson.M{
 			"$foo": "bar",
-		}, `apply: unknown operator "$foo"`)
+		}, `unknown top level operator "$foo"`)
 
 		// missing document
 		fn(bson.M{
 			"$set": "bar",
-		}, "apply: operator expected document")
+		}, "$set: expected document")
 
 		// empty document
 		fn(bson.M{
@@ -348,7 +348,7 @@ func TestApplyCurrentDate(t *testing.T) {
 			"$currentDate": bson.M{
 				"foo": "baz",
 			},
-		}, "apply: $currentDate: expected boolean or document")
+		}, "$currentDate: expected boolean or document")
 
 		// invalid document
 		fn(bson.M{
@@ -357,7 +357,7 @@ func TestApplyCurrentDate(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-		}, "apply: $currentDate: expected document with a single $type field")
+		}, "$currentDate: expected document with a single $type field")
 
 		// invalid type
 		fn(bson.M{
@@ -366,7 +366,7 @@ func TestApplyCurrentDate(t *testing.T) {
 					"$type": "foo",
 				},
 			},
-		}, "apply: $currentDate: expected $type 'date' or 'timestamp'")
+		}, "$currentDate: expected $type 'date' or 'timestamp'")
 
 		// set date
 		fn(bson.M{
