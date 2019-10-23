@@ -29,17 +29,17 @@ func (d *Data) Prepare() *Data {
 }
 
 func (d *Data) Clone() *Data {
-	// create new data
-	data := &Data{
+	// create clone
+	clone := &Data{
 		Namespaces: map[string]*Namespace{},
 	}
 
 	// copy namespaces
 	for name, namespace := range d.Namespaces {
-		data.Namespaces[name] = namespace
+		clone.Namespaces[name] = namespace
 	}
 
-	return data
+	return clone
 }
 
 type Namespace struct {
