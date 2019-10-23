@@ -65,7 +65,7 @@ func TestMatchQueryComposition(t *testing.T) {
 			"$cool": bson.A{
 				bson.M{"foo": "bar"},
 			},
-		}, `match: unknown top level operator "$cool"`)
+		}, `unknown top level operator "$cool"`)
 
 		// top level operator with field condition
 		fn(bson.M{
@@ -117,14 +117,14 @@ func TestMatchQueryComposition(t *testing.T) {
 				bson.E{Key: "$eq", Value: "bar"},
 				bson.E{Key: "bar", Value: "baz"},
 			},
-		}, `match: expected operator, got "bar"`)
+		}, `expected operator, got "bar"`)
 
 		// unknown expression operator
 		fn(bson.M{
 			"foo": bson.D{
 				bson.E{Key: "$cool", Value: "bar"},
 			},
-		}, `match: unknown operator "$cool"`)
+		}, `unknown expression operator "$cool"`)
 
 		// nested top level operator
 		fn(bson.M{
@@ -133,7 +133,7 @@ func TestMatchQueryComposition(t *testing.T) {
 					bson.M{},
 				},
 			},
-		}, `match: unknown operator "$and"`)
+		}, `unknown expression operator "$and"`)
 	})
 }
 
@@ -254,12 +254,12 @@ func TestMatchNot(t *testing.T) {
 		// no document
 		fn(bson.M{
 			"foo": bson.M{"$not": ""},
-		}, "match: $not: expected document")
+		}, "$not: expected document")
 
 		// empty document
 		fn(bson.M{
 			"foo": bson.M{"$not": bson.M{}},
-		}, "match: $not: empty document")
+		}, "$not: empty document")
 
 		// empty list
 		fn(bson.M{
@@ -290,7 +290,7 @@ func TestMatchIn(t *testing.T) {
 		// missing list
 		fn(bson.M{
 			"foo": bson.M{"$in": ""},
-		}, "match: $in: expected list")
+		}, "$in: expected list")
 
 		// empty list
 		fn(bson.M{
@@ -317,7 +317,7 @@ func TestMatchNin(t *testing.T) {
 		// missing list
 		fn(bson.M{
 			"foo": bson.M{"$nin": ""},
-		}, "match: $nin: expected list")
+		}, "$nin: expected list")
 
 		// empty list
 		fn(bson.M{
