@@ -12,9 +12,12 @@ import (
 )
 
 type IClient interface {
+	Connect(context.Context) error
 	Database(string, ...*options.DatabaseOptions) IDatabase
+	Disconnect(context.Context) error
 	ListDatabaseNames(context.Context, interface{}, ...*options.ListDatabasesOptions) ([]string, error)
 	ListDatabases(context.Context, interface{}, ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error)
+	Ping(context.Context, *readpref.ReadPref) error
 	StartSession(...*options.SessionOptions) (mongo.Session, error)
 	UseSession(context.Context, func(mongo.SessionContext) error) error
 	UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error

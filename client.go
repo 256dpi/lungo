@@ -5,6 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -27,6 +28,10 @@ func Open(ctx context.Context, store Store) (IClient, error) {
 	}, nil
 }
 
+func (c *Client) Connect(context.Context) error {
+	return nil
+}
+
 func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
 	// merge options
 	opt := options.MergeDatabaseOptions(opts...)
@@ -38,6 +43,10 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 		name:   name,
 		client: c,
 	}
+}
+
+func (c *Client) Disconnect(context.Context) error {
+	return nil
 }
 
 func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
@@ -95,6 +104,10 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	}
 
 	return result, nil
+}
+
+func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
+	return nil
 }
 
 func (c *Client) StartSession(...*options.SessionOptions) (mongo.Session, error) {
