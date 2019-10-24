@@ -75,6 +75,23 @@ func TestCollectionDatabase(t *testing.T) {
 }
 
 func TestCollectionDeleteMany(t *testing.T) {
+	// missing database
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		res, err := c.DeleteMany(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, &mongo.DeleteResult{}, res)
+	})
+
+	// missing collection
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		res, err := d.Collection("not-existing").DeleteMany(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, &mongo.DeleteResult{}, res)
+	})
+
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
@@ -130,6 +147,23 @@ func TestCollectionDeleteMany(t *testing.T) {
 }
 
 func TestCollectionDeleteOne(t *testing.T) {
+	// missing database
+	clientTest(t, func(t *testing.T, client IClient) {
+		c := client.Database("not-existing").Collection("not-existing")
+		res, err := c.DeleteOne(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, &mongo.DeleteResult{}, res)
+	})
+
+	// missing collection
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		res, err := d.Collection("not-existing").DeleteOne(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, &mongo.DeleteResult{}, res)
+	})
+
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id := primitive.NewObjectID()
 

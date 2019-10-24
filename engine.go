@@ -542,7 +542,7 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return nil, nil
+		return &Result{}, nil
 	}
 
 	// get documents
