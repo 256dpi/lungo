@@ -22,8 +22,8 @@ func init() {
 
 	// register top level query operators matchers
 	TopLevelQueryOperators["$and"] = matchAnd
-	TopLevelQueryOperators["$nor"] = matchNor
 	TopLevelQueryOperators["$or"] = matchOr
+	TopLevelQueryOperators["$nor"] = matchNor
 
 	// register expression query operators
 	ExpressionQueryOperators[""] = matchComp
@@ -84,40 +84,6 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) erro
 	return nil
 }
 
-func matchNor(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
-	// get array
-	list, ok := v.(bson.A)
-	if !ok {
-		return fmt.Errorf("%s: expected list", name)
-	}
-
-	// check list
-	if len(list) == 0 {
-		return fmt.Errorf("%s: empty list", name)
-	}
-
-	// match first item
-	for _, item := range list {
-		// coerce item
-		query, ok := item.(bson.D)
-		if !ok {
-			return fmt.Errorf("%s: expected list of documents", name)
-		}
-
-		// match document
-		err := Process(ctx, doc, query, false)
-		if err == ErrNotMatched {
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		return ErrNotMatched
-	}
-
-	return nil
-}
-
 func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
@@ -150,6 +116,12 @@ func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error
 	}
 
 	return ErrNotMatched
+}
+
+func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	return matchNegate(func() error {
+		return matchOr(ctx, doc, name, path, v)
+	})
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {

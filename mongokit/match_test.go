@@ -137,6 +137,255 @@ func TestMatchQueryComposition(t *testing.T) {
 	})
 }
 
+func TestMatchAnd(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": true,
+	}, func(fn func(bson.M, interface{})) {
+		// no array
+		fn(bson.M{
+			"$and": nil,
+		}, "$and: expected list")
+
+		// empty array
+		fn(bson.M{
+			"$and": bson.A{},
+		}, "$and: empty list")
+
+		// match single
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "baz",
+				},
+			},
+		}, false)
+
+		// match multiple
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, false)
+	})
+}
+
+func TestMatchOr(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": true,
+	}, func(fn func(bson.M, interface{})) {
+		// no array
+		fn(bson.M{
+			"$or": nil,
+		}, "$or: expected list")
+
+		// empty array
+		fn(bson.M{
+			"$or": bson.A{},
+		}, "$or: empty list")
+
+		// match single
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "baz",
+				},
+			},
+		}, false)
+
+		// match multiple
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, true)
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, false)
+	})
+}
+
+func TestMatchNor(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": true,
+	}, func(fn func(bson.M, interface{})) {
+		// no array
+		fn(bson.M{
+			"$nor": nil,
+		}, "$nor: expected list")
+
+		// empty array
+		fn(bson.M{
+			"$nor": bson.A{},
+		}, "$nor: empty list")
+
+		// match single
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "baz",
+				},
+			},
+		}, true)
+
+		// match multiple
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": true,
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"foo": "foo",
+				},
+				bson.M{
+					"bar": bson.M{
+						"$eq": false,
+					},
+				},
+			},
+		}, true)
+	})
+}
+
 func TestMatchEq(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
