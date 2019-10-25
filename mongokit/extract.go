@@ -105,11 +105,11 @@ func extractOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error 
 	return nil
 }
 
-func extractEq(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func extractEq(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func extractIn(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func extractIn(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {

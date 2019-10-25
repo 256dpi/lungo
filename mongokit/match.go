@@ -149,7 +149,7 @@ func matchOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	return ErrNotMatched
 }
 
-func matchComp(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
+func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 	// rewrite op
 	if op == "" {
 		op = "$eq"
@@ -227,7 +227,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 	return ErrNotMatched
 }
 
-func matchIn(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func matchIn(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -260,7 +260,7 @@ func matchIn(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	return ErrNotMatched
 }
 
-func matchNin(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func matchNin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -291,7 +291,7 @@ func matchNin(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 	return nil
 }
 
-func matchExists(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func matchExists(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get boolean
 	exists, ok := v.(bool)
 	if !ok {
