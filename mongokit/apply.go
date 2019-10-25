@@ -86,6 +86,9 @@ func applyRename(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) err
 
 	// get old value
 	value := bsonkit.Get(doc, path)
+	if value == bsonkit.Missing {
+		return nil
+	}
 
 	// unset old value
 	bsonkit.Unset(doc, path)

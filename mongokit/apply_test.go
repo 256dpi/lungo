@@ -245,6 +245,17 @@ func TestApplyRename(t *testing.T) {
 				"bar": "baz",
 			},
 		}))
+
+		// rename missing
+		fn(bson.M{
+			"$rename": bson.M{
+				"baz": "quz",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.M{
+				"bar": "baz",
+			},
+		}))
 	})
 }
 
