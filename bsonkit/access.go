@@ -12,6 +12,8 @@ type MissingType struct{}
 
 var Missing = MissingType{}
 
+var unsetValue interface{} = struct{}{}
+
 func Get(doc Doc, path string) interface{} {
 	return get(*doc, strings.Split(path, "."))
 }
@@ -58,6 +60,12 @@ func Put(doc Doc, path string, value interface{}, prepend bool) error {
 	return nil
 }
 
+func Unset(doc Doc, path string) {
+	_ = put(*doc, strings.Split(path, "."), unsetValue, false, func(v interface{}) {
+		*doc = v.(bson.D)
+	})
+}
+
 func put(v interface{}, path []string, value interface{}, prepend bool, set func(interface{})) bool {
 	// check path
 	if len(path) == 0 {
@@ -75,9 +83,18 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		for i, el := range doc {
 			if el.Key == path[0] {
 				return put(doc[i].Value, path[1:], value, prepend, func(v interface{}) {
-					doc[i].Value = v
+					if v == unsetValue {
+						set(append(doc[:i], doc[i+1:]...))
+					} else {
+						doc[i].Value = v
+					}
 				})
 			}
+		}
+
+		// check if unset
+		if value == unsetValue {
+			return true
 		}
 
 		// capture value
@@ -109,12 +126,21 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		// update existing element
 		if index < len(arr) {
 			return put(arr[index], path[1:], value, prepend, func(v interface{}) {
-				arr[index] = v
+				if v == unsetValue {
+					arr[index] = nil
+				} else {
+					arr[index] = v
+				}
 			})
 		}
 
+		// check if unset
+		if value == unsetValue {
+			return true
+		}
+
 		// fill with nil elements
-		for i:=len(arr); i<index+1;i++ {
+		for i := len(arr); i < index+1; i++ {
 			arr = append(arr, nil)
 		}
 
@@ -129,6 +155,11 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		// set array
 		set(arr)
 
+		return true
+	}
+
+	// check if unset
+	if value == unsetValue {
 		return true
 	}
 
@@ -150,40 +181,6 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 	}
 
 	return false
-}
-
-func Unset(doc Doc, path string) error {
-	return unset(doc, strings.Split(path, "."))
-}
-
-func unset(doc Doc, path []string) error {
-	// search for element
-	for i, el := range *doc {
-		if el.Key == path[0] {
-			// delete element
-			if len(path) == 1 {
-				*doc = append((*doc)[:i], (*doc)[i+1:]...)
-				return nil
-			}
-
-			// check if doc
-			if d, ok := el.Value.(bson.D); ok {
-				err := unset(&d, path[1:])
-				if err != nil {
-					return err
-				}
-
-				// update value
-				(*doc)[i].Value = d
-
-				return nil
-			}
-
-			return fmt.Errorf("cannot unset field in %+v", el.Value)
-		}
-	}
-
-	return nil
 }
 
 func Increment(doc Doc, path string, increment interface{}) error {

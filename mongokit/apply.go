@@ -73,7 +73,8 @@ func applySetOnInsert(ctx *Context, doc bsonkit.Doc, _, path string, v interface
 }
 
 func applyUnset(_ *Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
-	return bsonkit.Unset(doc, path)
+	bsonkit.Unset(doc, path)
+	return nil
 }
 
 func applyRename(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
@@ -87,13 +88,10 @@ func applyRename(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) err
 	value := bsonkit.Get(doc, path)
 
 	// unset old value
-	err := bsonkit.Unset(doc, path)
-	if err != nil {
-		return err
-	}
+	bsonkit.Unset(doc, path)
 
 	// set new value
-	err = bsonkit.Put(doc, newPath, value, false)
+	err := bsonkit.Put(doc, newPath, value, false)
 	if err != nil {
 		return err
 	}

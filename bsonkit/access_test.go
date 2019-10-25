@@ -222,6 +222,14 @@ func TestPutArray(t *testing.T) {
 	err := Put(doc, "foo.-1", 7, false)
 	assert.Error(t, err)
 	assert.Equal(t, "cannot put value at foo.-1", err.Error())
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
 
 	// first element
 	err = Put(doc, "foo.0", 7, false)
@@ -292,9 +300,7 @@ func TestUnset(t *testing.T) {
 	})
 
 	// leaf field
-	err := Unset(doc, "foo.bar.baz.quz")
-	assert.Error(t, err)
-	assert.Equal(t, "cannot unset field in 42", err.Error())
+	Unset(doc, "foo.bar.baz.quz")
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -304,8 +310,7 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// leaf field
-	err = Unset(doc, "foo.bar.baz")
-	assert.NoError(t, err)
+	Unset(doc, "foo.bar.baz")
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
@@ -313,8 +318,7 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// missing field
-	err = Unset(doc, "foo.bar.baz")
-	assert.NoError(t, err)
+	Unset(doc, "foo.bar.baz")
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
@@ -322,9 +326,59 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// top level field
-	err = Unset(doc, "foo")
-	assert.NoError(t, err)
+	Unset(doc, "foo")
 	assert.Equal(t, Convert(bson.M{}), doc)
+}
+
+func TestUnsetArray(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	// negative index
+	Unset(doc, "foo.-1")
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
+
+	// first element
+	Unset(doc, "foo.0")
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			nil,
+			bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
+
+	// second element
+	Unset(doc, "foo.1")
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			nil,
+			nil,
+		},
+	}), doc)
+
+	// missing index
+	Unset(doc, "foo.5")
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			nil,
+			nil,
+		},
+	}), doc)
 }
 
 func TestIncrement(t *testing.T) {
