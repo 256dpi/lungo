@@ -187,7 +187,7 @@ func TestPut(t *testing.T) {
 
 	err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
-	assert.Equal(t, "cannot put value at bar.baz", err.Error())
+	assert.Equal(t, "cannot put value at foo.bar.baz", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
@@ -204,6 +204,80 @@ func TestPut(t *testing.T) {
 			"bar": bson.M{
 				"foo": 42,
 			},
+		},
+	}), doc)
+}
+
+func TestPutArray(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	// negative index
+	err := Put(doc, "foo.-1", 7, false)
+	assert.Error(t, err)
+	assert.Equal(t, "cannot put value at foo.-1", err.Error())
+
+	// first element
+	err = Put(doc, "foo.0", 7, false)
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			7,
+			bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
+
+	// second element
+	err = Put(doc, "foo.1", *Convert(bson.M{
+		"baz": 42,
+	}), false)
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			7,
+			bson.M{
+				"baz": 42,
+			},
+		},
+	}), doc)
+
+	// missing index
+	err = Put(doc, "foo.5", 7, false)
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			7,
+			bson.M{
+				"baz": 42,
+			},
+			nil,
+			nil,
+			nil,
+			7,
+		},
+	}), doc)
+
+	// nested field
+	err = Put(doc, "foo.1.baz", 7, false)
+	assert.NoError(t, err)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{
+			7,
+			bson.M{
+				"baz": 7,
+			},
+			nil,
+			nil,
+			nil,
+			7,
 		},
 	}), doc)
 }

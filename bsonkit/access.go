@@ -48,65 +48,108 @@ func get(v interface{}, path []string) interface{} {
 }
 
 func Put(doc Doc, path string, value interface{}, prepend bool) error {
-	return put(doc, strings.Split(path, "."), value, prepend)
-}
-
-func put(doc Doc, path []string, value interface{}, prepend bool) error {
-	// search for element
-	for i, el := range *doc {
-		if el.Key == path[0] {
-			// replace value
-			if len(path) == 1 {
-				(*doc)[i].Value = value
-				return nil
-			}
-
-			// check if doc
-			if d, ok := el.Value.(bson.D); ok {
-				err := put(&d, path[1:], value, prepend)
-				if err != nil {
-					return err
-				}
-
-				// update value
-				(*doc)[i].Value = d
-
-				return nil
-			}
-
-			return fmt.Errorf("cannot put value at %s", strings.Join(path, "."))
-		}
-	}
-
-	// add intermediary element
-	if len(path) > 1 {
-		// prepare object
-		d := bson.D{}
-		err := put(&d, path[1:], value, prepend)
-		if err != nil {
-			return err
-		}
-
-		// add object
-		e := bson.E{Key: path[0], Value: d}
-		if prepend {
-			*doc = append(bson.D{e}, *doc...)
-		} else {
-			*doc = append(*doc, e)
-		}
-
-		return nil
-	}
-
-	// add final element
-	e := bson.E{Key: path[0], Value: value}
-	if prepend {
-		*doc = append(bson.D{e}, *doc...)
-	} else {
-		*doc = append(*doc, e)
+	ok := put(*doc, strings.Split(path, "."), value, prepend, func(v interface{}) {
+		*doc = v.(bson.D)
+	})
+	if !ok {
+		return fmt.Errorf("cannot put value at %s", path)
 	}
 
 	return nil
+}
+
+func put(v interface{}, path []string, value interface{}, prepend bool, set func(interface{})) bool {
+	// check path
+	if len(path) == 0 {
+		set(value)
+		return true
+	}
+
+	// check if empty
+	if path[0] == "" {
+		return false
+	}
+
+	// put document field
+	if doc, ok := v.(bson.D); ok {
+		for i, el := range doc {
+			if el.Key == path[0] {
+				return put(doc[i].Value, path[1:], value, prepend, func(v interface{}) {
+					doc[i].Value = v
+				})
+			}
+		}
+
+		// capture value
+		e := bson.E{Key: path[0]}
+		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
+			e.Value = v
+		})
+		if !ok {
+			return false
+		}
+
+		// set appended/prepended document
+		if prepend {
+			set(append(bson.D{e}, doc...))
+		} else {
+			set(append(doc, e))
+		}
+
+		return true
+	}
+
+	// put array element
+	if arr, ok := v.(bson.A); ok {
+		index, err := strconv.Atoi(path[0])
+		if err != nil || index < 0 {
+			return false
+		}
+
+		// update existing element
+		if index < len(arr) {
+			return put(arr[index], path[1:], value, prepend, func(v interface{}) {
+				arr[index] = v
+			})
+		}
+
+		// fill with nil elements
+		for i:=len(arr); i<index+1;i++ {
+			arr = append(arr, nil)
+		}
+
+		// put in last element
+		ok := put(arr[index], path[1:], value, prepend, func(v interface{}) {
+			arr[index] = v
+		})
+		if !ok {
+			return false
+		}
+
+		// set array
+		set(arr)
+
+		return true
+	}
+
+	// put new document
+	if v == Missing {
+		// capture value
+		e := bson.E{Key: path[0]}
+		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
+			e.Value = v
+		})
+		if !ok {
+			return false
+		}
+
+		// set document
+		set(bson.D{e})
+
+		return true
+	}
+
+	return false
 }
 
 func Unset(doc Doc, path string) error {
