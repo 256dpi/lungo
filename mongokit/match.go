@@ -3,6 +3,7 @@ package mongokit
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -53,16 +54,16 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	return true, nil
 }
 
-func matchAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
+func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$and: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list
 	if len(list) == 0 {
-		return fmt.Errorf("$and: empty list")
+		return fmt.Errorf("%s: empty list", name)
 	}
 
 	// match all expressions
@@ -70,7 +71,7 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("$and: expected list of documents")
+			return fmt.Errorf("%s: expected list of documents", name)
 		}
 
 		// match document
@@ -83,16 +84,16 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	return nil
 }
 
-func matchNor(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
+func matchNor(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$nor: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list
 	if len(list) == 0 {
-		return fmt.Errorf("$and: empty list")
+		return fmt.Errorf("%s: empty list", name)
 	}
 
 	// match first item
@@ -100,7 +101,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("$nor: expected list of documents")
+			return fmt.Errorf("%s: expected list of documents", name)
 		}
 
 		// match document
@@ -117,16 +118,16 @@ func matchNor(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	return nil
 }
 
-func matchOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
+func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$or: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list
 	if len(list) == 0 {
-		return fmt.Errorf("$and: empty list")
+		return fmt.Errorf("%s: empty list", name)
 	}
 
 	// match first item
@@ -134,82 +135,72 @@ func matchOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("$or: expected list of documents")
+			return fmt.Errorf("%s: expected list of documents", name)
 		}
 
 		// match document
 		err := Process(ctx, doc, query, false)
-		if err != nil {
+		if err == ErrNotMatched {
+			continue
+		} else if err != nil {
 			return err
-		} else {
-			return nil
 		}
+
+		return nil
 	}
 
 	return ErrNotMatched
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-	// rewrite op
-	if op == "" {
-		op = "$eq"
-	}
+	return matchUnwind(doc, path, false, func(path string) error {
+		// get field value
+		field := bsonkit.Get(doc, path)
 
-	// get field value
-	field := bsonkit.Get(doc, path)
-
-	// handle special array field equality
-	if array, ok := field.(bson.A); ok && op == "$eq" {
-		for _, item := range array {
-			if bsonkit.Compare(item, v) == 0 {
-				return nil
-			}
+		// check types (type bracketing)
+		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
+			return ErrNotMatched
 		}
-	}
 
-	// check types (type bracketing)
-	if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
-		return ErrNotMatched
-	}
+		// compare field with value
+		res := bsonkit.Compare(field, v)
 
-	// compare field with value
-	res := bsonkit.Compare(field, v)
+		// check operator
+		var ok bool
+		switch op {
+		case "", "$eq":
+			ok = res == 0
+		case "$gt":
+			ok = res > 0
+		case "$gte":
+			ok = res >= 0
+		case "$lt":
+			ok = res < 0
+		case "$lte":
+			ok = res <= 0
+		case "$ne":
+			ok = res != 0
+		default:
+			return fmt.Errorf("unkown comparison operator %q", op)
+		}
+		if !ok {
+			return ErrNotMatched
+		}
 
-	// check operator
-	var ok bool
-	switch op {
-	case "", "$eq":
-		ok = res == 0
-	case "$gt":
-		ok = res > 0
-	case "$gte":
-		ok = res >= 0
-	case "$lt":
-		ok = res < 0
-	case "$lte":
-		ok = res <= 0
-	case "$ne":
-		ok = res != 0
-	default:
-		return fmt.Errorf("unkown comparison operator %q", op)
-	}
-	if !ok {
-		return ErrNotMatched
-	}
-
-	return nil
+		return nil
+	})
 }
 
-func matchNot(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// coerce item
 	query, ok := v.(bson.D)
 	if !ok {
-		return fmt.Errorf("$not: expected document")
+		return fmt.Errorf("%s: expected document", name)
 	}
 
 	// check document
 	if len(query) == 0 {
-		return fmt.Errorf("$not: empty document")
+		return fmt.Errorf("%s: empty document", name)
 	}
 
 	// match all expressions
@@ -227,75 +218,41 @@ func matchNot(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 	return ErrNotMatched
 }
 
-func matchIn(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	// get array
-	list, ok := v.(bson.A)
-	if !ok {
-		return fmt.Errorf("$in: expected list")
-	}
-
-	// get field value
-	field := bsonkit.Get(doc, path)
-
-	// check if field is in list
-	for _, item := range list {
-		if bsonkit.Compare(field, item) == 0 {
-			return nil
+func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	return matchUnwind(doc, path, false, func(path string) error {
+		// get array
+		list, ok := v.(bson.A)
+		if !ok {
+			return fmt.Errorf("%s: expected list", name)
 		}
-	}
 
-	// check array elements
-	if array, ok := field.(bson.A); ok {
-		for _, entry := range array {
-			for _, item := range list {
-				if bsonkit.Compare(entry, item) == 0 {
-					return nil
-				}
+		// get field value
+		field := bsonkit.Get(doc, path)
+
+		// check if field is in list
+		for _, item := range list {
+			if bsonkit.Compare(field, item) == 0 {
+				return nil
 			}
 		}
-	}
 
-	// TODO: Support regular expressions.
+		// TODO: Support regular expressions.
 
-	return ErrNotMatched
+		return ErrNotMatched
+	})
 }
 
-func matchNin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	// get array
-	list, ok := v.(bson.A)
-	if !ok {
-		return fmt.Errorf("$nin: expected list")
-	}
-
-	// get field value
-	field := bsonkit.Get(doc, path)
-
-	// check if field is not in list
-	for _, item := range list {
-		if bsonkit.Compare(field, item) == 0 {
-			return ErrNotMatched
-		}
-	}
-
-	// check array elements
-	if array, ok := field.(bson.A); ok {
-		for _, entry := range array {
-			for _, item := range list {
-				if bsonkit.Compare(entry, item) == 0 {
-					return ErrNotMatched
-				}
-			}
-		}
-	}
-
-	return nil
+func matchNin(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	return matchNegate(func() error {
+		return matchIn(ctx, doc, name, path, v)
+	})
 }
 
-func matchExists(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get boolean
 	exists, ok := v.(bool)
 	if !ok {
-		return fmt.Errorf("$exists: expected boolean")
+		return fmt.Errorf("%s: expected boolean", name)
 	}
 
 	// get field value
@@ -310,6 +267,46 @@ func matchExists(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) err
 
 	if field == bsonkit.Missing {
 		return nil
+	}
+
+	return ErrNotMatched
+}
+
+func matchUnwind(doc bsonkit.Doc, path string, not bool, op func(string) error) error {
+	// get value
+	value := bsonkit.Get(doc, path)
+	if arr, ok := value.(bson.A); ok {
+		for i := range arr {
+			err := op(path + "." + strconv.Itoa(i))
+			if err == ErrNotMatched {
+				continue
+			} else if err != nil {
+				return err
+			}
+
+			if not {
+				return ErrNotMatched
+			}
+
+			return nil
+		}
+
+		if not {
+			return nil
+		}
+
+		return ErrNotMatched
+	}
+
+	return op(path)
+}
+
+func matchNegate(op func() error) error {
+	err := op()
+	if err == ErrNotMatched {
+		return nil
+	} else if err != nil {
+		return err
 	}
 
 	return ErrNotMatched
