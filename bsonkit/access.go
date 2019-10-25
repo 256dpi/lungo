@@ -22,14 +22,15 @@ func get(v interface{}, path []string) interface{} {
 		return v
 	}
 
+	// check if empty
+	if path[0] == "" {
+		return Missing
+	}
+
 	// get document field
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
 			if el.Key == path[0] {
-				if len(path) == 1 {
-					return el.Value
-				}
-
 				return get(el.Value, path[1:])
 			}
 		}

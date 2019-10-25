@@ -46,6 +46,16 @@ func TestGet(t *testing.T) {
 
 	res = Get(doc, "foo.bar.baz")
 	assert.Equal(t, 42, res)
+
+	// empty path
+
+	res = Get(doc, "")
+	assert.Equal(t, Missing, res)
+
+	// empty sub path
+
+	res = Get(doc, "foo.")
+	assert.Equal(t, Missing, res)
 }
 
 func TestGetArray(t *testing.T) {
