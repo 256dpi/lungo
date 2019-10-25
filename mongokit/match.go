@@ -150,8 +150,22 @@ func matchOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 }
 
 func matchComp(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
+	// rewrite op
+	if op == "" {
+		op = "$eq"
+	}
+
 	// get field value
 	field := bsonkit.Get(doc, path)
+
+	// handle special array field equality
+	if array, ok := field.(bson.A); ok && op == "$eq" {
+		for _, item := range array {
+			if bsonkit.Compare(item, v) == 0 {
+				return nil
+			}
+		}
+	}
 
 	// check types (type bracketing)
 	if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
@@ -160,15 +174,6 @@ func matchComp(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) er
 
 	// compare field with value
 	res := bsonkit.Compare(field, v)
-
-	// handle special array field equality
-	if array, ok := field.(bson.A); ok && op == "$eq" && res != 0 {
-		for _, item := range array {
-			if bsonkit.Compare(item, v) == 0 {
-				return nil
-			}
-		}
-	}
 
 	// check operator
 	var ok bool

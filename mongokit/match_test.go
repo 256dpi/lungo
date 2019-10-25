@@ -194,7 +194,7 @@ func TestMatchEq(t *testing.T) {
 		}, true)
 	})
 
-	// array field
+	// arrays
 	matchTest(t, bson.M{
 		"foo": bson.A{
 			"bar", "baz",
@@ -202,15 +202,34 @@ func TestMatchEq(t *testing.T) {
 		"bar": bson.A{
 			bson.A{"foo", "bar"}, bson.A{"bar", "baz"},
 		},
+		"baz": "quz",
 	}, func(fn func(bson.M, interface{})) {
+		// match element
+		fn(bson.M{
+			"foo": "bar",
+		}, true)
 		fn(bson.M{
 			"foo": bson.M{
-				"$eq": bson.A{
-					"bar", "baz",
-				},
+				"$eq": "bar",
 			},
 		}, true)
+		fn(bson.M{
+			"foo": bson.M{
+				"$eq": "quz",
+			},
+		}, false)
 
+		// match array
+		fn(bson.M{
+			"baz": bson.A{"bar", "quz"},
+		}, false)
+		fn(bson.M{
+			"baz": bson.M{
+				"$eq": bson.A{"bar", "quz"},
+			},
+		}, false)
+
+		// match sub array
 		fn(bson.M{
 			"bar": bson.M{
 				"$eq": bson.A{
@@ -218,6 +237,13 @@ func TestMatchEq(t *testing.T) {
 				},
 			},
 		}, true)
+		fn(bson.M{
+			"bar": bson.M{
+				"$eq": bson.A{
+					"baz", "bar",
+				},
+			},
+		}, false)
 	})
 }
 
