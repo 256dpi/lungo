@@ -119,7 +119,7 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		}
 
 		// put in last element
-		ok := put(arr[index], path[1:], value, prepend, func(v interface{}) {
+		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
 			arr[index] = v
 		})
 		if !ok {
