@@ -125,7 +125,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(path string) error {
+	return matchUnwind(doc, path, func(path string) error {
 		// get field value
 		field := bsonkit.Get(doc, path)
 
@@ -191,7 +191,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(path string) error {
+	return matchUnwind(doc, path, func(path string) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {
@@ -244,7 +244,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	return ErrNotMatched
 }
 
-func matchUnwind(doc bsonkit.Doc, path string, not bool, op func(string) error) error {
+func matchUnwind(doc bsonkit.Doc, path string, op func(string) error) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if arr, ok := value.(bson.A); ok {
@@ -256,14 +256,6 @@ func matchUnwind(doc bsonkit.Doc, path string, not bool, op func(string) error) 
 				return err
 			}
 
-			if not {
-				return ErrNotMatched
-			}
-
-			return nil
-		}
-
-		if not {
 			return nil
 		}
 	}
