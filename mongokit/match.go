@@ -37,6 +37,7 @@ func init() {
 	ExpressionQueryOperators["$in"] = matchIn
 	ExpressionQueryOperators["$nin"] = matchNin
 	ExpressionQueryOperators["$exists"] = matchExists
+	ExpressionQueryOperators["$all"] = matchAll
 }
 
 func Match(doc, query bsonkit.Doc) (bool, error) {
@@ -242,6 +243,52 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	}
 
 	return ErrNotMatched
+}
+
+func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	return matchUnwind(doc, path, func(path string) error {
+		// get array
+		list, ok := v.(bson.A)
+		if !ok {
+			return fmt.Errorf("%s: expected list", name)
+		}
+
+		// check array
+		if len(list) == 0 {
+			return ErrNotMatched
+		}
+
+		// get field value
+		field := bsonkit.Get(doc, path)
+
+		// check if array contains list
+		if arr, ok := field.(bson.A); ok {
+			matches := true
+			for _, value := range list {
+				ok := false
+				for _, element := range arr {
+					if bsonkit.Compare(value, element) == 0 {
+						ok = true
+					}
+				}
+				if !ok {
+					matches = false
+				}
+			}
+			if matches {
+				return nil
+			}
+		}
+
+		// check if field is in list
+		for _, item := range list {
+			if bsonkit.Compare(field, item) != 0 {
+				return ErrNotMatched
+			}
+		}
+
+		return nil
+	})
 }
 
 func matchUnwind(doc bsonkit.Doc, path string, op func(string) error) error {

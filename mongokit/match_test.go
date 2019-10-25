@@ -655,3 +655,43 @@ func TestMatchExists(t *testing.T) {
 		}, true)
 	})
 }
+
+func TestMatchAll(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": bson.A{"foo", "bar"},
+		"baz": bson.A{},
+	}, func(fn func(bson.M, interface{})) {
+		// missing list
+		fn(bson.M{
+			"foo": bson.M{"$all": ""},
+		}, "$all: expected list")
+
+		// empty list
+		fn(bson.M{
+			"foo": bson.M{"$all": bson.A{}},
+		}, false)
+		fn(bson.M{
+			"baz": bson.M{"$all": bson.A{}},
+		}, false)
+
+		// matching list
+		fn(bson.M{
+			"foo": bson.M{"$all": bson.A{"bar"}},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{"$all": bson.A{"bar", "baz"}},
+		}, false)
+
+		// array field (unwind)
+		fn(bson.M{
+			"bar": bson.M{"$all": bson.A{"foo"}},
+		}, true)
+		fn(bson.M{
+			"bar": bson.M{"$all": bson.A{"foo", "bar"}},
+		}, true)
+		fn(bson.M{
+			"bar": bson.M{"$all": bson.A{"foo", "bar", "baz"}},
+		}, false)
+	})
+}
