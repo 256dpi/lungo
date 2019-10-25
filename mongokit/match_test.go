@@ -194,7 +194,7 @@ func TestMatchEq(t *testing.T) {
 		}, true)
 	})
 
-	// arrays
+	// array fields (unwind)
 	matchTest(t, bson.M{
 		"foo": bson.A{
 			"bar", "baz",
@@ -250,6 +250,7 @@ func TestMatchEq(t *testing.T) {
 func TestMatchComp(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
+		"bar": bson.A{7.0, 42.0},
 	}, func(fn func(bson.M, interface{})) {
 		// greater than (wrong type)
 		fn(bson.M{
@@ -269,6 +270,11 @@ func TestMatchComp(t *testing.T) {
 		// lesser field
 		fn(bson.M{
 			"foo": bson.M{"$lt": "z"},
+		}, true)
+
+		// array field (unwind)
+		fn(bson.M{
+			"bar": bson.M{"$gt": 13.0},
 		}, true)
 	})
 }
@@ -328,7 +334,7 @@ func TestMatchIn(t *testing.T) {
 			"foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 
-		// array item
+		// array field (unwind)
 		fn(bson.M{
 			"bar": bson.M{"$in": bson.A{"bar"}},
 		}, true)
@@ -360,7 +366,7 @@ func TestMatchNin(t *testing.T) {
 			"baz": bson.M{"$nin": bson.A{"bar"}},
 		}, true)
 
-		// array item
+		// array field (unwind)
 		fn(bson.M{
 			"bar": bson.M{"$nin": bson.A{"bar"}},
 		}, false)
