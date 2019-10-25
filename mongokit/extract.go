@@ -40,16 +40,16 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	return doc, nil
 }
 
-func extractAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
+func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$and: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list
 	if len(list) == 0 {
-		return fmt.Errorf("$and: empty list")
+		return fmt.Errorf("%s: empty list", name)
 	}
 
 	// extract all expressions
@@ -57,7 +57,7 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("$and: expected list of documents")
+			return fmt.Errorf("%s: expected list of documents", name)
 		}
 
 		// extract document
@@ -70,16 +70,16 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error
 	return nil
 }
 
-func extractOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
+func extractOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$or: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list
 	if len(list) == 0 {
-		return fmt.Errorf("$or: empty list")
+		return fmt.Errorf("%s: empty list", name)
 	}
 
 	// check list
@@ -92,7 +92,7 @@ func extractOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error 
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("$or: expected list of documents")
+			return fmt.Errorf("%s: expected list of documents", name)
 		}
 
 		// extract document
@@ -109,11 +109,11 @@ func extractEq(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func extractIn(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func extractIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("$in: expected list")
+		return fmt.Errorf("%s: expected list", name)
 	}
 
 	// check list

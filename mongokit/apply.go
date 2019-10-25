@@ -77,11 +77,11 @@ func applyUnset(_ *Context, doc bsonkit.Doc, _, path string, _ interface{}) erro
 	return nil
 }
 
-func applyRename(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyRename(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get new path
 	newPath, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("$rename: expected string")
+		return fmt.Errorf("%s: expected string", name)
 	}
 
 	// get old value
@@ -146,7 +146,7 @@ func applyMin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error 
 	return nil
 }
 
-func applyCurrentDate(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyCurrentDate(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// check if boolean
 	value, ok := v.(bool)
 	if ok {
@@ -161,12 +161,12 @@ func applyCurrentDate(_ *Context, doc bsonkit.Doc, _, path string, v interface{}
 	// coerce object
 	obj, ok := v.(bson.D)
 	if !ok {
-		return fmt.Errorf("$currentDate: expected boolean or document")
+		return fmt.Errorf("%s: expected boolean or document", name)
 	}
 
 	// check object
 	if len(obj) > 1 || obj[0].Key != "$type" {
-		return fmt.Errorf("$currentDate: expected document with a single $type field")
+		return fmt.Errorf("%s: expected document with a single $type field", name)
 	}
 
 	// set date or timestamp
@@ -176,6 +176,6 @@ func applyCurrentDate(_ *Context, doc bsonkit.Doc, _, path string, v interface{}
 	case "timestamp":
 		return bsonkit.Put(doc, path, bsonkit.Generate(), false)
 	default:
-		return fmt.Errorf("$currentDate: expected $type 'date' or 'timestamp'")
+		return fmt.Errorf("%s: expected $type 'date' or 'timestamp'", name)
 	}
 }
