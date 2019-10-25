@@ -11,9 +11,9 @@ import (
 type Operator func(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error
 
 type Context struct {
-	Upsert     bool
 	TopLevel   map[string]Operator
 	Expression map[string]Operator
+	Upsert     bool
 }
 
 func Process(ctx *Context, doc bsonkit.Doc, query bson.D, root bool) error {
@@ -62,7 +62,7 @@ func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E
 	if exps, ok := pair.Value.(bson.D); ok {
 		// process all expressions (implicit and)
 		for i, exp := range exps {
-			// break and leave document as a simple condition if the
+			// stop and leave document as a simple condition if the
 			// first key does not look like an operator
 			if i == 0 && (len(exp.Key) == 0 || exp.Key[0] != '$') {
 				break
