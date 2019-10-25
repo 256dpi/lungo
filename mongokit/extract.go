@@ -40,7 +40,7 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	return doc, nil
 }
 
-func extractAnd(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
+func extractAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -70,7 +70,7 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
 	return nil
 }
 
-func extractOr(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
+func extractOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -105,11 +105,11 @@ func extractOr(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
 	return nil
 }
 
-func extractEq(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func extractEq(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func extractIn(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func extractIn(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {

@@ -8,7 +8,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-type Operator func(*Context, bsonkit.Doc, string, interface{}) error
+type Operator func(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error
 
 type Context struct {
 	Upsert     bool
@@ -48,7 +48,7 @@ func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E
 		}
 
 		// call operator
-		return operator(ctx, doc, prefix, pair.Value)
+		return operator(ctx, doc, pair.Key, prefix, pair.Value)
 	}
 
 	// get path
@@ -80,7 +80,7 @@ func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E
 			}
 
 			// call operator
-			err := operator(ctx, doc, path, exp.Value)
+			err := operator(ctx, doc, exp.Key, path, exp.Value)
 			if err != nil {
 				return err
 			}
@@ -101,7 +101,7 @@ func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E
 	}
 
 	// call operator
-	err := operator(ctx, doc, path, pair.Value)
+	err := operator(ctx, doc, "", path, pair.Value)
 	if err != nil {
 		return err
 	}

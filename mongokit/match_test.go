@@ -162,24 +162,24 @@ func TestMatchEq(t *testing.T) {
 		}, false)
 	})
 
-	// nested document
+	// nested document (condition)
 	matchTest(t, bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
-				"$eq": "baz",
+				"$foo": "baz",
 			},
 		},
 	}, func(fn func(bson.M, interface{})) {
 		fn(bson.M{
 			"foo": bson.M{
 				"bar": bson.M{
-					"$eq": "baz",
+					"$foo": "baz",
 				},
 			},
 		}, true)
 	})
 
-	// nested document
+	// nested document (operator)
 	matchTest(t, bson.M{
 		"foo": bson.M{
 			"bar": "baz",

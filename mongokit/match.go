@@ -25,13 +25,13 @@ func init() {
 	TopLevelQueryOperators["$or"] = matchOr
 
 	// register expression query operators
-	ExpressionQueryOperators[""] = matchComp("$eq")
-	ExpressionQueryOperators["$eq"] = matchComp("$eq")
-	ExpressionQueryOperators["$gt"] = matchComp("$gt")
-	ExpressionQueryOperators["$lt"] = matchComp("$lt")
-	ExpressionQueryOperators["$gte"] = matchComp("$gte")
-	ExpressionQueryOperators["$lte"] = matchComp("$lte")
-	ExpressionQueryOperators["$ne"] = matchComp("$ne")
+	ExpressionQueryOperators[""] = matchComp
+	ExpressionQueryOperators["$eq"] = matchComp
+	ExpressionQueryOperators["$gt"] = matchComp
+	ExpressionQueryOperators["$lt"] = matchComp
+	ExpressionQueryOperators["$gte"] = matchComp
+	ExpressionQueryOperators["$lte"] = matchComp
+	ExpressionQueryOperators["$ne"] = matchComp
 	ExpressionQueryOperators["$not"] = matchNot
 	ExpressionQueryOperators["$in"] = matchIn
 	ExpressionQueryOperators["$nin"] = matchNin
@@ -53,7 +53,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	return true, nil
 }
 
-func matchAnd(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
+func matchAnd(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -83,7 +83,7 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
 	return nil
 }
 
-func matchNor(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
+func matchNor(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -117,7 +117,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
 	return nil
 }
 
-func matchOr(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
+func matchOr(ctx *Context, doc bsonkit.Doc, _, _ string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -149,55 +149,53 @@ func matchOr(ctx *Context, doc bsonkit.Doc, _ string, v interface{}) error {
 	return ErrNotMatched
 }
 
-func matchComp(op string) Operator {
-	return func(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
-		// get field value
-		field := bsonkit.Get(doc, path)
+func matchComp(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
+	// get field value
+	field := bsonkit.Get(doc, path)
 
-		// check types (type bracketing)
-		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
-			return ErrNotMatched
-		}
+	// check types (type bracketing)
+	if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
+		return ErrNotMatched
+	}
 
-		// compare field with value
-		res := bsonkit.Compare(field, v)
+	// compare field with value
+	res := bsonkit.Compare(field, v)
 
-		// handle special array field equality
-		if array, ok := field.(bson.A); ok && op == "$eq" && res != 0 {
-			for _, item := range array {
-				if bsonkit.Compare(item, v) == 0 {
-					return nil
-				}
+	// handle special array field equality
+	if array, ok := field.(bson.A); ok && op == "$eq" && res != 0 {
+		for _, item := range array {
+			if bsonkit.Compare(item, v) == 0 {
+				return nil
 			}
 		}
-
-		// check operator
-		var ok bool
-		switch op {
-		case "$eq":
-			ok = res == 0
-		case "$gt":
-			ok = res > 0
-		case "$gte":
-			ok = res >= 0
-		case "$lt":
-			ok = res < 0
-		case "$lte":
-			ok = res <= 0
-		case "$ne":
-			ok = res != 0
-		default:
-			return fmt.Errorf("unkown comparison operator %q", op)
-		}
-		if !ok {
-			return ErrNotMatched
-		}
-
-		return nil
 	}
+
+	// check operator
+	var ok bool
+	switch op {
+	case "", "$eq":
+		ok = res == 0
+	case "$gt":
+		ok = res > 0
+	case "$gte":
+		ok = res >= 0
+	case "$lt":
+		ok = res < 0
+	case "$lte":
+		ok = res <= 0
+	case "$ne":
+		ok = res != 0
+	default:
+		return fmt.Errorf("unkown comparison operator %q", op)
+	}
+	if !ok {
+		return ErrNotMatched
+	}
+
+	return nil
 }
 
-func matchNot(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func matchNot(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// coerce item
 	query, ok := v.(bson.D)
 	if !ok {
@@ -224,7 +222,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return ErrNotMatched
 }
 
-func matchIn(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func matchIn(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -257,7 +255,7 @@ func matchIn(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return ErrNotMatched
 }
 
-func matchNin(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func matchNin(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get array
 	list, ok := v.(bson.A)
 	if !ok {
@@ -288,7 +286,7 @@ func matchNin(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
 	return nil
 }
 
-func matchExists(ctx *Context, doc bsonkit.Doc, path string, v interface{}) error {
+func matchExists(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get boolean
 	exists, ok := v.(bool)
 	if !ok {
