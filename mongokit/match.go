@@ -38,6 +38,7 @@ func init() {
 	ExpressionQueryOperators["$nin"] = matchNin
 	ExpressionQueryOperators["$exists"] = matchExists
 	ExpressionQueryOperators["$all"] = matchAll
+	ExpressionQueryOperators["$size"] = matchSize
 }
 
 func Match(doc, query bsonkit.Doc) (bool, error) {
@@ -288,6 +289,28 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 		}
 
 		return nil
+	})
+}
+
+func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	return matchUnwind(doc, path, func(path string) error {
+		// check value
+		if bsonkit.Inspect(v) != bsonkit.Number {
+			return fmt.Errorf("%s: expected number", name)
+		}
+
+		// get field value
+		field := bsonkit.Get(doc, path)
+
+		// compare length if array
+		list, ok := field.(bson.A)
+		if ok {
+			if bsonkit.Compare(int64(len(list)), v) == 0 {
+				return nil
+			}
+		}
+
+		return ErrNotMatched
 	})
 }
 

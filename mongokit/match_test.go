@@ -695,3 +695,34 @@ func TestMatchAll(t *testing.T) {
 		}, false)
 	})
 }
+
+func TestMatchSize(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": bson.A{"foo", "bar"},
+	}, func(fn func(bson.M, interface{})) {
+		// invalid value
+		fn(bson.M{
+			"foo": bson.M{"$size": false},
+		}, "$size: expected number")
+
+		// non list
+		fn(bson.M{
+			"foo": bson.M{"$size": int32(1)},
+		}, false)
+
+		// matching list
+		fn(bson.M{
+			"bar": bson.M{"$size": int32(0)},
+		}, false)
+		fn(bson.M{
+			"bar": bson.M{"$size": int32(1)},
+		}, false)
+		fn(bson.M{
+			"bar": bson.M{"$size": int32(2)},
+		}, true)
+		fn(bson.M{
+			"bar": bson.M{"$size": int32(3)},
+		}, false)
+	})
+}
