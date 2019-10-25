@@ -39,11 +39,9 @@ func get(v interface{}, path []string) interface{} {
 	// get array element
 	if arr, ok := v.(bson.A); ok {
 		index, err := strconv.ParseInt(path[0], 10, 64)
-		if err != nil || index < 0 || index >= int64(len(arr)) {
-			return Missing
+		if err == nil && index >= 0 && index < int64(len(arr)) {
+			return get(arr[index], path[1:])
 		}
-
-		return get(arr[index], path[1:])
 	}
 
 	return Missing
