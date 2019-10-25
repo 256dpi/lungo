@@ -2,6 +2,7 @@ package bsonkit
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,24 +13,36 @@ type MissingType struct{}
 var Missing = MissingType{}
 
 func Get(doc Doc, path string) interface{} {
-	return get(doc, strings.Split(path, "."))
+	return get(*doc, strings.Split(path, "."))
 }
 
-func get(doc Doc, path []string) interface{} {
-	// search for element
-	for _, el := range *doc {
-		if el.Key == path[0] {
-			if len(path) == 1 {
-				return el.Value
-			}
+func get(v interface{}, path []string) interface{} {
+	// check path
+	if len(path) == 0 {
+		return v
+	}
 
-			// check if doc
-			if d, ok := el.Value.(bson.D); ok {
-				return get(&d, path[1:])
-			}
+	// get document field
+	if doc, ok := v.(bson.D); ok {
+		for _, el := range doc {
+			if el.Key == path[0] {
+				if len(path) == 1 {
+					return el.Value
+				}
 
+				return get(el.Value, path[1:])
+			}
+		}
+	}
+
+	// get array element
+	if arr, ok := v.(bson.A); ok {
+		index, err := strconv.ParseInt(path[0], 10, 64)
+		if err != nil || index < 0 || index >= int64(len(arr)) {
 			return Missing
 		}
+
+		return get(arr[index], path[1:])
 	}
 
 	return Missing

@@ -48,6 +48,44 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, 42, res)
 }
 
+func TestGetArray(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	// negative index
+
+	res := Get(doc, "foo.-1")
+	assert.Equal(t, Missing, res)
+
+	// first element
+
+	res = Get(doc, "foo.0")
+	assert.Equal(t, "bar", res)
+
+	// second element
+
+	res = Get(doc, "foo.1")
+	assert.Equal(t, *Convert(bson.M{
+		"baz": 42,
+	}), res)
+
+	// missing index
+
+	res = Get(doc, "foo.5")
+	assert.Equal(t, Missing, res)
+
+	// nested field
+
+	res = Get(doc, "foo.1.baz")
+	assert.Equal(t, 42, res)
+}
+
 func TestPut(t *testing.T) {
 	doc := Convert(bson.M{
 		"foo": "bar",
