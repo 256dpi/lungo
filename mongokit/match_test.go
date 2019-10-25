@@ -470,6 +470,14 @@ func TestMatchEq(t *testing.T) {
 
 		// match array
 		fn(bson.M{
+			"foo": bson.A{"bar", "baz"},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{
+				"$eq": bson.A{"bar", "baz"},
+			},
+		}, true)
+		fn(bson.M{
 			"baz": bson.A{"bar", "quz"},
 		}, false)
 		fn(bson.M{

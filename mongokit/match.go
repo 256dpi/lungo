@@ -266,8 +266,6 @@ func matchUnwind(doc bsonkit.Doc, path string, not bool, op func(string) error) 
 		if not {
 			return nil
 		}
-
-		return ErrNotMatched
 	}
 
 	return op(path)
