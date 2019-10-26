@@ -15,13 +15,13 @@ var Missing = MissingType{}
 var unsetValue interface{} = struct{}{}
 
 func Get(doc Doc, path string) interface{} {
-	res, _ := get(*doc, strings.Split(path, "."), false)
-	return res
+	value, _ := get(*doc, strings.Split(path, "."), false)
+	return value
 }
 
 func All(doc Doc, path string, collect bool) (interface{}, bool) {
-	res, multi := get(*doc, strings.Split(path, "."), collect)
-	return res, multi
+	value, multi := get(*doc, strings.Split(path, "."), collect)
+	return value, multi
 }
 
 func get(v interface{}, path []string, collect bool) (interface{}, bool) {

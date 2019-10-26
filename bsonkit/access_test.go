@@ -102,6 +102,9 @@ func TestGetEmbedded(t *testing.T) {
 					bson.M{
 						"qux": 13,
 					},
+					bson.M{
+						"qux": 26,
+					},
 				},
 			},
 		},
@@ -136,7 +139,7 @@ func TestGetEmbedded(t *testing.T) {
 	// multi level
 	res, multi = All(doc, "foo.quz.qux", true)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{13, 13}, res)
+	assert.Equal(t, bson.A{13, 13, 26}, res)
 }
 
 func TestPut(t *testing.T) {
