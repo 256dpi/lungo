@@ -3,7 +3,6 @@ package mongokit
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -127,10 +126,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-	return matchUnwind(doc, path, func(path string) error {
-		// get field value
-		field := bsonkit.Get(doc, path, false)
-
+	return matchUnwind(doc, path, false, func(field interface{}) error {
 		// check types (type bracketing)
 		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
 			return ErrNotMatched
@@ -193,15 +189,12 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, func(path string) error {
+	return matchUnwind(doc, path, false, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {
 			return fmt.Errorf("%s: expected list", name)
 		}
-
-		// get field value
-		field := bsonkit.Get(doc, path, false)
 
 		// check if field is in list
 		for _, item := range list {
@@ -247,7 +240,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 }
 
 func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, func(path string) error {
+	return matchUnwind(doc, path, false, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {
@@ -258,9 +251,6 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 		if len(list) == 0 {
 			return ErrNotMatched
 		}
-
-		// get field value
-		field := bsonkit.Get(doc, path, false)
 
 		// check if array contains list
 		if arr, ok := field.(bson.A); ok {
@@ -293,14 +283,11 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 }
 
 func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, func(path string) error {
+	return matchUnwind(doc, path, false, func(field interface{}) error {
 		// check value
 		if bsonkit.Inspect(v) != bsonkit.Number {
 			return fmt.Errorf("%s: expected number", name)
 		}
-
-		// get field value
-		field := bsonkit.Get(doc, path, false)
 
 		// compare length if array
 		list, ok := field.(bson.A)
@@ -314,12 +301,12 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	})
 }
 
-func matchUnwind(doc bsonkit.Doc, path string, op func(string) error) error {
+func matchUnwind(doc bsonkit.Doc, path string, collect bool, op func(interface{}) error) error {
 	// get value
-	value := bsonkit.Get(doc, path, false)
+	value := bsonkit.Get(doc, path, collect)
 	if arr, ok := value.(bson.A); ok {
-		for i := range arr {
-			err := op(path + "." + strconv.Itoa(i))
+		for _, field := range arr {
+			err := op(field)
 			if err == ErrNotMatched {
 				continue
 			} else if err != nil {
@@ -330,7 +317,7 @@ func matchUnwind(doc bsonkit.Doc, path string, op func(string) error) error {
 		}
 	}
 
-	return op(path)
+	return op(value)
 }
 
 func matchNegate(op func() error) error {
