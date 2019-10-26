@@ -49,7 +49,7 @@ func Collect(list List, path string, compact, distinct bool) []interface{} {
 		}
 
 		// add value
-		result = append(result, Get(doc, path, false))
+		result = append(result, v)
 	}
 
 	// return early if not distinct
