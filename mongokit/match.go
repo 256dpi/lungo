@@ -240,7 +240,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 }
 
 func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(field interface{}) error {
+	return matchUnwind(doc, path, true, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {

@@ -705,6 +705,10 @@ func TestMatchAll(t *testing.T) {
 		"foo": "bar",
 		"bar": bson.A{"foo", "bar"},
 		"baz": bson.A{},
+		"quz": bson.A{
+			bson.M{"foo": "baz"},
+			bson.M{"foo": "bar"},
+		},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
 		fn(bson.M{
@@ -737,6 +741,11 @@ func TestMatchAll(t *testing.T) {
 		fn(bson.M{
 			"bar": bson.M{"$all": bson.A{"foo", "bar", "baz"}},
 		}, false)
+
+		// embedded document
+		fn(bson.M{
+			"quz.foo": bson.M{"$all": bson.A{"bar", "baz"}},
+		}, true)
 	})
 }
 
@@ -744,6 +753,10 @@ func TestMatchSize(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 		"bar": bson.A{"foo", "bar"},
+		"baz": bson.A{
+			bson.M{"foo": "baz"},
+			bson.M{"foo": "bar"},
+		},
 	}, func(fn func(bson.M, interface{})) {
 		// invalid value
 		fn(bson.M{
@@ -751,6 +764,9 @@ func TestMatchSize(t *testing.T) {
 		}, "$size: expected number")
 
 		// non list
+		fn(bson.M{
+			"foo": bson.M{"$size": int32(0)},
+		}, false)
 		fn(bson.M{
 			"foo": bson.M{"$size": int32(1)},
 		}, false)
@@ -767,6 +783,11 @@ func TestMatchSize(t *testing.T) {
 		}, true)
 		fn(bson.M{
 			"bar": bson.M{"$size": int32(3)},
+		}, false)
+
+		// embedded fields (no support)
+		fn(bson.M{
+			"baz.foo": bson.M{"$size": int32(2)},
 		}, false)
 	})
 }
