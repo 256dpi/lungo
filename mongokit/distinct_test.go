@@ -70,4 +70,14 @@ func TestDistinct(t *testing.T) {
 	}, func(fn func(string, bson.A)) {
 		fn("a.b", bson.A{"1", "2"})
 	})
+
+	// numbers
+	distinctTest(t, bsonkit.List{
+		bsonkit.Convert(bson.M{"a": int32(1)}),
+		bsonkit.Convert(bson.M{"a": int64(1)}),
+		bsonkit.Convert(bson.M{"a": float64(1)}),
+		bsonkit.Convert(bson.M{"a": "1"}),
+	}, func(fn func(string, bson.A)) {
+		fn("a", bson.A{int32(1), "1"})
+	})
 }
