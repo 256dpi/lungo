@@ -19,9 +19,34 @@ func Get(doc Doc, path string) interface{} {
 	return value
 }
 
-func All(doc Doc, path string, collect bool) (interface{}, bool) {
-	value, multi := get(*doc, strings.Split(path, "."), collect)
-	return value, multi
+func All(doc Doc, path string, collect, flatten bool) (interface{}, bool) {
+	// get value
+	value, nested := get(*doc, strings.Split(path, "."), collect)
+	if !flatten {
+		return value, nested
+	}
+
+	// get array
+	array, ok := value.(bson.A)
+	if !ok {
+		return value, nested
+	}
+
+	// prepare result
+	result := make(bson.A, 0, len(array))
+
+	// flatten array
+	for _, item := range array {
+		if a, ok := item.(bson.A); ok {
+			for _, i := range a {
+				result = append(result, i)
+			}
+		} else {
+			result = append(result, item)
+		}
+	}
+
+	return result, nested
 }
 
 func get(v interface{}, path []string, collect bool) (interface{}, bool) {

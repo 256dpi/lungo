@@ -60,12 +60,10 @@ func TestDistinct(t *testing.T) {
 		fn("a", bson.A{"1", "2"})
 	})
 
-	// TODO: Support embedded array fields flattening.
-
 	// embedded fields (with array fields)
 	distinctTest(t, bsonkit.List{
 		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": "1"}}}),
-		// bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}}),
+		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}}),
 		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}}),
 	}, func(fn func(string, bson.A)) {
 		fn("a.b", bson.A{"1", "2"})
