@@ -550,7 +550,7 @@ func TestMatchNot(t *testing.T) {
 			"foo": bson.M{"$not": bson.M{}},
 		}, "$not: empty document")
 
-		// empty list
+		// no match => match
 		fn(bson.M{
 			"foo": bson.M{
 				"$not": bson.M{
@@ -559,7 +559,7 @@ func TestMatchNot(t *testing.T) {
 			},
 		}, true)
 
-		// empty list
+		// match => no match
 		fn(bson.M{
 			"foo": bson.M{
 				"$not": bson.M{
