@@ -17,7 +17,7 @@ var ExpressionQueryOperators = map[string]Operator{}
 var ErrNotMatched = errors.New("not matched")
 
 func init() {
-	// TODO: Add more operators.
+	// TODO: Add missing operators.
 
 	// register top level query operators matchers
 	TopLevelQueryOperators["$and"] = matchAnd
