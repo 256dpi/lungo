@@ -40,14 +40,14 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	return result
 }
 
-func Collect(list List, path string, compact, flatten, distinct bool) []interface{} {
+func Collect(list List, path string, compact, flatten, distinct bool) bson.A {
 	// prepare result
 	result := make([]interface{}, 0, len(list))
 
 	// add values
 	for _, doc := range list {
 		// get value
-		v := Get(doc, path, false)
+		v := Get(doc, path, true)
 		if v == Missing && compact {
 			continue
 		}
