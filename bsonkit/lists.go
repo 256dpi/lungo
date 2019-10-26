@@ -42,7 +42,7 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 
 func Collect(list List, path string, compact, flatten, distinct bool) bson.A {
 	// prepare result
-	result := make([]interface{}, 0, len(list))
+	result := make(bson.A, 0, len(list))
 
 	// add values
 	for _, doc := range list {
@@ -71,7 +71,7 @@ func Collect(list List, path string, compact, flatten, distinct bool) bson.A {
 	})
 
 	// prepare distincts
-	distincts := make([]interface{}, 0, len(result))
+	distincts := make(bson.A, 0, len(result))
 
 	// keep last value
 	var lastValue interface{}
