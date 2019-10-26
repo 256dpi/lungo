@@ -217,6 +217,17 @@ func TestMatchAnd(t *testing.T) {
 				},
 			},
 		}, false)
+
+		// nested
+		fn(bson.M{
+			"foo": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": "bar",
+					},
+				},
+			},
+		}, `unknown expression operator "$and"`)
 	})
 }
 
@@ -300,6 +311,17 @@ func TestMatchOr(t *testing.T) {
 				},
 			},
 		}, false)
+
+		// nested
+		fn(bson.M{
+			"foo": bson.M{
+				"$or": bson.A{
+					bson.M{
+						"$eq": "bar",
+					},
+				},
+			},
+		}, `unknown expression operator "$or"`)
 	})
 }
 
@@ -383,6 +405,17 @@ func TestMatchNor(t *testing.T) {
 				},
 			},
 		}, true)
+
+		// nested
+		fn(bson.M{
+			"foo": bson.M{
+				"$nor": bson.A{
+					bson.M{
+						"$eq": "bar",
+					},
+				},
+			},
+		}, `unknown expression operator "$nor"`)
 	})
 }
 
@@ -594,6 +627,11 @@ func TestMatchNot(t *testing.T) {
 				},
 			},
 		}, false)
+
+		// top level
+		fn(bson.M{
+			"$not": bson.M{"$eq": "foo"},
+		}, `unknown top level operator "$not"`)
 	})
 }
 
