@@ -386,7 +386,7 @@ func TestMatchNor(t *testing.T) {
 	})
 }
 
-func TestMatchEq(t *testing.T) {
+func TestMatchComp(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 	}, func(fn func(bson.M, interface{})) {
@@ -535,9 +535,7 @@ func TestMatchEq(t *testing.T) {
 			"foo.quz.qux": 13.0,
 		}, true)
 	})
-}
 
-func TestMatchComp(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 		"bar": bson.A{7.0, 42.0},
@@ -560,11 +558,6 @@ func TestMatchComp(t *testing.T) {
 		// lesser field
 		fn(bson.M{
 			"foo": bson.M{"$lt": "z"},
-		}, true)
-
-		// array field
-		fn(bson.M{
-			"bar": bson.M{"$gt": 13.0},
 		}, true)
 	})
 }
