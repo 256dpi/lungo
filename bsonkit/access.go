@@ -15,18 +15,19 @@ var Missing = MissingType{}
 var unsetValue interface{} = struct{}{}
 
 func Get(doc Doc, path string, collect bool) interface{} {
-	return get(*doc, strings.Split(path, "."), collect)
+	res, _ := get(*doc, strings.Split(path, "."), collect)
+	return res
 }
 
-func get(v interface{}, path []string, collect bool) interface{} {
+func get(v interface{}, path []string, collect bool) (interface{}, bool) {
 	// check path
 	if len(path) == 0 {
-		return v
+		return v, false
 	}
 
 	// check if empty
 	if path[0] == "" {
-		return Missing
+		return Missing, false
 	}
 
 	// get document field
@@ -50,16 +51,20 @@ func get(v interface{}, path []string, collect bool) interface{} {
 		if collect {
 			res := make(bson.A, 0, len(arr))
 			for _, item := range arr {
-				value := get(item, path, collect)
+				value, ok := get(item, path, collect)
 				if value != Missing {
-					res = append(res, value)
+					if ok {
+						res = append(res, value.(bson.A)...)
+					} else {
+						res = append(res, value)
+					}
 				}
 			}
-			return res
+			return res, true
 		}
 	}
 
-	return Missing
+	return Missing, false
 }
 
 func Put(doc Doc, path string, value interface{}, prepend bool) error {

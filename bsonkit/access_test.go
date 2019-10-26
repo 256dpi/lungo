@@ -102,9 +102,19 @@ func TestGetEmbedded(t *testing.T) {
 			"bar",
 			bson.M{
 				"baz": 7,
+				"quz": bson.A{
+					bson.M{
+						"qux": 13,
+					},
+				},
 			},
 			bson.M{
 				"baz": 42,
+				"quz": bson.A{
+					bson.M{
+						"qux": 13,
+					},
+				},
 			},
 		},
 	})
@@ -124,6 +134,10 @@ func TestGetEmbedded(t *testing.T) {
 	// no collection
 	res = Get(doc, "foo.baz", true)
 	assert.Equal(t, bson.A{7, 42}, res)
+
+	// multi level
+	res = Get(doc, "foo.quz.qux", true)
+	assert.Equal(t, bson.A{13, 13}, res)
 }
 
 func TestPut(t *testing.T) {
