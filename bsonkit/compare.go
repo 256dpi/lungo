@@ -11,8 +11,8 @@ import (
 
 func Compare(lv, rv interface{}) int {
 	// get types
-	lt := Inspect(lv)
-	rt := Inspect(rv)
+	lt, _ := Inspect(lv)
+	rt, _ := Inspect(rv)
 
 	// check type equality
 	if lt > rt {

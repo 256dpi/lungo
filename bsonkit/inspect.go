@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -25,30 +26,34 @@ const (
 	Regex
 )
 
-func Inspect(v interface{}) Type {
+func Inspect(v interface{}) (Type, bsontype.Type) {
 	switch v.(type) {
 	case nil, primitive.Null, MissingType:
-		return Null
-	case int32, int64, float64:
-		return Number
+		return Null, bsontype.Null
+	case int32:
+		return Number, bsontype.Int32
+	case int64:
+		return Number, bsontype.Int64
+	case float64:
+		return Number, bsontype.Double
 	case string:
-		return String
+		return String, bsontype.String
 	case bson.D:
-		return Object
+		return Object, bsontype.EmbeddedDocument
 	case bson.A:
-		return Array
+		return Array, bsontype.Array
 	case primitive.Binary:
-		return Binary
+		return Binary, bsontype.Binary
 	case primitive.ObjectID:
-		return ObjectID
+		return ObjectID, bsontype.ObjectID
 	case bool:
-		return Boolean
+		return Boolean, bsontype.Boolean
 	case primitive.DateTime:
-		return Date
+		return Date, bsontype.DateTime
 	case primitive.Timestamp:
-		return Timestamp
+		return Timestamp, bsontype.Timestamp
 	case primitive.Regex:
-		return Regex
+		return Regex, bsontype.Regex
 	default:
 		panic(fmt.Sprintf("bsonkit: cannot inspect: %T", v))
 	}
