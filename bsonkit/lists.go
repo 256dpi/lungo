@@ -40,7 +40,7 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	return result
 }
 
-func Collect(list List, path string, compact, flatten, distinct bool) bson.A {
+func Collect(list List, path string, compact, merge, distinct bool) bson.A {
 	// prepare result
 	result := make(bson.A, 0, len(list))
 
@@ -53,7 +53,7 @@ func Collect(list List, path string, compact, flatten, distinct bool) bson.A {
 		}
 
 		// add values or value
-		if a, ok := v.(bson.A); ok && flatten {
+		if a, ok := v.(bson.A); ok && merge {
 			result = append(result, a...)
 		} else {
 			result = append(result, v)
