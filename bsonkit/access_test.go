@@ -17,7 +17,6 @@ func TestGet(t *testing.T) {
 	})
 
 	// basic field
-
 	res := Get(doc, "foo", false)
 	assert.Equal(t, *Convert(bson.M{
 		"bar": bson.M{
@@ -26,34 +25,28 @@ func TestGet(t *testing.T) {
 	}), res)
 
 	// missing field
-
 	res = Get(doc, "bar", false)
 	assert.Equal(t, Missing, res)
 
 	// nested field
-
 	res = Get(doc, "foo.bar", false)
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing nested field
-
 	res = Get(doc, "bar.foo", false)
 	assert.Equal(t, Missing, res)
 
 	// final nested field
-
 	res = Get(doc, "foo.bar.baz", false)
 	assert.Equal(t, 42, res)
 
 	// empty path
-
 	res = Get(doc, "", false)
 	assert.Equal(t, Missing, res)
 
 	// empty sub path
-
 	res = Get(doc, "foo.", false)
 	assert.Equal(t, Missing, res)
 }
@@ -69,29 +62,24 @@ func TestGetArray(t *testing.T) {
 	})
 
 	// negative index
-
 	res := Get(doc, "foo.-1", false)
 	assert.Equal(t, Missing, res)
 
 	// first element
-
 	res = Get(doc, "foo.0", false)
 	assert.Equal(t, "bar", res)
 
 	// second element
-
 	res = Get(doc, "foo.1", false)
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing index
-
 	res = Get(doc, "foo.5", false)
 	assert.Equal(t, Missing, res)
 
 	// nested field
-
 	res = Get(doc, "foo.1.baz", false)
 	assert.Equal(t, 42, res)
 }
@@ -146,7 +134,6 @@ func TestPut(t *testing.T) {
 	})
 
 	// replace final value
-
 	err := Put(doc, "foo", "baz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
@@ -179,7 +166,6 @@ func TestPut(t *testing.T) {
 	})
 
 	// replace nested final value
-
 	err = Put(doc, "foo.bar.baz", 7, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
@@ -191,7 +177,6 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// append nested field
-
 	err = Put(doc, "foo.bar.quz", 42, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
@@ -204,7 +189,6 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// prepend nested field
-
 	err = Put(doc, "foo.bar.qux", 42, true)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
@@ -218,7 +202,6 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// replace tree
-
 	err = Put(doc, "foo.bar", 42, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
@@ -228,7 +211,6 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// invalid type error
-
 	err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
 	assert.Equal(t, "cannot put value at foo.bar.baz", err.Error())
@@ -239,7 +221,6 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// intermediary object creation
-
 	doc = &bson.D{}
 	err = Put(doc, "baz.bar.foo", 42, false)
 	assert.NoError(t, err)
