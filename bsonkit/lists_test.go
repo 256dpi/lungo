@@ -35,15 +35,22 @@ func TestSelect(t *testing.T) {
 func TestCollect(t *testing.T) {
 	a1 := Convert(bson.M{"a": "1"})
 	a2 := Convert(bson.M{"a": "2"})
-	a3 := Convert(bson.M{"a": "3"})
+	a3 := Convert(bson.M{"a": "2"})
 	b1 := Convert(bson.M{"b": "3"})
 
+	// raw values
 	res := Collect(List{a1, a2, b1, a3}, "a", false, false)
-	assert.Equal(t, []interface{}{"1", "2", Missing, "3"}, res)
+	assert.Equal(t, []interface{}{"1", "2", Missing, "2"}, res)
 
+	// compact values
 	res = Collect(List{a1, b1, a2, a3}, "a", true, false)
-	assert.Equal(t, []interface{}{"1", "2", "3"}, res)
+	assert.Equal(t, []interface{}{"1", "2", "2"}, res)
 
+	// distinct values
+	res = Collect(List{a1, b1, a2, a3}, "a", false, true)
+	assert.Equal(t, []interface{}{Missing, "1", "2"}, res)
+
+	// compact and distinct values
 	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, true)
-	assert.Equal(t, []interface{}{"1", "2", "3"}, res)
+	assert.Equal(t, []interface{}{"1", "2"}, res)
 }
