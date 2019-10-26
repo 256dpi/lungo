@@ -178,7 +178,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// collect distinct values
-	values := bsonkit.Collect(res.Matched, field, true, true)
+	values := bsonkit.Collect(res.Matched, field, true, true,true)
 
 	return values, nil
 }
@@ -588,7 +588,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	return &mongo.InsertManyResult{
-		InsertedIDs: bsonkit.Collect(res.Modified, "_id", false, false),
+		InsertedIDs: bsonkit.Collect(res.Modified, "_id", false, false, false),
 	}, err
 }
 

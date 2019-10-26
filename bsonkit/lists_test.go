@@ -39,18 +39,36 @@ func TestCollect(t *testing.T) {
 	b1 := Convert(bson.M{"b": "3"})
 
 	// raw values
-	res := Collect(List{a1, a2, b1, a3}, "a", false, false)
+	res := Collect(List{a1, a2, b1, a3}, "a", false, false, false)
 	assert.Equal(t, []interface{}{"1", "2", Missing, "2"}, res)
 
 	// compact values
-	res = Collect(List{a1, b1, a2, a3}, "a", true, false)
+	res = Collect(List{a1, b1, a2, a3}, "a", true, false, false)
 	assert.Equal(t, []interface{}{"1", "2", "2"}, res)
 
 	// distinct values
-	res = Collect(List{a1, b1, a2, a3}, "a", false, true)
+	res = Collect(List{a1, b1, a2, a3}, "a", false, false, true)
 	assert.Equal(t, []interface{}{Missing, "1", "2"}, res)
 
 	// compact and distinct values
-	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, true)
+	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, false, true)
+	assert.Equal(t, []interface{}{"1", "2"}, res)
+}
+
+func TestCollectArray(t *testing.T) {
+	a1 := Convert(bson.M{"a": "1"})
+	a2 := Convert(bson.M{"a": bson.A{"1", "2"}})
+	a3 := Convert(bson.M{"a": "2"})
+
+	// raw values
+	res := Collect(List{a1, a2, a3}, "a", false, false, false)
+	assert.Equal(t, []interface{}{"1", bson.A{"1", "2"}, "2"}, res)
+
+	// flattened values
+	res = Collect(List{a1, a2, a3}, "a", false, true, false)
+	assert.Equal(t, []interface{}{"1", "1", "2", "2"}, res)
+
+	// distinct flattened values
+	res = Collect(List{a1, a2, a3}, "a", false, true, true)
 	assert.Equal(t, []interface{}{"1", "2"}, res)
 }

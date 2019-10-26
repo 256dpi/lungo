@@ -1,6 +1,10 @@
 package bsonkit
 
-import "sort"
+import (
+	"sort"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
@@ -36,7 +40,7 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	return result
 }
 
-func Collect(list List, path string, compact, distinct bool) []interface{} {
+func Collect(list List, path string, compact, flatten, distinct bool) []interface{} {
 	// prepare result
 	result := make([]interface{}, 0, len(list))
 
@@ -48,8 +52,12 @@ func Collect(list List, path string, compact, distinct bool) []interface{} {
 			continue
 		}
 
-		// add value
-		result = append(result, v)
+		// add values or value
+		if a, ok := v.(bson.A); ok && flatten {
+			result = append(result, a...)
+		} else {
+			result = append(result, v)
+		}
 	}
 
 	// return early if not distinct
