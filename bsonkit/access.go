@@ -14,11 +14,11 @@ var Missing = MissingType{}
 
 var unsetValue interface{} = struct{}{}
 
-func Get(doc Doc, path string) interface{} {
-	return get(*doc, strings.Split(path, "."))
+func Get(doc Doc, path string, collect bool) interface{} {
+	return get(*doc, strings.Split(path, "."), collect)
 }
 
-func get(v interface{}, path []string) interface{} {
+func get(v interface{}, path []string, collect bool) interface{} {
 	// check path
 	if len(path) == 0 {
 		return v
@@ -33,16 +33,29 @@ func get(v interface{}, path []string) interface{} {
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
 			if el.Key == path[0] {
-				return get(el.Value, path[1:])
+				return get(el.Value, path[1:], collect)
 			}
 		}
 	}
 
 	// get array element
 	if arr, ok := v.(bson.A); ok {
+		// get indexed array element
 		index, err := strconv.ParseInt(path[0], 10, 64)
 		if err == nil && index >= 0 && index < int64(len(arr)) {
-			return get(arr[index], path[1:])
+			return get(arr[index], path[1:], collect)
+		}
+
+		// collect value from embedded documents
+		if collect {
+			res := make(bson.A, 0, len(arr))
+			for _, item := range arr {
+				value := get(item, path, collect)
+				if value != Missing {
+					res = append(res, value)
+				}
+			}
+			return res
 		}
 	}
 
@@ -185,7 +198,7 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 
 func Increment(doc Doc, path string, increment interface{}) error {
 	// get field
-	field := Get(doc, path)
+	field := Get(doc, path, false)
 
 	// increment field
 	switch num := field.(type) {
@@ -244,7 +257,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 
 func Multiply(doc Doc, path string, multiplier interface{}) error {
 	// get field
-	field := Get(doc, path)
+	field := Get(doc, path, false)
 
 	// multiply field
 	switch num := field.(type) {

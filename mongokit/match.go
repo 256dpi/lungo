@@ -129,7 +129,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 	return matchUnwind(doc, path, func(path string) error {
 		// get field value
-		field := bsonkit.Get(doc, path)
+		field := bsonkit.Get(doc, path, false)
 
 		// check types (type bracketing)
 		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
@@ -201,7 +201,7 @@ func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) erro
 		}
 
 		// get field value
-		field := bsonkit.Get(doc, path)
+		field := bsonkit.Get(doc, path, false)
 
 		// check if field is in list
 		for _, item := range list {
@@ -230,7 +230,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	}
 
 	// get field value
-	field := bsonkit.Get(doc, path)
+	field := bsonkit.Get(doc, path, false)
 	if exists {
 		if field != bsonkit.Missing {
 			return nil
@@ -260,7 +260,7 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 		}
 
 		// get field value
-		field := bsonkit.Get(doc, path)
+		field := bsonkit.Get(doc, path, false)
 
 		// check if array contains list
 		if arr, ok := field.(bson.A); ok {
@@ -300,7 +300,7 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 		}
 
 		// get field value
-		field := bsonkit.Get(doc, path)
+		field := bsonkit.Get(doc, path, false)
 
 		// compare length if array
 		list, ok := field.(bson.A)
@@ -316,7 +316,7 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 
 func matchUnwind(doc bsonkit.Doc, path string, op func(string) error) error {
 	// get value
-	value := bsonkit.Get(doc, path)
+	value := bsonkit.Get(doc, path, false)
 	if arr, ok := value.(bson.A); ok {
 		for i := range arr {
 			err := op(path + "." + strconv.Itoa(i))

@@ -619,7 +619,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	return &mongo.InsertOneResult{
-		InsertedID: bsonkit.Get(res.Modified[0], "_id"),
+		InsertedID: bsonkit.Get(res.Modified[0], "_id", false),
 	}, nil
 }
 
@@ -674,7 +674,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	if res.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id", false),
 		}, nil
 	}
 
@@ -731,7 +731,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	if res.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id", false),
 		}, nil
 	}
 
@@ -788,7 +788,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	if res.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(res.Upserted, "_id", false),
 		}, nil
 	}
 

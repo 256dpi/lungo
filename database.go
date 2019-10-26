@@ -65,7 +65,7 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	// collect names
 	names := make([]string, 0)
 	for _, doc := range csr.list {
-		names = append(names, bsonkit.Get(doc, "name").(string))
+		names = append(names, bsonkit.Get(doc, "name", false).(string))
 	}
 
 	return names, nil

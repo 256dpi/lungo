@@ -18,7 +18,7 @@ func TestGet(t *testing.T) {
 
 	// basic field
 
-	res := Get(doc, "foo")
+	res := Get(doc, "foo", false)
 	assert.Equal(t, *Convert(bson.M{
 		"bar": bson.M{
 			"baz": 42,
@@ -27,34 +27,34 @@ func TestGet(t *testing.T) {
 
 	// missing field
 
-	res = Get(doc, "bar")
+	res = Get(doc, "bar", false)
 	assert.Equal(t, Missing, res)
 
 	// nested field
 
-	res = Get(doc, "foo.bar")
+	res = Get(doc, "foo.bar", false)
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing nested field
 
-	res = Get(doc, "bar.foo")
+	res = Get(doc, "bar.foo", false)
 	assert.Equal(t, Missing, res)
 
 	// final nested field
 
-	res = Get(doc, "foo.bar.baz")
+	res = Get(doc, "foo.bar.baz", false)
 	assert.Equal(t, 42, res)
 
 	// empty path
 
-	res = Get(doc, "")
+	res = Get(doc, "", false)
 	assert.Equal(t, Missing, res)
 
 	// empty sub path
 
-	res = Get(doc, "foo.")
+	res = Get(doc, "foo.", false)
 	assert.Equal(t, Missing, res)
 }
 
@@ -70,30 +70,60 @@ func TestGetArray(t *testing.T) {
 
 	// negative index
 
-	res := Get(doc, "foo.-1")
+	res := Get(doc, "foo.-1", false)
 	assert.Equal(t, Missing, res)
 
 	// first element
 
-	res = Get(doc, "foo.0")
+	res = Get(doc, "foo.0", false)
 	assert.Equal(t, "bar", res)
 
 	// second element
 
-	res = Get(doc, "foo.1")
+	res = Get(doc, "foo.1", false)
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing index
 
-	res = Get(doc, "foo.5")
+	res = Get(doc, "foo.5", false)
 	assert.Equal(t, Missing, res)
 
 	// nested field
 
-	res = Get(doc, "foo.1.baz")
+	res = Get(doc, "foo.1.baz", false)
 	assert.Equal(t, 42, res)
+}
+
+func TestGetEmbedded(t *testing.T) {
+	doc := Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 7,
+			},
+			bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	// missing field
+	res := Get(doc, "foo.bar", false)
+	assert.Equal(t, Missing, res)
+
+	// missing field (collect)
+	res = Get(doc, "foo.bar", true)
+	assert.Equal(t, bson.A{}, res)
+
+	// existing field
+	res = Get(doc, "foo.baz", false)
+	assert.Equal(t, Missing, res)
+
+	// no collection
+	res = Get(doc, "foo.baz", true)
+	assert.Equal(t, bson.A{7, 42}, res)
 }
 
 func TestPut(t *testing.T) {

@@ -43,13 +43,13 @@ func Collect(list List, path string, compact, distinct bool) []interface{} {
 	// add values
 	for _, doc := range list {
 		// get value
-		v := Get(doc, path)
+		v := Get(doc, path, false)
 		if v == Missing && compact {
 			continue
 		}
 
 		// add value
-		result = append(result, Get(doc, path))
+		result = append(result, Get(doc, path, false))
 	}
 
 	// return early if not distinct

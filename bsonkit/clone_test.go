@@ -33,7 +33,7 @@ func TestClone(t *testing.T) {
 		"bar": bson.A{"foo", "bar"},
 	}), doc2)
 
-	a := Get(doc2, "bar").(bson.A)
+	a := Get(doc2, "bar", false).(bson.A)
 	a = append(a, "baz")
 	err = Put(doc2, "bar", a, false)
 	assert.NoError(t, err)

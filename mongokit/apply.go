@@ -85,7 +85,7 @@ func applyRename(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	}
 
 	// get old value
-	value := bsonkit.Get(doc, path)
+	value := bsonkit.Get(doc, path, false)
 	if value == bsonkit.Missing {
 		return nil
 	}
@@ -112,7 +112,7 @@ func applyMul(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error 
 
 func applyMax(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
-	value := bsonkit.Get(doc, path)
+	value := bsonkit.Get(doc, path, false)
 	if value == bsonkit.Missing {
 		return bsonkit.Put(doc, path, v, false)
 	}
@@ -130,7 +130,7 @@ func applyMax(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error 
 
 func applyMin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
-	value := bsonkit.Get(doc, path)
+	value := bsonkit.Get(doc, path, false)
 	if value == bsonkit.Missing {
 		return bsonkit.Put(doc, path, v, false)
 	}
