@@ -126,7 +126,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(field interface{}) error {
+	return matchUnwind(doc, path, true, func(field interface{}) error {
 		// check types (type bracketing)
 		if bsonkit.Inspect(field) != bsonkit.Inspect(v) {
 			return ErrNotMatched
@@ -189,7 +189,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(field interface{}) error {
+	return matchUnwind(doc, path, true, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {

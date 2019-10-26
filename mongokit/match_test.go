@@ -443,7 +443,7 @@ func TestMatchEq(t *testing.T) {
 		}, true)
 	})
 
-	// array fields (unwind)
+	// array fields
 	matchTest(t, bson.M{
 		"foo": bson.A{
 			"bar", "baz",
@@ -502,6 +502,39 @@ func TestMatchEq(t *testing.T) {
 			},
 		}, false)
 	})
+
+	// embedded documents
+	matchTest(t, bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 7.0,
+				"quz": bson.A{
+					bson.M{
+						"qux": 13.0,
+					},
+				},
+			},
+			bson.M{
+				"baz": 42.0,
+				"quz": bson.A{
+					bson.M{
+						"qux": 13.0,
+					},
+				},
+			},
+		},
+	}, func(fn func(bson.M, interface{})) {
+		// one level
+		fn(bson.M{
+			"foo.baz": 7.0,
+		}, true)
+
+		// two levels
+		fn(bson.M{
+			"foo.quz.qux": 13.0,
+		}, true)
+	})
 }
 
 func TestMatchComp(t *testing.T) {
@@ -529,7 +562,7 @@ func TestMatchComp(t *testing.T) {
 			"foo": bson.M{"$lt": "z"},
 		}, true)
 
-		// array field (unwind)
+		// array field
 		fn(bson.M{
 			"bar": bson.M{"$gt": 13.0},
 		}, true)
@@ -575,6 +608,10 @@ func TestMatchIn(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 		"bar": bson.A{"foo", "bar"},
+		"baz": bson.A{
+			bson.M{"foo": "baz"},
+			bson.M{"foo": "bar"},
+		},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
 		fn(bson.M{
@@ -591,9 +628,14 @@ func TestMatchIn(t *testing.T) {
 			"foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 
-		// array field (unwind)
+		// array field
 		fn(bson.M{
 			"bar": bson.M{"$in": bson.A{"bar"}},
+		}, true)
+
+		// embedded document
+		fn(bson.M{
+			"baz.foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 	})
 }
@@ -602,6 +644,10 @@ func TestMatchNin(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 		"bar": bson.A{"foo", "bar"},
+		"baz": bson.A{
+			bson.M{"foo": "baz"},
+			bson.M{"foo": "bar"},
+		},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
 		fn(bson.M{
@@ -623,9 +669,14 @@ func TestMatchNin(t *testing.T) {
 			"baz": bson.M{"$nin": bson.A{"bar"}},
 		}, true)
 
-		// array field (unwind)
+		// array field
 		fn(bson.M{
 			"bar": bson.M{"$nin": bson.A{"bar"}},
+		}, false)
+
+		// embedded document
+		fn(bson.M{
+			"baz.foo": bson.M{"$nin": bson.A{"bar"}},
 		}, false)
 	})
 }
@@ -683,7 +734,7 @@ func TestMatchAll(t *testing.T) {
 			"foo": bson.M{"$all": bson.A{"bar", "baz"}},
 		}, false)
 
-		// array field (unwind)
+		// array field
 		fn(bson.M{
 			"bar": bson.M{"$all": bson.A{"foo"}},
 		}, true)
