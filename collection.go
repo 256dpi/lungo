@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/mongokit"
 )
 
 var _ ICollection = &Collection{}
@@ -178,7 +179,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// collect distinct values
-	values := bsonkit.Collect(res.Matched, field, true, true,true)
+	values := mongokit.Distinct(res.Matched, field)
 
 	return values, nil
 }
