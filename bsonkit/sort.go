@@ -17,8 +17,8 @@ func Sort(list List, columns []Column) {
 func Order(l, r Doc, columns []Column) int {
 	for _, column := range columns {
 		// get values
-		a := Get(l, column.Path, false)
-		b := Get(r, column.Path, false)
+		a := Get(l, column.Path)
+		b := Get(r, column.Path)
 
 		// compare values
 		res := Compare(a, b)

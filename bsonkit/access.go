@@ -14,7 +14,12 @@ var Missing = MissingType{}
 
 var unsetValue interface{} = struct{}{}
 
-func Get(doc Doc, path string, collect bool) interface{} {
+func Get(doc Doc, path string) interface{} {
+	res, _ := get(*doc, strings.Split(path, "."), false)
+	return res
+}
+
+func All(doc Doc, path string, collect bool) interface{} {
 	res, _ := get(*doc, strings.Split(path, "."), collect)
 	return res
 }
@@ -203,7 +208,7 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 
 func Increment(doc Doc, path string, increment interface{}) error {
 	// get field
-	field := Get(doc, path, false)
+	field := Get(doc, path)
 
 	// increment field
 	switch num := field.(type) {
@@ -262,7 +267,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 
 func Multiply(doc Doc, path string, multiplier interface{}) error {
 	// get field
-	field := Get(doc, path, false)
+	field := Get(doc, path)
 
 	// multiply field
 	switch num := field.(type) {

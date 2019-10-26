@@ -226,7 +226,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	}
 
 	// get field value
-	field := bsonkit.Get(doc, path, false)
+	field := bsonkit.Get(doc, path)
 	if exists {
 		if field != bsonkit.Missing {
 			return nil
@@ -253,7 +253,7 @@ func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 		}
 
 		// match type string
-		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path, false))
+		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path))
 		if vt == typ {
 			return nil
 		}
@@ -276,7 +276,7 @@ func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 		}
 
 		// match type number
-		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path, false))
+		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path))
 		if vt == typ {
 			return nil
 		}
@@ -352,7 +352,7 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 
 func matchUnwind(doc bsonkit.Doc, path string, collect bool, op func(interface{}) error) error {
 	// get value
-	value := bsonkit.Get(doc, path, collect)
+	value := bsonkit.All(doc, path, collect)
 	if arr, ok := value.(bson.A); ok {
 		for _, field := range arr {
 			err := op(field)

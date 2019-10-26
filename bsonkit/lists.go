@@ -47,7 +47,7 @@ func Collect(list List, path string, compact, merge, distinct bool) bson.A {
 	// add values
 	for _, doc := range list {
 		// get value
-		v := Get(doc, path, true)
+		v := All(doc, path, true)
 		if v == Missing && compact {
 			continue
 		}

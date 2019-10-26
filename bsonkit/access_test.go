@@ -17,7 +17,7 @@ func TestGet(t *testing.T) {
 	})
 
 	// basic field
-	res := Get(doc, "foo", false)
+	res := Get(doc, "foo")
 	assert.Equal(t, *Convert(bson.M{
 		"bar": bson.M{
 			"baz": 42,
@@ -25,29 +25,29 @@ func TestGet(t *testing.T) {
 	}), res)
 
 	// missing field
-	res = Get(doc, "bar", false)
+	res = Get(doc, "bar")
 	assert.Equal(t, Missing, res)
 
 	// nested field
-	res = Get(doc, "foo.bar", false)
+	res = Get(doc, "foo.bar")
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing nested field
-	res = Get(doc, "bar.foo", false)
+	res = Get(doc, "bar.foo")
 	assert.Equal(t, Missing, res)
 
 	// final nested field
-	res = Get(doc, "foo.bar.baz", false)
+	res = Get(doc, "foo.bar.baz")
 	assert.Equal(t, 42, res)
 
 	// empty path
-	res = Get(doc, "", false)
+	res = Get(doc, "")
 	assert.Equal(t, Missing, res)
 
 	// empty sub path
-	res = Get(doc, "foo.", false)
+	res = Get(doc, "foo.")
 	assert.Equal(t, Missing, res)
 }
 
@@ -62,25 +62,25 @@ func TestGetArray(t *testing.T) {
 	})
 
 	// negative index
-	res := Get(doc, "foo.-1", false)
+	res := Get(doc, "foo.-1")
 	assert.Equal(t, Missing, res)
 
 	// first element
-	res = Get(doc, "foo.0", false)
+	res = Get(doc, "foo.0")
 	assert.Equal(t, "bar", res)
 
 	// second element
-	res = Get(doc, "foo.1", false)
+	res = Get(doc, "foo.1")
 	assert.Equal(t, *Convert(bson.M{
 		"baz": 42,
 	}), res)
 
 	// missing index
-	res = Get(doc, "foo.5", false)
+	res = Get(doc, "foo.5")
 	assert.Equal(t, Missing, res)
 
 	// nested field
-	res = Get(doc, "foo.1.baz", false)
+	res = Get(doc, "foo.1.baz")
 	assert.Equal(t, 42, res)
 }
 
@@ -108,23 +108,23 @@ func TestGetEmbedded(t *testing.T) {
 	})
 
 	// missing field
-	res := Get(doc, "foo.bar", false)
+	res := Get(doc, "foo.bar")
 	assert.Equal(t, Missing, res)
 
 	// missing field (collect)
-	res = Get(doc, "foo.bar", true)
+	res = All(doc, "foo.bar", true)
 	assert.Equal(t, bson.A{}, res)
 
 	// existing field
-	res = Get(doc, "foo.baz", false)
+	res = Get(doc, "foo.baz")
 	assert.Equal(t, Missing, res)
 
 	// no collection
-	res = Get(doc, "foo.baz", true)
+	res = All(doc, "foo.baz", true)
 	assert.Equal(t, bson.A{7, 42}, res)
 
 	// multi level
-	res = Get(doc, "foo.quz.qux", true)
+	res = All(doc, "foo.quz.qux", true)
 	assert.Equal(t, bson.A{13, 13}, res)
 }
 

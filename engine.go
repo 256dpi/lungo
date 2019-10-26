@@ -190,7 +190,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	// ensure ids
 	for _, doc := range list {
 		// ensure object id
-		if bsonkit.Get(doc, "_id", false) == bsonkit.Missing {
+		if bsonkit.Get(doc, "_id") == bsonkit.Missing {
 			err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 			if err != nil {
 				return nil, err
@@ -304,13 +304,13 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	}
 
 	// set missing id or check existing id
-	replID := bsonkit.Get(repl, "_id", false)
+	replID := bsonkit.Get(repl, "_id")
 	if replID == bsonkit.Missing {
-		err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id", false), true)
+		err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id"), true)
 		if err != nil {
 			return nil, err
 		}
-	} else if replID != bsonkit.Get(list[0], "_id", false) {
+	} else if replID != bsonkit.Get(list[0], "_id") {
 		return nil, fmt.Errorf("document _id is immutable")
 	}
 
@@ -397,7 +397,7 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 
 	// check ids
 	for i, doc := range newList {
-		if bsonkit.Get(doc, "_id", false) != bsonkit.Get(list[i], "_id", false) {
+		if bsonkit.Get(doc, "_id") != bsonkit.Get(list[i], "_id") {
 			return nil, fmt.Errorf("document _id is immutable")
 		}
 	}
@@ -455,8 +455,8 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 	// set replacement if present
 	if repl != nil {
 		// get ids
-		queryID := bsonkit.Get(doc, "_id", false)
-		replID := bsonkit.Get(repl, "_id", false)
+		queryID := bsonkit.Get(doc, "_id")
+		replID := bsonkit.Get(repl, "_id")
 
 		// check ids
 		if queryID != bsonkit.Missing && replID != bsonkit.Missing {
@@ -491,7 +491,7 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 	}
 
 	// generate object id if missing
-	if bsonkit.Get(doc, "_id", false) == bsonkit.Missing {
+	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
 		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 		if err != nil {
 			return nil, err
