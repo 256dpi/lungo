@@ -219,9 +219,9 @@ func matchNin(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 
 func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get boolean
-	exists, ok := v.(bool)
-	if !ok {
-		return fmt.Errorf("%s: expected boolean", name)
+	exists := true
+	if b, ok := v.(bool); ok {
+		exists = b
 	}
 
 	// get field value

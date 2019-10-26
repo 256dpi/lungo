@@ -716,6 +716,11 @@ func TestMatchExists(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 	}, func(fn func(bson.M, interface{})) {
+		// non boolean
+		fn(bson.M{
+			"foo": bson.M{"$exists": "bar"},
+		}, true)
+
 		// present field
 		fn(bson.M{
 			"foo": bson.M{"$exists": true},
