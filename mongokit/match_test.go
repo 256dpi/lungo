@@ -743,6 +743,53 @@ func TestMatchExists(t *testing.T) {
 	})
 }
 
+func TestMatchType(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// invalid argument
+		fn(bson.M{
+			"foo": bson.M{"$type": true},
+		}, "$type: expected string or number")
+		fn(bson.M{
+			"foo": bson.M{"$type": "foo"},
+		}, "$type: unknown type string")
+		fn(bson.M{
+			"foo": bson.M{"$type": int32(300)},
+		}, "$type: unknown type number")
+
+		// string
+		fn(bson.M{
+			"foo": bson.M{"$type": "string"},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{"$type": "double"},
+		}, false)
+
+		// number
+		fn(bson.M{
+			"foo": bson.M{"$type": int32(2)},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{"$type": int64(2)},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{"$type": float64(2)},
+		}, true)
+		fn(bson.M{
+			"foo": bson.M{"$type": int64(1)},
+		}, false)
+
+		// missing field
+		fn(bson.M{
+			"bar": bson.M{"type": "string"},
+		}, false)
+		fn(bson.M{
+			"bar": bson.M{"type": "null"},
+		}, false)
+	})
+}
+
 func TestMatchAll(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",

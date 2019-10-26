@@ -36,6 +36,7 @@ func init() {
 	ExpressionQueryOperators["$in"] = matchIn
 	ExpressionQueryOperators["$nin"] = matchNin
 	ExpressionQueryOperators["$exists"] = matchExists
+	ExpressionQueryOperators["$type"] = matchType
 	ExpressionQueryOperators["$all"] = matchAll
 	ExpressionQueryOperators["$size"] = matchSize
 }
@@ -236,6 +237,51 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 
 	if field == bsonkit.Missing {
 		return nil
+	}
+
+	return ErrNotMatched
+}
+
+func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	// check value type
+	switch value := v.(type) {
+	case string:
+		// check type string
+		vt, ok := bsonkit.TypeString[value]
+		if !ok {
+			return fmt.Errorf("%s: unknown type string", name)
+		}
+
+		// match type string
+		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path, false))
+		if vt == typ {
+			return nil
+		}
+	case int32, int64, float64:
+		// coerce number
+		var num byte
+		switch nn := v.(type) {
+		case int32:
+			num = byte(nn)
+		case int64:
+			num = byte(nn)
+		case float64:
+			num = byte(nn)
+		}
+
+		// check type number
+		vt, ok := bsonkit.TypeNumber[num]
+		if !ok {
+			return fmt.Errorf("%s: unknown type number", name)
+		}
+
+		// match type number
+		_, typ := bsonkit.Inspect(bsonkit.Get(doc, path, false))
+		if vt == typ {
+			return nil
+		}
+	default:
+		return fmt.Errorf("%s: expected string or number", name)
 	}
 
 	return ErrNotMatched
