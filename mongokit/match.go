@@ -352,7 +352,7 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 
 func matchUnwind(doc bsonkit.Doc, path string, collect bool, op func(interface{}) error) error {
 	// get value
-	value := bsonkit.All(doc, path, collect)
+	value, _  := bsonkit.All(doc, path, collect)
 	if arr, ok := value.(bson.A); ok {
 		for _, field := range arr {
 			err := op(field)

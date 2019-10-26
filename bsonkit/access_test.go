@@ -105,26 +105,37 @@ func TestGetEmbedded(t *testing.T) {
 				},
 			},
 		},
+		"bar": "baz",
 	})
 
 	// missing field
-	res := Get(doc, "foo.bar")
+	res, multi := All(doc, "foo.bar", false)
+	assert.False(t, multi)
 	assert.Equal(t, Missing, res)
 
 	// missing field (collect)
-	res = All(doc, "foo.bar", true)
+	res, multi = All(doc, "foo.bar", true)
+	assert.True(t, multi)
 	assert.Equal(t, bson.A{}, res)
 
-	// existing field
-	res = Get(doc, "foo.baz")
+	// simple field (collect)
+	res, multi = All(doc, "bar", true)
+	assert.False(t, multi)
+	assert.Equal(t, "baz", res)
+
+	// nested field
+	res, multi = All(doc, "foo.baz", false)
+	assert.False(t, multi)
 	assert.Equal(t, Missing, res)
 
-	// no collection
-	res = All(doc, "foo.baz", true)
+	// nested field (collect)
+	res, multi = All(doc, "foo.baz", true)
+	assert.True(t, multi)
 	assert.Equal(t, bson.A{7, 42}, res)
 
 	// multi level
-	res = All(doc, "foo.quz.qux", true)
+	res, multi = All(doc, "foo.quz.qux", true)
+	assert.True(t, multi)
 	assert.Equal(t, bson.A{13, 13}, res)
 }
 

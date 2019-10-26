@@ -19,9 +19,9 @@ func Get(doc Doc, path string) interface{} {
 	return res
 }
 
-func All(doc Doc, path string, collect bool) interface{} {
-	res, _ := get(*doc, strings.Split(path, "."), collect)
-	return res
+func All(doc Doc, path string, collect bool) (interface{}, bool) {
+	res, multi := get(*doc, strings.Split(path, "."), collect)
+	return res, multi
 }
 
 func get(v interface{}, path []string, collect bool) (interface{}, bool) {
