@@ -534,6 +534,15 @@ func TestMatchComp(t *testing.T) {
 				},
 			},
 		}, false)
+
+		// do not match flattened sub array
+		fn(bson.M{
+			"bar": bson.M{
+				"$eq": bson.A{
+					"foo", "bar", "bar", "baz",
+				},
+			},
+		}, false)
 	})
 
 	// embedded documents
@@ -552,7 +561,7 @@ func TestMatchComp(t *testing.T) {
 				"baz": 42.0,
 				"quz": bson.A{
 					bson.M{
-						"qux": 13.0,
+						"qux": bson.A{13.0, 26.0},
 					},
 				},
 			},
@@ -567,6 +576,16 @@ func TestMatchComp(t *testing.T) {
 		fn(bson.M{
 			"foo.quz.qux": 13.0,
 		}, true)
+
+		// two levels array field
+		fn(bson.M{
+			"foo.quz.qux": 26.0,
+		}, true)
+
+		// do not match merged array
+		fn(bson.M{
+			"foo.quz.qux": bson.A{13.0, 13.0},
+		}, false)
 	})
 
 	matchTest(t, bson.M{
@@ -638,10 +657,10 @@ func TestMatchNot(t *testing.T) {
 func TestMatchIn(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
-		"bar": bson.A{"foo", "bar"},
+		"bar": bson.A{"foo", "bar", bson.A{"baz"}},
 		"baz": bson.A{
 			bson.M{"foo": "baz"},
-			bson.M{"foo": "bar"},
+			bson.M{"foo": bson.A{"bar"}},
 		},
 	}, func(fn func(bson.M, interface{})) {
 		// missing list
@@ -664,7 +683,17 @@ func TestMatchIn(t *testing.T) {
 			"bar": bson.M{"$in": bson.A{"bar"}},
 		}, true)
 
+		// array field (flattened)
+		fn(bson.M{
+			"bar": bson.M{"$in": bson.A{"baz"}},
+		}, false)
+
 		// embedded document
+		fn(bson.M{
+			"baz.foo": bson.M{"$in": bson.A{"baz"}},
+		}, true)
+
+		// embedded document (flattened)
 		fn(bson.M{
 			"baz.foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)

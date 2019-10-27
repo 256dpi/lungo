@@ -127,7 +127,7 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-	return matchUnwind(doc, path, true, func(field interface{}) error {
+	return matchUnwind(doc, path, true, true, false, func(field interface{}) error {
 		// check types (type bracketing)
 		lt, _ := bsonkit.Inspect(field)
 		rt, _ := bsonkit.Inspect(v)
@@ -192,7 +192,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, true, func(field interface{}) error {
+	return matchUnwind(doc, path, true, true, false, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {
@@ -288,7 +288,7 @@ func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 }
 
 func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, true, func(field interface{}) error {
+	return matchUnwind(doc, path, true, false, true, func(field interface{}) error {
 		// get array
 		list, ok := v.(bson.A)
 		if !ok {
@@ -331,7 +331,7 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 }
 
 func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	return matchUnwind(doc, path, false, func(field interface{}) error {
+	return matchUnwind(doc, path, false, false, false, func(field interface{}) error {
 		// check value
 		t, _ := bsonkit.Inspect(v)
 		if t != bsonkit.Number {
@@ -350,9 +350,9 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	})
 }
 
-func matchUnwind(doc bsonkit.Doc, path string, collect bool, op func(interface{}) error) error {
+func matchUnwind(doc bsonkit.Doc, path string, collect, merge, yieldMerge bool, op func(interface{}) error) error {
 	// get value
-	value, _ := bsonkit.All(doc, path, collect, false)
+	value, multi := bsonkit.All(doc, path, collect, merge)
 	if arr, ok := value.(bson.A); ok {
 		for _, field := range arr {
 			err := op(field)
@@ -366,7 +366,12 @@ func matchUnwind(doc bsonkit.Doc, path string, collect bool, op func(interface{}
 		}
 	}
 
-	return op(value)
+	// match value
+	if !multi || yieldMerge {
+		return op(value)
+	}
+
+	return ErrNotMatched
 }
 
 func matchNegate(op func() error) error {
