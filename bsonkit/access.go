@@ -19,9 +19,9 @@ func Get(doc Doc, path string) interface{} {
 	return value
 }
 
-func All(doc Doc, path string, collect, compact, merge bool) (interface{}, bool) {
+func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	// get value
-	value, nested := get(*doc, strings.Split(path, "."), collect, compact)
+	value, nested := get(*doc, strings.Split(path, "."), true, compact)
 	if !nested || !merge {
 		return value, nested
 	}
