@@ -142,14 +142,19 @@ func TestAll(t *testing.T) {
 	assert.Equal(t, bson.A{13, 13, 26}, res)
 }
 
-func TestAllFlatten(t *testing.T) {
+func TestAllMerge(t *testing.T) {
 	doc := Convert(bson.M{
 		"foo": bson.A{
 			bson.M{
-				"quz": bson.A{3, 4},
+				"quz": bson.A{
+					3,
+					4,
+				},
 			},
 			bson.M{
-				"quz": bson.A{1, 2},
+				"quz": bson.A{
+					bson.A{1, 2},
+				},
 			},
 			bson.M{
 				"quz": 5,
@@ -165,12 +170,12 @@ func TestAllFlatten(t *testing.T) {
 	// array field
 	res, multi := All(doc, "bar", true, true)
 	assert.False(t, multi)
-	assert.Equal(t, bson.A{1, 2, 3, 4, 5}, res)
+	assert.Equal(t, bson.A{bson.A{1, 2}, bson.A{3, 4}, 5}, res)
 
 	// nested array field
 	res, multi = All(doc, "foo.quz", true, true)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{3, 4, 1, 2, 5}, res)
+	assert.Equal(t, bson.A{3, 4, bson.A{1, 2}, 5}, res)
 }
 
 func TestPut(t *testing.T) {
