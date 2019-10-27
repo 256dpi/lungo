@@ -42,22 +42,22 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 
 func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
-	list, ok := v.(bson.A)
+	array, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("%s: expected list", name)
+		return fmt.Errorf("%s: expected array", name)
 	}
 
-	// check list
-	if len(list) == 0 {
-		return fmt.Errorf("%s: empty list", name)
+	// check array
+	if len(array) == 0 {
+		return fmt.Errorf("%s: empty array", name)
 	}
 
 	// extract all expressions
-	for _, item := range list {
+	for _, item := range array {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("%s: expected list of documents", name)
+			return fmt.Errorf("%s: expected array of documents", name)
 		}
 
 		// extract document
@@ -72,34 +72,31 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) er
 
 func extractOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
-	list, ok := v.(bson.A)
+	array, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("%s: expected list", name)
+		return fmt.Errorf("%s: expected array", name)
 	}
 
-	// check list
-	if len(list) == 0 {
-		return fmt.Errorf("%s: empty list", name)
+	// check array
+	if len(array) == 0 {
+		return fmt.Errorf("%s: empty array", name)
 	}
 
-	// check list
-	if len(list) > 1 {
+	// ignore longer arrays
+	if len(array) > 1 {
 		return nil
 	}
 
-	// extract first item
-	for _, item := range list {
-		// coerce item
-		query, ok := item.(bson.D)
-		if !ok {
-			return fmt.Errorf("%s: expected list of documents", name)
-		}
+	// coerce first item
+	query, ok := array[0].(bson.D)
+	if !ok {
+		return fmt.Errorf("%s: expected array of documents", name)
+	}
 
-		// extract document
-		err := Process(ctx, doc, query, false)
-		if err != nil {
-			return err
-		}
+	// extract document
+	err := Process(ctx, doc, query, false)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -111,14 +108,14 @@ func extractEq(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error
 
 func extractIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get array
-	list, ok := v.(bson.A)
+	array, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("%s: expected list", name)
+		return fmt.Errorf("%s: expected array", name)
 	}
 
-	// check list
-	if len(list) == 1 {
-		return bsonkit.Put(doc, path, list[0], false)
+	// check array
+	if len(array) == 1 {
+		return bsonkit.Put(doc, path, array[0], false)
 	}
 
 	return nil

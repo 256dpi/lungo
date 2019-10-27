@@ -30,7 +30,7 @@ var TypeString = map[string]bsontype.Type{}
 var TypeNumber = map[byte]bsontype.Type{}
 
 func init() {
-	// make list
+	// prepare types
 	types := []bsontype.Type{
 		bsontype.Double,
 		bsontype.String,

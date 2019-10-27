@@ -145,12 +145,12 @@ func TestMatchAnd(t *testing.T) {
 		// no array
 		fn(bson.M{
 			"$and": nil,
-		}, "$and: expected list")
+		}, "$and: expected array")
 
 		// empty array
 		fn(bson.M{
 			"$and": bson.A{},
-		}, "$and: empty list")
+		}, "$and: empty array")
 
 		// match single
 		fn(bson.M{
@@ -239,12 +239,12 @@ func TestMatchOr(t *testing.T) {
 		// no array
 		fn(bson.M{
 			"$or": nil,
-		}, "$or: expected list")
+		}, "$or: expected array")
 
 		// empty array
 		fn(bson.M{
 			"$or": bson.A{},
-		}, "$or: empty list")
+		}, "$or: empty array")
 
 		// match single
 		fn(bson.M{
@@ -333,12 +333,12 @@ func TestMatchNor(t *testing.T) {
 		// no array
 		fn(bson.M{
 			"$nor": nil,
-		}, "$nor: expected list")
+		}, "$nor: expected array")
 
 		// empty array
 		fn(bson.M{
 			"$nor": bson.A{},
-		}, "$nor: empty list")
+		}, "$nor: empty array")
 
 		// match single
 		fn(bson.M{
@@ -663,17 +663,17 @@ func TestMatchIn(t *testing.T) {
 			bson.M{"foo": bson.A{"bar"}},
 		},
 	}, func(fn func(bson.M, interface{})) {
-		// missing list
+		// missing array
 		fn(bson.M{
 			"foo": bson.M{"$in": ""},
-		}, "$in: expected list")
+		}, "$in: expected array")
 
-		// empty list
+		// empty array
 		fn(bson.M{
 			"foo": bson.M{"$in": bson.A{}},
 		}, false)
 
-		// matching list
+		// matching array
 		fn(bson.M{
 			"foo": bson.M{"$in": bson.A{"bar"}},
 		}, true)
@@ -709,17 +709,17 @@ func TestMatchNin(t *testing.T) {
 			bson.M{"foo": "bar"},
 		},
 	}, func(fn func(bson.M, interface{})) {
-		// missing list
+		// missing array
 		fn(bson.M{
 			"foo": bson.M{"$nin": ""},
-		}, "$nin: expected list")
+		}, "$nin: expected array")
 
-		// empty list
+		// empty array
 		fn(bson.M{
 			"foo": bson.M{"$nin": bson.A{}},
 		}, true)
 
-		// matching list
+		// matching array
 		fn(bson.M{
 			"foo": bson.M{"$nin": bson.A{"bar"}},
 		}, false)
@@ -829,12 +829,12 @@ func TestMatchAll(t *testing.T) {
 			bson.M{"foo": "bar"},
 		},
 	}, func(fn func(bson.M, interface{})) {
-		// missing list
+		// missing array
 		fn(bson.M{
 			"foo": bson.M{"$all": ""},
-		}, "$all: expected list")
+		}, "$all: expected array")
 
-		// empty list
+		// empty array
 		fn(bson.M{
 			"foo": bson.M{"$all": bson.A{}},
 		}, false)
@@ -842,7 +842,7 @@ func TestMatchAll(t *testing.T) {
 			"baz": bson.M{"$all": bson.A{}},
 		}, false)
 
-		// matching list
+		// matching array
 		fn(bson.M{
 			"foo": bson.M{"$all": bson.A{"bar"}},
 		}, true)
@@ -882,7 +882,7 @@ func TestMatchSize(t *testing.T) {
 			"foo": bson.M{"$size": false},
 		}, "$size: expected number")
 
-		// non list
+		// non array
 		fn(bson.M{
 			"foo": bson.M{"$size": int32(0)},
 		}, false)
@@ -890,7 +890,7 @@ func TestMatchSize(t *testing.T) {
 			"foo": bson.M{"$size": int32(1)},
 		}, false)
 
-		// matching list
+		// matching array
 		fn(bson.M{
 			"bar": bson.M{"$size": int32(0)},
 		}, false)

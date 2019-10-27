@@ -58,22 +58,22 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 
 func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
-	list, ok := v.(bson.A)
+	array, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("%s: expected list", name)
+		return fmt.Errorf("%s: expected array", name)
 	}
 
-	// check list
-	if len(list) == 0 {
-		return fmt.Errorf("%s: empty list", name)
+	// check array
+	if len(array) == 0 {
+		return fmt.Errorf("%s: empty array", name)
 	}
 
 	// match all expressions
-	for _, item := range list {
+	for _, item := range array {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("%s: expected list of documents", name)
+			return fmt.Errorf("%s: expected array of documents", name)
 		}
 
 		// match document
@@ -88,22 +88,22 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) erro
 
 func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
-	list, ok := v.(bson.A)
+	array, ok := v.(bson.A)
 	if !ok {
-		return fmt.Errorf("%s: expected list", name)
+		return fmt.Errorf("%s: expected array", name)
 	}
 
-	// check list
-	if len(list) == 0 {
-		return fmt.Errorf("%s: empty list", name)
+	// check array
+	if len(array) == 0 {
+		return fmt.Errorf("%s: empty array", name)
 	}
 
 	// match first item
-	for _, item := range list {
+	for _, item := range array {
 		// coerce item
 		query, ok := item.(bson.D)
 		if !ok {
-			return fmt.Errorf("%s: expected list of documents", name)
+			return fmt.Errorf("%s: expected array of documents", name)
 		}
 
 		// match document
@@ -194,13 +194,13 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, true, false, func(field interface{}) error {
 		// get array
-		list, ok := v.(bson.A)
+		array, ok := v.(bson.A)
 		if !ok {
-			return fmt.Errorf("%s: expected list", name)
+			return fmt.Errorf("%s: expected array", name)
 		}
 
-		// check if field is in list
-		for _, item := range list {
+		// check if field is in array
+		for _, item := range array {
 			if bsonkit.Compare(field, item) == 0 {
 				return nil
 			}
@@ -290,20 +290,20 @@ func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, false, true, func(field interface{}) error {
 		// get array
-		list, ok := v.(bson.A)
+		array, ok := v.(bson.A)
 		if !ok {
-			return fmt.Errorf("%s: expected list", name)
+			return fmt.Errorf("%s: expected array", name)
 		}
 
 		// check array
-		if len(list) == 0 {
+		if len(array) == 0 {
 			return ErrNotMatched
 		}
 
-		// check if array contains list
+		// check if array contains array
 		if arr, ok := field.(bson.A); ok {
 			matches := true
-			for _, value := range list {
+			for _, value := range array {
 				ok := false
 				for _, element := range arr {
 					if bsonkit.Compare(value, element) == 0 {
@@ -319,8 +319,8 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 			}
 		}
 
-		// check if field is in list
-		for _, item := range list {
+		// check if field is in array
+		for _, item := range array {
 			if bsonkit.Compare(field, item) != 0 {
 				return ErrNotMatched
 			}
@@ -339,9 +339,9 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 		}
 
 		// compare length if array
-		list, ok := field.(bson.A)
+		array, ok := field.(bson.A)
 		if ok {
-			if bsonkit.Compare(int64(len(list)), v) == 0 {
+			if bsonkit.Compare(int64(len(array)), v) == 0 {
 				return nil
 			}
 		}
