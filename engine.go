@@ -563,12 +563,6 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 		return nil, err
 	}
 
-	// build list index
-	listIndex := map[bsonkit.Doc]bool{}
-	for _, doc := range list {
-		listIndex[doc] = true
-	}
-
 	// clone data
 	clone := e.data.Clone()
 
