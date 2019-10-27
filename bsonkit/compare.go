@@ -29,8 +29,8 @@ func Compare(lv, rv interface{}) int {
 		return compareNumbers(lv, rv)
 	case String:
 		return compareStrings(lv, rv)
-	case Object:
-		return compareObjects(lv, rv)
+	case Document:
+		return compareDocuments(lv, rv)
 	case Array:
 		return compareArrays(lv, rv)
 	case Binary:
@@ -95,7 +95,7 @@ func compareStrings(lv, rv interface{}) int {
 	return res
 }
 
-func compareObjects(lv, rv interface{}) int {
+func compareDocuments(lv, rv interface{}) int {
 	// get documents
 	l := lv.(bson.D)
 	r := rv.(bson.D)

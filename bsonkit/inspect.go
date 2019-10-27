@@ -16,7 +16,7 @@ const (
 	Null Type = iota
 	Number
 	String
-	Object
+	Document
 	Array
 	Binary
 	ObjectID
@@ -75,7 +75,7 @@ func Inspect(v interface{}) (Type, bsontype.Type) {
 	case string:
 		return String, bsontype.String
 	case bson.D:
-		return Object, bsontype.EmbeddedDocument
+		return Document, bsontype.EmbeddedDocument
 	case bson.A:
 		return Array, bsontype.Array
 	case primitive.Binary:

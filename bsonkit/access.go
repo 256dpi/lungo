@@ -69,7 +69,7 @@ func get(v interface{}, path []string, collect, compact bool) (interface{}, bool
 		}
 	}
 
-	// get array element
+	// get array field
 	if arr, ok := v.(bson.A); ok {
 		// get indexed array element
 		index, err := strconv.ParseInt(path[0], 10, 64)
@@ -77,7 +77,7 @@ func get(v interface{}, path []string, collect, compact bool) (interface{}, bool
 			return get(arr[index], path[1:], collect, compact)
 		}
 
-		// collect value from embedded documents
+		// collect values from embedded documents
 		if collect {
 			res := make(bson.A, 0, len(arr))
 			for _, item := range arr {
@@ -166,7 +166,7 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		return true
 	}
 
-	// put array element
+	// put array field
 	if arr, ok := v.(bson.A); ok {
 		index, err := strconv.Atoi(path[0])
 		if err != nil || index < 0 {

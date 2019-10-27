@@ -10,7 +10,7 @@ import (
 func Decode(doc Doc, out interface{}) error {
 	// TODO: This approach is slow, we should do it directly in memory if possible.
 
-	// marshal doc
+	// marshal document
 	bytes, err := bson.Marshal(doc)
 	if err != nil {
 		return err

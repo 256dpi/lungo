@@ -22,7 +22,7 @@ func TestInspect(t *testing.T) {
 		{in: 4.2, t1: Number, t2: bsontype.Double},
 		{in: "", t1: String, t2: bsontype.String},
 		{in: "foo", t1: String, t2: bsontype.String},
-		{in: bson.D{}, t1: Object, t2: bsontype.EmbeddedDocument},
+		{in: bson.D{}, t1: Document, t2: bsontype.EmbeddedDocument},
 		{in: bson.A{}, t1: Array, t2: bsontype.Array},
 		{in: primitive.Binary{}, t1: Binary, t2: bsontype.Binary},
 		{in: primitive.NewObjectID(), t1: ObjectID, t2: bsontype.ObjectID},

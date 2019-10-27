@@ -42,14 +42,14 @@ func Apply(doc, update bsonkit.Doc, upsert bool) error {
 
 func applyAll(name string, operator Operator) Operator {
 	return func(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-		// get object
-		obj, ok := v.(bson.D)
+		// get update document
+		update, ok := v.(bson.D)
 		if !ok {
 			return fmt.Errorf("%s: expected document", name)
 		}
 
 		// call operator for each pair
-		for _, pair := range obj {
+		for _, pair := range update {
 			err := operator(ctx, doc, op, pair.Key, pair.Value)
 			if err != nil {
 				return err
@@ -158,19 +158,19 @@ func applyCurrentDate(_ *Context, doc bsonkit.Doc, name, path string, v interfac
 		return nil
 	}
 
-	// coerce object
-	obj, ok := v.(bson.D)
+	// coerce document
+	args, ok := v.(bson.D)
 	if !ok {
 		return fmt.Errorf("%s: expected boolean or document", name)
 	}
 
-	// check object
-	if len(obj) > 1 || obj[0].Key != "$type" {
+	// check document
+	if len(args) > 1 || args[0].Key != "$type" {
 		return fmt.Errorf("%s: expected document with a single $type field", name)
 	}
 
 	// set date or timestamp
-	switch obj[0].Value {
+	switch args[0].Value {
 	case "date":
 		return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
 	case "timestamp":

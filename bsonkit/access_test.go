@@ -288,7 +288,7 @@ func TestPut(t *testing.T) {
 		},
 	}), doc)
 
-	// intermediary object creation
+	// intermediary document creation
 	doc = &bson.D{}
 	err = Put(doc, "baz.bar.foo", 42, false)
 	assert.NoError(t, err)
