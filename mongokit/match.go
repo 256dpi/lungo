@@ -39,6 +39,7 @@ func init() {
 	ExpressionQueryOperators["$type"] = matchType
 	ExpressionQueryOperators["$all"] = matchAll
 	ExpressionQueryOperators["$size"] = matchSize
+	ExpressionQueryOperators["$elemMatch"] = matchElem
 }
 
 func Match(doc, query bsonkit.Doc) (bool, error) {
@@ -348,6 +349,50 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 
 		return ErrNotMatched
 	})
+}
+
+func matchElem(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	// get query
+	query, ok := v.(bson.D)
+	if !ok {
+		return fmt.Errorf("%s: expected document", name)
+	}
+
+	// check query
+	if len(query) == 0 {
+		return ErrNotMatched
+	}
+
+	// get value
+	value, _ := bsonkit.All(doc, path, true, true)
+
+	// get array
+	array, ok := value.(bson.A)
+	if !ok {
+		return ErrNotMatched
+	}
+
+	// match first item
+	for _, item := range array {
+		// prepare virtual doc
+		virtual := bson.D{
+			bson.E{Key: "item", Value: item},
+		}
+
+		// TODO: Blacklist unsupported operators.
+
+		// process virtual document
+		err := Process(ctx, &virtual, query, "item", false)
+		if err == ErrNotMatched {
+			continue
+		} else if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return ErrNotMatched
 }
 
 func matchUnwind(doc bsonkit.Doc, path string, merge, yieldMerge bool, op func(interface{}) error) error {

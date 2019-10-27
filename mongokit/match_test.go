@@ -910,3 +910,68 @@ func TestMatchSize(t *testing.T) {
 		}, false)
 	})
 }
+
+func TestMatchElem(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": bson.A{"foo", "bar"},
+		"baz": bson.A{
+			bson.M{
+				"foo": 7.0,
+				"bar": bson.A{
+					bson.M{
+						"baz": 13.0,
+					},
+				},
+			},
+			bson.M{
+				"foo": 42.0,
+				"bar": bson.A{
+					bson.M{
+						"baz": bson.A{13.0, 26.0},
+					},
+				},
+			},
+		},
+	}, func(fn func(bson.M, interface{})) {
+		// invalid value
+		fn(bson.M{
+			"foo": bson.M{"$elemMatch": false},
+		}, "$elemMatch: expected document")
+
+		// no array
+		fn(bson.M{
+			"foo": bson.M{"$elemMatch": bson.M{}},
+		}, false)
+
+		// no query
+		fn(bson.M{
+			"bar": bson.M{"$elemMatch": bson.M{}},
+		}, false)
+
+		// basic query
+		fn(bson.M{
+			"bar": bson.M{"$elemMatch": bson.M{
+				"$eq": "foo",
+			}},
+		}, true)
+
+		// embedded field
+		fn(bson.M{
+			"baz": bson.M{"$elemMatch": bson.M{
+				"foo": bson.M{
+					"$gt": 9.0,
+				},
+			}},
+		}, true)
+
+		// nested field
+		fn(bson.M{
+			"baz.bar": bson.M{"$elemMatch": bson.M{
+				"baz": bson.M{
+					"$gt": 15.0,
+				},
+			}},
+		}, true)
+	})
+}
