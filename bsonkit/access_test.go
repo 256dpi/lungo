@@ -92,6 +92,9 @@ func TestAll(t *testing.T) {
 				"baz": 7,
 				"quz": bson.A{
 					bson.M{
+						"foo": "bar",
+					},
+					bson.M{
 						"qux": 13,
 					},
 				},
@@ -112,32 +115,47 @@ func TestAll(t *testing.T) {
 	})
 
 	// missing field
-	res, multi := All(doc, "foo.bar", false, false)
+	res, multi := All(doc, "foo.bar", false, false, false)
 	assert.False(t, multi)
 	assert.Equal(t, Missing, res)
 
 	// missing field (collect)
-	res, multi = All(doc, "foo.bar", true, false)
+	res, multi = All(doc, "foo.bar", true, false, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{Missing, Missing, Missing}, res)
+
+	// missing field (collect & compact)
+	res, multi = All(doc, "foo.bar", true, true, false)
 	assert.True(t, multi)
 	assert.Equal(t, bson.A{}, res)
 
 	// simple field (collect)
-	res, multi = All(doc, "bar", true, false)
+	res, multi = All(doc, "bar", true, false, false)
 	assert.False(t, multi)
 	assert.Equal(t, "baz", res)
 
 	// nested field
-	res, multi = All(doc, "foo.baz", false, false)
+	res, multi = All(doc, "foo.baz", false, false, false)
 	assert.False(t, multi)
 	assert.Equal(t, Missing, res)
 
 	// nested field (collect)
-	res, multi = All(doc, "foo.baz", true, false)
+	res, multi = All(doc, "foo.baz", true, false, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{Missing, 7, 42}, res)
+
+	// nested field (collect & compact)
+	res, multi = All(doc, "foo.baz", true, true, false)
 	assert.True(t, multi)
 	assert.Equal(t, bson.A{7, 42}, res)
 
 	// multi level
-	res, multi = All(doc, "foo.quz.qux", true, false)
+	res, multi = All(doc, "foo.quz.qux", true, false, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{Missing, bson.A{Missing, 13}, bson.A{13, 26}}, res)
+
+	// multi level (compact)
+	res, multi = All(doc, "foo.quz.qux", true, true, false)
 	assert.True(t, multi)
 	assert.Equal(t, bson.A{13, 13, 26}, res)
 }
@@ -168,12 +186,12 @@ func TestAllMerge(t *testing.T) {
 	})
 
 	// array field
-	res, multi := All(doc, "bar", true, true)
+	res, multi := All(doc, "bar", true, true, true)
 	assert.False(t, multi)
 	assert.Equal(t, bson.A{bson.A{1, 2}, bson.A{3, 4}, 5}, res)
 
 	// nested array field
-	res, multi = All(doc, "foo.quz", true, true)
+	res, multi = All(doc, "foo.quz", true, true, true)
 	assert.True(t, multi)
 	assert.Equal(t, bson.A{3, 4, bson.A{1, 2}, 5}, res)
 }

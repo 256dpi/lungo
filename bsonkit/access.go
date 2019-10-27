@@ -15,13 +15,13 @@ var Missing = MissingType{}
 var unsetValue interface{} = struct{}{}
 
 func Get(doc Doc, path string) interface{} {
-	value, _ := get(*doc, strings.Split(path, "."), false)
+	value, _ := get(*doc, strings.Split(path, "."), false, false)
 	return value
 }
 
-func All(doc Doc, path string, collect, merge bool) (interface{}, bool) {
+func All(doc Doc, path string, collect, compact, merge bool) (interface{}, bool) {
 	// get value
-	value, nested := get(*doc, strings.Split(path, "."), collect)
+	value, nested := get(*doc, strings.Split(path, "."), collect, compact)
 	if !nested || !merge {
 		return value, nested
 	}
@@ -49,7 +49,7 @@ func All(doc Doc, path string, collect, merge bool) (interface{}, bool) {
 	return result, nested
 }
 
-func get(v interface{}, path []string, collect bool) (interface{}, bool) {
+func get(v interface{}, path []string, collect, compact bool) (interface{}, bool) {
 	// check path
 	if len(path) == 0 {
 		return v, false
@@ -64,7 +64,7 @@ func get(v interface{}, path []string, collect bool) (interface{}, bool) {
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
 			if el.Key == path[0] {
-				return get(el.Value, path[1:], collect)
+				return get(el.Value, path[1:], collect, compact)
 			}
 		}
 	}
@@ -74,16 +74,18 @@ func get(v interface{}, path []string, collect bool) (interface{}, bool) {
 		// get indexed array element
 		index, err := strconv.ParseInt(path[0], 10, 64)
 		if err == nil && index >= 0 && index < int64(len(arr)) {
-			return get(arr[index], path[1:], collect)
+			return get(arr[index], path[1:], collect, compact)
 		}
 
 		// collect value from embedded documents
 		if collect {
 			res := make(bson.A, 0, len(arr))
 			for _, item := range arr {
-				value, ok := get(item, path, collect)
-				if value != Missing {
-					if ok {
+				value, ok := get(item, path, collect, compact)
+				if value == Missing && !compact {
+					res = append(res, value)
+				} else if value != Missing {
+					if ok && compact {
 						res = append(res, value.(bson.A)...)
 					} else {
 						res = append(res, value)
