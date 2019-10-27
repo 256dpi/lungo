@@ -46,7 +46,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	err := Process(&Context{
 		TopLevel:   TopLevelQueryOperators,
 		Expression: ExpressionQueryOperators,
-	}, doc, *query, true)
+	}, doc, *query, "", true)
 	if err == ErrNotMatched {
 		return false, nil
 	} else if err != nil {
@@ -77,7 +77,7 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) erro
 		}
 
 		// match document
-		err := Process(ctx, doc, query, false)
+		err := Process(ctx, doc, query, "", false)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error
 		}
 
 		// match document
-		err := Process(ctx, doc, query, false)
+		err := Process(ctx, doc, query, "", false)
 		if err == ErrNotMatched {
 			continue
 		} else if err != nil {

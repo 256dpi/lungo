@@ -37,7 +37,7 @@ func Apply(doc, update bsonkit.Doc, upsert bool) error {
 	return Process(&Context{
 		Upsert:   upsert,
 		TopLevel: FieldUpdateOperators,
-	}, doc, *update, true)
+	}, doc, *update, "", true)
 }
 
 func applyAll(name string, operator Operator) Operator {

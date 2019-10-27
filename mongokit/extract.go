@@ -32,7 +32,7 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	err := Process(&Context{
 		TopLevel:   TopLevelExtractOperators,
 		Expression: ExpressionExtractOperators,
-	}, doc, *query, true)
+	}, doc, *query, "", true)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) er
 		}
 
 		// extract document
-		err := Process(ctx, doc, query, false)
+		err := Process(ctx, doc, query, "", false)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func extractOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) err
 	}
 
 	// extract document
-	err := Process(ctx, doc, query, false)
+	err := Process(ctx, doc, query, "", false)
 	if err != nil {
 		return err
 	}

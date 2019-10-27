@@ -16,10 +16,10 @@ type Context struct {
 	Upsert     bool
 }
 
-func Process(ctx *Context, doc bsonkit.Doc, query bson.D, root bool) error {
+func Process(ctx *Context, doc bsonkit.Doc, query bson.D, prefix string, root bool) error {
 	// process all expressions (implicit and)
 	for _, exp := range query {
-		err := ProcessExpression(ctx, doc, "", exp, root)
+		err := ProcessExpression(ctx, doc, prefix, exp, root)
 		if err != nil {
 			return err
 		}
