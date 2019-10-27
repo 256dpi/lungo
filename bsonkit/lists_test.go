@@ -32,6 +32,21 @@ func TestSelect(t *testing.T) {
 	assert.Equal(t, List{a}, list)
 }
 
+func TestPick(t *testing.T) {
+	a1 := Convert(bson.M{"a": "1"})
+	a2 := Convert(bson.M{"a": "2"})
+	a3 := Convert(bson.M{"a": "2"})
+	b1 := Convert(bson.M{"b": "3"})
+
+	// raw values
+	res := Pick(List{a1, a2, b1, a3}, "a", false)
+	assert.Equal(t, bson.A{"1", "2", Missing, "2"}, res)
+
+	// compact values
+	res = Pick(List{a1, b1, a2, a3}, "a", true)
+	assert.Equal(t, bson.A{"1", "2", "2"}, res)
+}
+
 func TestCollect(t *testing.T) {
 	a1 := Convert(bson.M{"a": "1"})
 	a2 := Convert(bson.M{"a": "2"})
