@@ -7,5 +7,5 @@ import (
 )
 
 func Distinct(list bsonkit.List, path string) bson.A {
-	return bsonkit.Collect(list, path, true, true, true)
+	return bsonkit.Collect(list, path, true, true, true, true)
 }

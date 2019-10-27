@@ -39,19 +39,19 @@ func TestCollect(t *testing.T) {
 	b1 := Convert(bson.M{"b": "3"})
 
 	// raw values
-	res := Collect(List{a1, a2, b1, a3}, "a", false, false, false)
+	res := Collect(List{a1, a2, b1, a3}, "a", false, false, false, false)
 	assert.Equal(t, bson.A{"1", "2", Missing, "2"}, res)
 
 	// compact values
-	res = Collect(List{a1, b1, a2, a3}, "a", true, false, false)
+	res = Collect(List{a1, b1, a2, a3}, "a", true, false, false, false)
 	assert.Equal(t, bson.A{"1", "2", "2"}, res)
 
 	// distinct values
-	res = Collect(List{a1, b1, a2, a3}, "a", false, false, true)
+	res = Collect(List{a1, b1, a2, a3}, "a", false, false, false, true)
 	assert.Equal(t, bson.A{Missing, "1", "2"}, res)
 
 	// compact and distinct values
-	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, false, true)
+	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, false, false, true)
 	assert.Equal(t, bson.A{"1", "2"}, res)
 }
 
@@ -61,15 +61,15 @@ func TestCollectArray(t *testing.T) {
 	a3 := Convert(bson.M{"a": "2"})
 
 	// raw values
-	res := Collect(List{a1, a2, a3}, "a", false, false, false)
+	res := Collect(List{a1, a2, a3}, "a", false, false, false, false)
 	assert.Equal(t, bson.A{"1", bson.A{"1", "2"}, "2"}, res)
 
 	// flattened values
-	res = Collect(List{a1, a2, a3}, "a", false, true, false)
+	res = Collect(List{a1, a2, a3}, "a", false, false, true, false)
 	assert.Equal(t, bson.A{"1", "1", "2", "2"}, res)
 
 	// distinct flattened values
-	res = Collect(List{a1, a2, a3}, "a", false, true, true)
+	res = Collect(List{a1, a2, a3}, "a", false, false, true, true)
 	assert.Equal(t, bson.A{"1", "2"}, res)
 }
 
@@ -79,14 +79,18 @@ func TestCollectEmbedded(t *testing.T) {
 	a3 := Convert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}})
 
 	// raw values
-	res := Collect(List{a1, a2, a3}, "a.b", false, false, false)
+	res := Collect(List{a1, a2, a3}, "a.b", false, false, false, false)
+	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{bson.A{"1", "2"}}, bson.A{"1","2"}}, res)
+
+	// merged values
+	res = Collect(List{a1, a2, a3}, "a.b", false, true, false, false)
 	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{"1", "2"}, bson.A{"1","2"}}, res)
 
 	// flattened values
-	res = Collect(List{a1, a2, a3}, "a.b", false, true, false)
+	res = Collect(List{a1, a2, a3}, "a.b", false, true, true, false)
 	assert.Equal(t, bson.A{"1", "1", "2", "1", "2"}, res)
 
-	// distinct flattened values
-	res = Collect(List{a1, a2, a3}, "a.b", false, true, true)
+	// distinct values
+	res = Collect(List{a1, a2, a3}, "a.b", false, true, true, true)
 	assert.Equal(t, bson.A{"1", "2"}, res)
 }

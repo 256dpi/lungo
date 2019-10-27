@@ -589,7 +589,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	return &mongo.InsertManyResult{
-		InsertedIDs: bsonkit.Collect(res.Modified, "_id", false, false, false),
+		InsertedIDs: bsonkit.Collect(res.Modified, "_id", false, false, false, false),
 	}, err
 }
 
