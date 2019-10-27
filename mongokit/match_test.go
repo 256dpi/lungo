@@ -42,7 +42,7 @@ func matchTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))) 
 	})
 }
 
-func TestMatchQueryComposition(t *testing.T) {
+func TestMatch(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
 		"bar": "baz",

@@ -68,7 +68,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, in
 	})
 }
 
-func TestApplyUpdateComposition(t *testing.T) {
+func TestApply(t *testing.T) {
 	applyTest(t, false, bson.M{
 		"foo": "bar",
 	}, func(fn func(bson.M, interface{})) {
