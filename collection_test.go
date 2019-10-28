@@ -10,6 +10,105 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func TestCollectionBulkWrite(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		models := []mongo.WriteModel{
+			mongo.NewInsertOneModel().SetDocument(bson.M{
+				"_id": id1,
+				"foo": "bar",
+			}),
+			mongo.NewUpdateOneModel().SetFilter(bson.M{
+				"foo": "bar",
+			}).SetUpdate(bson.M{
+				"$set": bson.M{
+					"foo": "baz",
+				},
+			}),
+			mongo.NewUpdateManyModel().SetFilter(bson.M{
+				"bar": "baz",
+			}).SetUpdate(bson.M{
+				"$set": bson.M{
+					"_id": id2,
+				},
+			}).SetUpsert(true),
+			mongo.NewReplaceOneModel().SetFilter(bson.M{
+				"bar": "baz",
+			}).SetReplacement(bson.M{
+				"baz": "quz",
+			}),
+		}
+
+		res, err := c.BulkWrite(nil, models)
+		assert.NoError(t, err)
+		assert.Equal(t, &mongo.BulkWriteResult{
+			InsertedCount: 1,
+			MatchedCount:  2,
+			ModifiedCount: 2,
+			UpsertedCount: 1,
+			UpsertedIDs: map[int64]interface{}{
+				2: id2,
+			},
+		}, res)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"baz": "quz",
+			},
+		}, dumpCollection(c, false))
+
+		models = []mongo.WriteModel{
+			mongo.NewDeleteOneModel().SetFilter(bson.M{
+				"foo": "baz",
+			}),
+			mongo.NewDeleteManyModel().SetFilter(bson.M{
+				"baz": "quz",
+			}),
+		}
+
+		res, err = c.BulkWrite(nil, models)
+		assert.NoError(t, err)
+		assert.Equal(t, &mongo.BulkWriteResult{
+			DeletedCount: 2,
+			UpsertedIDs:  map[int64]interface{}{},
+		}, res)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
+
+		models = []mongo.WriteModel{
+			mongo.NewInsertOneModel().SetDocument(bson.M{
+				"_id": id1,
+				"foo": "bar",
+			}),
+			mongo.NewUpdateOneModel().SetFilter(bson.M{
+				"foo": "bar",
+			}).SetUpdate(bson.M{
+				"$foo": bson.M{
+					"foo": "baz",
+				},
+			}),
+		}
+
+		res, err = c.BulkWrite(nil, models)
+		assert.Error(t, err)
+		assert.Equal(t, &mongo.BulkWriteResult{
+			InsertedCount: 1,
+			UpsertedIDs:  map[int64]interface{}{},
+		}, res)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionClone(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		c2, err := c.Clone()

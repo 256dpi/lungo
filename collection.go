@@ -24,8 +24,160 @@ func (c *Collection) Aggregate(context.Context, interface{}, ...*options.Aggrega
 }
 
 // BulkWrite implements the ICollection.BulkWrite method.
-func (c *Collection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
-	panic("lungo: not implemented")
+func (c *Collection) BulkWrite(_ context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	// merge options
+	opt := options.MergeBulkWriteOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"Ordered": supported,
+	})
+
+	// get ordered
+	var ordered bool
+	if opt.Ordered != nil {
+		ordered = *opt.Ordered
+	}
+
+	// prepare operations
+	ops := make([]Operation, 0, len(models))
+
+	// transform models
+	for _, item := range models {
+		// prepare variables
+		var operation Command
+		var document interface{}
+		var filter interface{}
+		var upsert *bool
+		var limit int
+
+		// set variables
+		switch model := item.(type) {
+		case *mongo.InsertOneModel:
+			operation = Insert
+			document = model.Document
+			limit = 1
+		case *mongo.ReplaceOneModel:
+			operation = Replace
+			filter = model.Filter
+			document = model.Replacement
+			upsert = model.Upsert
+			limit = 1
+		case *mongo.UpdateOneModel:
+			operation = Update
+			filter = model.Filter
+			document = model.Update
+			upsert = model.Upsert
+			limit = 1
+		case *mongo.UpdateManyModel:
+			operation = Update
+			filter = model.Filter
+			document = model.Update
+			upsert = model.Upsert
+			limit = 0
+		case *mongo.DeleteOneModel:
+			operation = Delete
+			filter = model.Filter
+			limit = 1
+		case *mongo.DeleteManyModel:
+			operation = Delete
+			filter = model.Filter
+			limit = 0
+		}
+
+		// prepare operation
+		op := Operation{
+			Command: operation,
+			Limit:   limit,
+		}
+
+		// transform document
+		if document != nil {
+			doc, err := bsonkit.Transform(document)
+			if err != nil {
+				return nil, err
+			}
+			op.Document = doc
+		}
+
+		// transform filter
+		if filter != nil {
+			flt, err := bsonkit.Transform(filter)
+			if err != nil {
+				return nil, err
+			}
+			op.Filter = flt
+		}
+
+		// check upsert
+		if upsert != nil {
+			op.Upsert = *upsert
+		}
+
+		// add operation
+		ops = append(ops, op)
+	}
+
+	// run bulk
+	results, err := c.engine.Bulk(c.handle, ops, ordered)
+	if err != nil {
+		return nil, err
+	}
+
+	// prepare result
+	result := &mongo.BulkWriteResult{
+		InsertedCount: 0,
+		MatchedCount:  0,
+		ModifiedCount: 0,
+		DeletedCount:  0,
+		UpsertedCount: 0,
+		UpsertedIDs:   map[int64]interface{}{},
+	}
+
+	// prepare errors
+	errors := make(mongo.WriteErrors, 0, len(results))
+
+	// apply bulk results
+	for i, res := range results {
+		// check error
+		if res.Error != nil {
+			errors = append(errors, mongo.WriteError{
+				Index:   i,
+				Code:    0,
+				Message: res.Error.Error(),
+			})
+			continue
+		}
+
+		switch ops[i].Command {
+		case Insert:
+			result.InsertedCount += int64(len(res.Modified))
+		case Replace:
+			result.MatchedCount += int64(len(res.Matched))
+			result.ModifiedCount += int64(len(res.Modified))
+			if res.Upserted != nil {
+				result.UpsertedCount++
+				result.UpsertedIDs[int64(i)] = bsonkit.Get(res.Upserted, "_id")
+			}
+		case Update:
+			result.MatchedCount += int64(len(res.Matched))
+			result.ModifiedCount += int64(len(res.Modified))
+			if res.Upserted != nil {
+				result.UpsertedCount++
+				result.UpsertedIDs[int64(i)] = bsonkit.Get(res.Upserted, "_id")
+			}
+		case Delete:
+			result.DeletedCount += int64(len(res.Matched))
+		}
+	}
+
+	// prepare error
+	err = nil
+	if len(errors) > 0 {
+		err = errors
+	}
+
+	return result, err
 }
 
 // Clone implements the ICollection.Clone method.

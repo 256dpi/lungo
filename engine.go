@@ -34,6 +34,35 @@ type Result struct {
 	Error error
 }
 
+// Command defines the type of an operation.
+type Command int
+
+// The available commands.
+const (
+	Insert Command = iota
+	Replace
+	Update
+	Delete
+)
+
+// Operation defines a single operation.
+type Operation struct {
+	// The command.
+	Command Command
+
+	// The filter document (replace, update, delete).
+	Filter bsonkit.Doc
+
+	// The insert, update or replacement document.
+	Document bsonkit.Doc
+
+	// Whether an upsert should be performed (replace, update).
+	Upsert bool
+
+	// The limit (one, many).
+	Limit int
+}
+
 // Options is used to configure an engine.
 type Options struct {
 	// The store used by the engine to load and store the dataset.
@@ -113,6 +142,81 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 	}
 
 	return &Result{Matched: list}, nil
+}
+
+// Bulk performs the specified operations in one go. If ordered is true the
+// process is aborted on the first error.
+func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
+
+	// clone dataset
+	clone := e.dataset.Clone()
+
+	// create or clone namespace
+	var namespace *Namespace
+	if clone.Namespaces[handle] == nil {
+		namespace = NewNamespace()
+		clone.Namespaces[handle] = namespace
+	} else {
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
+	}
+
+	// prepare results
+	results := make([]Result, 0, len(ops))
+
+	// process models
+	for _, op := range ops {
+		// prepare variables
+		var res *Result
+		var err error
+
+		// run operation
+		switch op.Command {
+		case Insert:
+			res, err = e.insert(namespace, op.Document)
+		case Replace:
+			res, err = e.replace(namespace, op.Filter, op.Document, nil, op.Upsert)
+		case Update:
+			res, err = e.update(namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
+		case Delete:
+			res, err = e.delete(namespace, op.Filter, nil, op.Limit)
+		}
+
+		// check error
+		if err != nil {
+			// append error
+			results = append(results, Result{
+				Error: err,
+			})
+
+			// stop if ordered
+			if ordered {
+				break
+			}
+		} else {
+			// append result
+			results = append(results, *res)
+		}
+	}
+
+	// write dataset
+	err := e.store.Store(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	// set new dataset
+	e.dataset = clone
+
+	return results, nil
 }
 
 // Insert will insert the specified documents into the namespace. The engine
