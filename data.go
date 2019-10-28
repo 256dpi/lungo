@@ -41,17 +41,17 @@ func (d *Data) Clone() *Data {
 }
 
 type Namespace struct {
-	Name      string                   `bson:"name"`
-	Documents *bsonkit.Set             `bson:"documents"`
-	Indexes   map[string]*bsonkit.Tree `bson:"indexes"`
+	Name      string                    `bson:"name"`
+	Documents *bsonkit.Set              `bson:"documents"`
+	Indexes   map[string]*bsonkit.Index `bson:"indexes"`
 }
 
 func NewNamespace(name string) *Namespace {
 	return (&Namespace{
 		Name:      name,
 		Documents: bsonkit.NewSet(nil),
-		Indexes: map[string]*bsonkit.Tree{
-			"_id_": bsonkit.NewTree(true, []bsonkit.Column{
+		Indexes: map[string]*bsonkit.Index{
+			"_id_": bsonkit.NewIndex(true, []bsonkit.Column{
 				{Path: "_id"},
 			}),
 		},
@@ -72,7 +72,7 @@ func (n *Namespace) Clone() *Namespace {
 	clone := &Namespace{
 		Name:      n.Name,
 		Documents: n.Documents.Clone(),
-		Indexes:   map[string]*bsonkit.Tree{},
+		Indexes:   map[string]*bsonkit.Index{},
 	}
 
 	// clone indexes

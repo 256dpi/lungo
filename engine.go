@@ -727,7 +727,7 @@ func (e *Engine) CreateIndex(ns string, keys bsonkit.Doc, name string, unique bo
 	}
 
 	// create index
-	index := bsonkit.NewTree(unique, columns)
+	index := bsonkit.NewIndex(unique, columns)
 	namespace.Indexes[name] = index
 
 	// fill index
