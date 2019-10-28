@@ -2,14 +2,11 @@ package lungo
 
 import (
 	"context"
-	"errors"
 	"io"
 	"sync"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
-
-var ErrCursorClosed = errors.New("cursor closed")
 
 type Cursor struct {
 	list   bsonkit.List
@@ -22,11 +19,6 @@ func (c *Cursor) All(ctx context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	// check if closed
-	if c.closed {
-		return ErrCursorClosed
-	}
 
 	// decode items
 	err := bsonkit.DecodeList(c.list, out)
@@ -55,11 +47,6 @@ func (c *Cursor) Decode(out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	// check if closed
-	if c.closed {
-		return ErrCursorClosed
-	}
 
 	// check if exhausted
 	if c.pos > len(c.list) {
@@ -94,8 +81,12 @@ func (c *Cursor) Next(context.Context) bool {
 	}
 
 	// increment position
-	c.pos++
+	if c.pos < len(c.list)-1 {
+		c.pos++
+	}
 
-	// return whether the are items
-	return c.pos <= len(c.list)
+	// determine whether the are more documents
+	more := c.pos < len(c.list)-1
+
+	return more
 }

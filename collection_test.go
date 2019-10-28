@@ -385,6 +385,21 @@ func TestCollectionFind(t *testing.T) {
 				"foo": "baz",
 			},
 		}, readAll(csr))
+
+		// cursor
+		csr, err = c.Find(nil, bson.M{})
+		assert.NoError(t, err)
+		for csr.Next(nil) {}
+		assert.NoError(t, csr.Err())
+		var m bson.M
+		err = csr.Decode(&m)
+		assert.NoError(t, err)
+		assert.NotEqual(t, bson.M{}, m)
+		err = csr.Close(nil)
+		assert.NoError(t, err)
+		err = csr.Decode(&m)
+		assert.NoError(t, err)
+		assert.NotEqual(t, bson.M{}, m)
 	})
 }
 
