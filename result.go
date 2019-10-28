@@ -7,11 +7,15 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+var _ ISingleResult = &SingleResult{}
+
+// SingleResult wraps a result to be mongo compatible.
 type SingleResult struct {
 	doc bsonkit.Doc
 	err error
 }
 
+// Decode implements the ISingleResult.Decode method.
 func (r *SingleResult) Decode(out interface{}) error {
 	// check error
 	if r.err != nil {
@@ -27,6 +31,7 @@ func (r *SingleResult) Decode(out interface{}) error {
 	return bsonkit.Decode(r.doc, out)
 }
 
+// DecodeBytes implements the ISingleResult.DecodeBytes method.
 func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 	// check error
 	if r.err != nil {
@@ -42,6 +47,7 @@ func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 	return bson.Marshal(r.doc)
 }
 
+// Err implements the ISingleResult.Err method.
 func (r *SingleResult) Err() error {
 	// check error
 	if r.err != nil {

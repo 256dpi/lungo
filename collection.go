@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -12,21 +13,24 @@ import (
 
 var _ ICollection = &Collection{}
 
+// Collection wraps an Engine to be mongo compatible.
 type Collection struct {
 	ns     string
 	name   string
-	db     *Database
-	client *Client
+	engine *Engine
 }
 
+// Aggregate implements the ICollection.Aggregate method.
 func (c *Collection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
+// BulkWrite implements the ICollection.BulkWrite method.
 func (c *Collection) BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	panic("lungo: not implemented")
 }
 
+// Clone implements the ICollection.Clone method.
 func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, error) {
 	// merge options
 	opt := options.MergeCollectionOptions(opts...)
@@ -37,11 +41,11 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	return &Collection{
 		ns:     c.ns,
 		name:   c.name,
-		db:     c.db,
-		client: c.client,
+		engine: c.engine,
 	}, nil
 }
 
+// CountDocuments implements the ICollection.CountDocuments method.
 func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
 	// merge options
 	opt := options.MergeCountOptions(opts...)
@@ -77,7 +81,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, nil, skip, limit)
+	res, err := c.engine.Find(c.ns, query, nil, skip, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -85,10 +89,15 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	return int64(len(res.Matched)), nil
 }
 
+// Database implements the ICollection.Database method.
 func (c *Collection) Database() IDatabase {
-	return c.db
+	return &Database{
+		name:   strings.Split(c.ns, ".")[0],
+		engine: c.engine,
+	}
 }
 
+// DeleteMany implements the ICollection.DeleteMany method.
 func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// merge options
 	opt := options.MergeDeleteOptions(opts...)
@@ -108,7 +117,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	res, err := c.client.engine.Delete(c.ns, query, nil, 0)
+	res, err := c.engine.Delete(c.ns, query, nil, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +127,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}, nil
 }
 
+// DeleteOne implements the ICollection.DeleteOne method.
 func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	// merge options
 	opt := options.MergeDeleteOptions(opts...)
@@ -137,7 +147,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	res, err := c.client.engine.Delete(c.ns, query, nil, 1)
+	res, err := c.engine.Delete(c.ns, query, nil, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +157,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}, nil
 }
 
+// Distinct implements the ICollection.Distinct method.
 func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	// merge options
 	opt := options.MergeDistinctOptions(opts...)
@@ -173,7 +184,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, nil, 0, 0)
+	res, err := c.engine.Find(c.ns, query, nil, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +195,10 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	return values, nil
 }
 
+// Drop implements the ICollection.Drop method.
 func (c *Collection) Drop(context.Context) error {
 	// drop namespace
-	err := c.client.engine.Drop(c.ns)
+	err := c.engine.Drop(c.ns)
 	if err != nil {
 		return err
 	}
@@ -194,6 +206,7 @@ func (c *Collection) Drop(context.Context) error {
 	return nil
 }
 
+// EstimatedDocumentCount implements the ICollection.EstimatedDocumentCount method.
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// merge options
 	opt := options.MergeEstimatedDocumentCountOptions(opts...)
@@ -204,11 +217,12 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	})
 
 	// get num documents
-	num := c.client.engine.NumDocuments(c.ns)
+	num := c.engine.NumDocuments(c.ns)
 
 	return int64(num), nil
 }
 
+// Find implements the ICollection.Find method.
 func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeFindOptions(opts...)
@@ -260,7 +274,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, sort, skip, limit)
+	res, err := c.engine.Find(c.ns, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -268,6 +282,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	return &Cursor{list: res.Matched}, nil
 }
 
+// FindOne implements the ICollection.FindOne method.
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
 	// merge options
 	opt := options.MergeFindOneOptions(opts...)
@@ -312,7 +327,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// find documents
-	res, err := c.client.engine.Find(c.ns, query, sort, skip, 1)
+	res, err := c.engine.Find(c.ns, query, sort, skip, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -325,6 +340,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	return &SingleResult{doc: res.Matched[0]}
 }
 
+// FindOneAndDelete implements the ICollection.FindOneAndDelete method.
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
 	// merge options
 	opt := options.MergeFindOneAndDeleteOptions(opts...)
@@ -356,7 +372,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	}
 
 	// delete documents
-	res, err := c.client.engine.Delete(c.ns, query, sort, 1)
+	res, err := c.engine.Delete(c.ns, query, sort, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -369,6 +385,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	return &SingleResult{doc: res.Matched[0]}
 }
 
+// FindOneAndReplace implements the ICollection.FindOneAndReplace method.
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
 	// merge options
 	opt := options.MergeFindOneAndReplaceOptions(opts...)
@@ -425,7 +442,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	}
 
 	// insert document
-	res, err := c.client.engine.Replace(c.ns, query, sort, doc, upsert)
+	res, err := c.engine.Replace(c.ns, query, sort, doc, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -451,6 +468,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	return &SingleResult{}
 }
 
+// FindOneAndUpdate implements the ICollection.FindOneAndUpdate method.
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
 	// merge options
 	opt := options.MergeFindOneAndUpdateOptions(opts...)
@@ -507,7 +525,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, sort, doc, 1, upsert)
+	res, err := c.engine.Update(c.ns, query, sort, doc, 1, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -533,15 +551,15 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	return &SingleResult{}
 }
 
+// Indexes implements the ICollection.Indexes method.
 func (c *Collection) Indexes() IIndexView {
 	return &IndexView{
 		ns:     c.ns,
-		coll:   c,
-		db:     c.db,
-		client: c.client,
+		engine: c.engine,
 	}
 }
 
+// InsertMany implements the ICollection.InsertMany method.
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	// merge options
 	opt := options.MergeInsertManyOptions(opts...)
@@ -578,7 +596,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	// insert documents
-	res, err := c.client.engine.Insert(c.ns, list, ordered)
+	res, err := c.engine.Insert(c.ns, list, ordered)
 	if err != nil {
 		return nil, err
 	}
@@ -593,6 +611,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}, err
 }
 
+// InsertOne implements the ICollection.InsertOne method.
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// merge options
 	opt := options.MergeInsertOneOptions(opts...)
@@ -612,7 +631,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// insert document
-	res, err := c.client.engine.Insert(c.ns, bsonkit.List{doc}, true)
+	res, err := c.engine.Insert(c.ns, bsonkit.List{doc}, true)
 	if err != nil {
 		return nil, err
 	} else if len(res.Errors) > 0 {
@@ -624,10 +643,12 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}, nil
 }
 
+// Name implements the ICollection.Name method.
 func (c *Collection) Name() string {
 	return c.name
 }
 
+// ReplaceOne implements the ICollection.ReplaceOne method.
 func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	// merge options
 	opt := options.MergeReplaceOptions(opts...)
@@ -666,7 +687,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}
 
 	// insert document
-	res, err := c.client.engine.Replace(c.ns, query, nil, doc, upsert)
+	res, err := c.engine.Replace(c.ns, query, nil, doc, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -685,6 +706,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}, nil
 }
 
+// UpdateMany implements the ICollection.UpdateMany method.
 func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// merge options
 	opt := options.MergeUpdateOptions(opts...)
@@ -723,7 +745,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}
 
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, nil, doc, 0, upsert)
+	res, err := c.engine.Update(c.ns, query, nil, doc, 0, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -742,6 +764,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}, nil
 }
 
+// UpdateOne implements the ICollection.UpdateOne method.
 func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// merge options
 	opt := options.MergeUpdateOptions(opts...)
@@ -780,7 +803,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}
 
 	// update documents
-	res, err := c.client.engine.Update(c.ns, query, nil, doc, 1, upsert)
+	res, err := c.engine.Update(c.ns, query, nil, doc, 1, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -799,6 +822,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}, nil
 }
 
+// Watch implements the ICollection.Watch method.
 func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("lungo: not implemented")
 }

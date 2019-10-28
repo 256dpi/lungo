@@ -12,10 +12,12 @@ import (
 
 var _ IClient = &Client{}
 
+// Client wraps an Engine to be mongo compatible.
 type Client struct {
 	engine *Engine
 }
 
+// Open will open a lungo database using the provided store.
 func Open(ctx context.Context, store Store) (IClient, error) {
 	// create engine
 	engine, err := CreateEngine(store)
@@ -28,10 +30,12 @@ func Open(ctx context.Context, store Store) (IClient, error) {
 	}, nil
 }
 
+// Connect implements the IClient.Connect method.
 func (c *Client) Connect(context.Context) error {
 	return nil
 }
 
+// Database implements the IClient.Database method.
 func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
 	// merge options
 	opt := options.MergeDatabaseOptions(opts...)
@@ -41,14 +45,16 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 
 	return &Database{
 		name:   name,
-		client: c,
+		engine: c.engine,
 	}
 }
 
+// Disconnect implements the IClient.Disconnect method.
 func (c *Client) Disconnect(context.Context) error {
 	return nil
 }
 
+// ListDatabaseNames implements the IClient.ListDatabaseNames method.
 func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
 	// list databases
 	res, err := c.ListDatabases(ctx, filter, opts...)
@@ -65,6 +71,7 @@ func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts
 	return names, nil
 }
 
+// ListDatabases implements the IClient.ListDatabases method.
 func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error) {
 	// merge options
 	opt := options.MergeListDatabasesOptions(opts...)
@@ -106,22 +113,27 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	return result, nil
 }
 
+// Ping implements the IClient.Ping method.
 func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 	return nil
 }
 
+// StartSession implements the IClient.StartSession method.
 func (c *Client) StartSession(...*options.SessionOptions) (mongo.Session, error) {
 	panic("lungo: not implemented")
 }
 
+// UseSession implements the IClient.UseSession method.
 func (c *Client) UseSession(context.Context, func(mongo.SessionContext) error) error {
 	panic("lungo: not implemented")
 }
 
+// UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
 func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error {
 	panic("lungo: not implemented")
 }
 
+// Watch implements the IClient.Watch method.
 func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("lungo: not implemented")
 }

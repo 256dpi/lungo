@@ -14,19 +14,25 @@ import (
 
 var _ IDatabase = &Database{}
 
+// Database wraps an Engine to be mongo compatible.
 type Database struct {
 	name   string
-	client *Client
+	engine *Engine
 }
 
+// Aggregate implements the IDatabase.Aggregate method.
 func (d *Database) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
+// Client implements the IDatabase.Client method.
 func (d *Database) Client() IClient {
-	return d.client
+	return &Client{
+		engine: d.engine,
+	}
 }
 
+// Collection implements the IDatabase.Collection method.
 func (d *Database) Collection(name string, opts ...*options.CollectionOptions) ICollection {
 	// merge options
 	opt := options.MergeCollectionOptions(opts...)
@@ -37,14 +43,14 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	return &Collection{
 		ns:     d.name + "." + name,
 		name:   name,
-		db:     d,
-		client: d.client,
+		engine: d.engine,
 	}
 }
 
+// Drop implements the IDatabase.Drop method.
 func (d *Database) Drop(context.Context) error {
 	// drop all namespaces with database prefix
-	err := d.client.engine.Drop(d.name + ".*")
+	err := d.engine.Drop(d.name + ".*")
 	if err != nil {
 		return err
 	}
@@ -52,6 +58,7 @@ func (d *Database) Drop(context.Context) error {
 	return nil
 }
 
+// ListCollectionNames implements the IDatabase.ListCollectionNames method.
 func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
 	// list collections
 	res, err := d.ListCollections(ctx, filter, opts...)
@@ -71,6 +78,7 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	return names, nil
 }
 
+// ListCollections implements the IDatabase.ListCollections method.
 func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeListCollectionsOptions(opts...)
@@ -85,7 +93,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	}
 
 	// list collections
-	list, err := d.client.engine.ListCollections(d.name, query)
+	list, err := d.engine.ListCollections(d.name, query)
 	if err != nil {
 		return nil, err
 	}
@@ -93,30 +101,37 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	return &Cursor{list: list}, nil
 }
 
+// Name implements the IDatabase.Name method.
 func (d *Database) Name() string {
 	return d.name
 }
 
+// ReadConcern implements the IDatabase.ReadConcern method.
 func (d *Database) ReadConcern() *readconcern.ReadConcern {
 	return readconcern.New()
 }
 
+// ReadPreference implements the IDatabase.ReadPreference method.
 func (d *Database) ReadPreference() *readpref.ReadPref {
 	return readpref.Primary()
 }
 
+// RunCommand implements the IDatabase.RunCommand method.
 func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult {
 	panic("lungo: not implemented")
 }
 
+// RunCommandCursor implements the IDatabase.RunCommandCursor method.
 func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
+// Watch implements the IDatabase.Watch method.
 func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	panic("lungo: not implemented")
 }
 
+// WriteConcern implements the IDatabase.WriteConcern method.
 func (d *Database) WriteConcern() *writeconcern.WriteConcern {
 	return nil
 }

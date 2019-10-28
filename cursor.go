@@ -8,6 +8,9 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+var _ ICursor = &Cursor{}
+
+// Cursor wraps a list to be mongo compatible.
 type Cursor struct {
 	list   bsonkit.List
 	pos    int
@@ -15,6 +18,7 @@ type Cursor struct {
 	mutex  sync.Mutex
 }
 
+// All implements the ICursor.All method.
 func (c *Cursor) All(ctx context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
@@ -32,6 +36,7 @@ func (c *Cursor) All(ctx context.Context, out interface{}) error {
 	return nil
 }
 
+// Close implements the ICursor.Close method.
 func (c *Cursor) Close(ctx context.Context) error {
 	// acquire mutex
 	c.mutex.Lock()
@@ -43,6 +48,7 @@ func (c *Cursor) Close(ctx context.Context) error {
 	return nil
 }
 
+// Decode implements the ICursor.Decode method.
 func (c *Cursor) Decode(out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
@@ -62,14 +68,17 @@ func (c *Cursor) Decode(out interface{}) error {
 	return nil
 }
 
+// Err implements the ICursor.Err method.
 func (c *Cursor) Err() error {
 	return nil
 }
 
+// ID implements the ICursor.ID method.
 func (c *Cursor) ID() int64 {
 	return 0
 }
 
+// Next implements the ICursor.Next method.
 func (c *Cursor) Next(context.Context) bool {
 	// acquire mutex
 	c.mutex.Lock()
