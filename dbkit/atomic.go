@@ -1,4 +1,4 @@
-package lungo
+package dbkit
 
 import (
 	"fmt"

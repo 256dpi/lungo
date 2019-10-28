@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/lungo/dbkit"
 )
 
 type Store interface {
@@ -74,7 +76,7 @@ func (s *SingleFileStore) Store(data *Data) error {
 	}
 
 	// write file
-	err = AtomicWriteFile(s.path, bytes.NewReader(buf), s.mode)
+	err = dbkit.AtomicWriteFile(s.path, bytes.NewReader(buf), s.mode)
 	if err != nil {
 		return err
 	}
