@@ -6,21 +6,26 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// NS is a namespace identifier
 type NS [2]string
 
+// String will return the string form of the ns.
 func (ns NS) String() string {
 	return strings.Join(ns[:], ".")
 }
 
-type Data struct {
+// Dataset is the top level object per database that contains all data.
+type Dataset struct {
 	Namespaces map[NS]*Namespace `bson:"namespaces"`
 }
 
-func NewData() *Data {
-	return (&Data{}).Prepare()
+// NewDataset creates and returns a new dataset.
+func NewDataset() *Dataset {
+	return (&Dataset{}).Prepare()
 }
 
-func (d *Data) Prepare() *Data {
+// Prepare will prepare the dataset.
+func (d *Dataset) Prepare() *Dataset {
 	// ensure namespaces
 	if d.Namespaces == nil {
 		d.Namespaces = make(map[NS]*Namespace)
@@ -34,9 +39,10 @@ func (d *Data) Prepare() *Data {
 	return d
 }
 
-func (d *Data) Clone() *Data {
+// Clone will cone the dataset. Namespaces need to be cloned separately.
+func (d *Dataset) Clone() *Dataset {
 	// create clone
-	clone := &Data{
+	clone := &Dataset{
 		Namespaces: map[NS]*Namespace{},
 	}
 
@@ -48,12 +54,17 @@ func (d *Data) Clone() *Data {
 	return clone
 }
 
+// Namespace holds documents and indexes.
 type Namespace struct {
-	Documents *bsonkit.Set              `bson:"documents"`
-	Indexes   map[string]*bsonkit.Index `bson:"indexes"`
+	// The document set.
+	Documents *bsonkit.Set `bson:"documents"`
+
+	// The indexes.
+	Indexes map[string]*bsonkit.Index `bson:"indexes"`
 }
 
-func NewNamespace(name NS) *Namespace {
+// NewNamespace creates and returns a new namespace.
+func NewNamespace() *Namespace {
 	return (&Namespace{
 		Documents: bsonkit.NewSet(nil),
 		Indexes: map[string]*bsonkit.Index{
@@ -64,6 +75,7 @@ func NewNamespace(name NS) *Namespace {
 	}).Prepare()
 }
 
+// Prepare will prepare the namespace.
 func (n *Namespace) Prepare() *Namespace {
 	// prepare indexes
 	for _, index := range n.Indexes {
@@ -73,6 +85,7 @@ func (n *Namespace) Prepare() *Namespace {
 	return n
 }
 
+// Clone will clone the namespace.
 func (n *Namespace) Clone() *Namespace {
 	// create new namespace
 	clone := &Namespace{

@@ -11,26 +11,26 @@ import (
 )
 
 type Store interface {
-	Load() (*Data, error)
-	Store(*Data) error
+	Load() (*Dataset, error)
+	Store(*Dataset) error
 }
 
 type MemoryStore struct {
-	data *Data
+	dataset *Dataset
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		data: NewData(),
+		dataset: NewDataset(),
 	}
 }
 
-func (m MemoryStore) Load() (*Data, error) {
-	return m.data, nil
+func (m MemoryStore) Load() (*Dataset, error) {
+	return m.dataset, nil
 }
 
-func (m MemoryStore) Store(data *Data) error {
-	m.data = data
+func (m MemoryStore) Store(data *Dataset) error {
+	m.dataset = data
 	return nil
 }
 
@@ -46,30 +46,30 @@ func NewSingleFileStore(path string, mode os.FileMode) *SingleFileStore {
 	}
 }
 
-func (s *SingleFileStore) Load() (*Data, error) {
+func (s *SingleFileStore) Load() (*Dataset, error) {
 	// load file
 	buf, err := ioutil.ReadFile(s.path)
 	if os.IsNotExist(err) {
-		return NewData(), nil
+		return NewDataset(), nil
 	} else if err != nil {
 		return nil, err
 	}
 
-	// decode data
-	var data Data
-	err = bson.Unmarshal(buf, &data)
+	// decode dataset
+	var dataset Dataset
+	err = bson.Unmarshal(buf, &dataset)
 	if err != nil {
 		return nil, err
 	}
 
 	// prepare
-	data.Prepare()
+	dataset.Prepare()
 
-	return &data, nil
+	return &dataset, nil
 }
 
-func (s *SingleFileStore) Store(data *Data) error {
-	// encode data
+func (s *SingleFileStore) Store(data *Dataset) error {
+	// encode dataset
 	buf, err := bson.Marshal(data)
 	if err != nil {
 		return err
