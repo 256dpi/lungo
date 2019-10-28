@@ -42,14 +42,14 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 
 	return &Collection{
 		engine: d.engine,
-		ns:     NS{d.name, name},
+		handle: Handle{d.name, name},
 	}
 }
 
 // Drop implements the IDatabase.Drop method.
 func (d *Database) Drop(context.Context) error {
 	// drop all namespaces with database prefix
-	err := d.engine.Drop(NS{d.name, ""})
+	err := d.engine.Drop(Handle{d.name, ""})
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ var _ IIndexView = &IndexView{}
 // IndexView wraps an Engine to be mongo compatible.
 type IndexView struct {
 	engine *Engine
-	ns     NS
+	handle Handle
 }
 
 // CreateMany implements the IIndexView.CreateMany method.
@@ -91,7 +91,7 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	}
 
 	// create index
-	name, err = v.engine.CreateIndex(v.ns, keys, name, unique)
+	name, err = v.engine.CreateIndex(v.handle, keys, name, unique)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +110,7 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 	})
 
 	// drop all indexes
-	err := v.engine.DropIndex(v.ns, "*")
+	err := v.engine.DropIndex(v.handle, "*")
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 	}
 
 	// drop all indexes
-	err := v.engine.DropIndex(v.ns, name)
+	err := v.engine.DropIndex(v.handle, name)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 	})
 
 	// list indexes
-	list, err := v.engine.ListIndexes(v.ns)
+	list, err := v.engine.ListIndexes(v.handle)
 	if err != nil {
 		return nil, err
 	}

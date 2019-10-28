@@ -6,17 +6,18 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// NS is a namespace identifier
-type NS [2]string
+// Handle is a two component identifier for namespaces where the first part is
+// the database and the second the collection.
+type Handle [2]string
 
-// String will return the string form of the ns.
-func (ns NS) String() string {
-	return strings.Join(ns[:], ".")
+// String will return the string form of the handle.
+func (h Handle) String() string {
+	return strings.Join(h[:], ".")
 }
 
 // Dataset is the top level object per database that contains all data.
 type Dataset struct {
-	Namespaces map[NS]*Namespace `bson:"namespaces"`
+	Namespaces map[Handle]*Namespace `bson:"namespaces"`
 }
 
 // NewDataset creates and returns a new dataset.
@@ -28,7 +29,7 @@ func NewDataset() *Dataset {
 func (d *Dataset) Prepare() *Dataset {
 	// ensure namespaces
 	if d.Namespaces == nil {
-		d.Namespaces = make(map[NS]*Namespace)
+		d.Namespaces = make(map[Handle]*Namespace)
 	}
 
 	// init namespaces
@@ -43,7 +44,7 @@ func (d *Dataset) Prepare() *Dataset {
 func (d *Dataset) Clone() *Dataset {
 	// create clone
 	clone := &Dataset{
-		Namespaces: map[NS]*Namespace{},
+		Namespaces: map[Handle]*Namespace{},
 	}
 
 	// copy namespaces

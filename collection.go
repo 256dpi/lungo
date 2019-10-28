@@ -15,7 +15,7 @@ var _ ICollection = &Collection{}
 // Collection wraps an Engine to be mongo compatible.
 type Collection struct {
 	engine *Engine
-	ns     NS
+	handle Handle
 }
 
 // Aggregate implements the ICollection.Aggregate method.
@@ -38,7 +38,7 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 
 	return &Collection{
 		engine: c.engine,
-		ns:     c.ns,
+		handle: c.handle,
 	}, nil
 }
 
@@ -78,7 +78,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// find documents
-	res, err := c.engine.Find(c.ns, query, nil, skip, limit)
+	res, err := c.engine.Find(c.handle, query, nil, skip, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -89,7 +89,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 // Database implements the ICollection.Database method.
 func (c *Collection) Database() IDatabase {
 	return &Database{
-		name:   c.ns[0],
+		name:   c.handle[0],
 		engine: c.engine,
 	}
 }
@@ -114,7 +114,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	res, err := c.engine.Delete(c.ns, query, nil, 0)
+	res, err := c.engine.Delete(c.handle, query, nil, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	res, err := c.engine.Delete(c.ns, query, nil, 1)
+	res, err := c.engine.Delete(c.handle, query, nil, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	}
 
 	// find documents
-	res, err := c.engine.Find(c.ns, query, nil, 0, 0)
+	res, err := c.engine.Find(c.handle, query, nil, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 // Drop implements the ICollection.Drop method.
 func (c *Collection) Drop(context.Context) error {
 	// drop namespace
-	err := c.engine.Drop(c.ns)
+	err := c.engine.Drop(c.handle)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	})
 
 	// get num documents
-	num := c.engine.NumDocuments(c.ns)
+	num := c.engine.NumDocuments(c.handle)
 
 	return int64(num), nil
 }
@@ -271,7 +271,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// find documents
-	res, err := c.engine.Find(c.ns, query, sort, skip, limit)
+	res, err := c.engine.Find(c.handle, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +324,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// find documents
-	res, err := c.engine.Find(c.ns, query, sort, skip, 1)
+	res, err := c.engine.Find(c.handle, query, sort, skip, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -369,7 +369,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	}
 
 	// delete documents
-	res, err := c.engine.Delete(c.ns, query, sort, 1)
+	res, err := c.engine.Delete(c.handle, query, sort, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -439,7 +439,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	}
 
 	// insert document
-	res, err := c.engine.Replace(c.ns, query, sort, doc, upsert)
+	res, err := c.engine.Replace(c.handle, query, sort, doc, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -522,7 +522,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// update documents
-	res, err := c.engine.Update(c.ns, query, sort, doc, 1, upsert)
+	res, err := c.engine.Update(c.handle, query, sort, doc, 1, upsert)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -551,7 +551,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 // Indexes implements the ICollection.Indexes method.
 func (c *Collection) Indexes() IIndexView {
 	return &IndexView{
-		ns:     c.ns,
+		handle: c.handle,
 		engine: c.engine,
 	}
 }
@@ -593,7 +593,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 	}
 
 	// insert documents
-	res, err := c.engine.Insert(c.ns, list, ordered)
+	res, err := c.engine.Insert(c.handle, list, ordered)
 	if err != nil {
 		return nil, err
 	}
@@ -628,7 +628,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// insert document
-	res, err := c.engine.Insert(c.ns, bsonkit.List{doc}, true)
+	res, err := c.engine.Insert(c.handle, bsonkit.List{doc}, true)
 	if err != nil {
 		return nil, err
 	} else if len(res.Errors) > 0 {
@@ -642,7 +642,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 
 // Name implements the ICollection.Name method.
 func (c *Collection) Name() string {
-	return c.ns[1]
+	return c.handle[1]
 }
 
 // ReplaceOne implements the ICollection.ReplaceOne method.
@@ -684,7 +684,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}
 
 	// insert document
-	res, err := c.engine.Replace(c.ns, query, nil, doc, upsert)
+	res, err := c.engine.Replace(c.handle, query, nil, doc, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -742,7 +742,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 	}
 
 	// update documents
-	res, err := c.engine.Update(c.ns, query, nil, doc, 0, upsert)
+	res, err := c.engine.Update(c.handle, query, nil, doc, 0, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -800,7 +800,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 	}
 
 	// update documents
-	res, err := c.engine.Update(c.ns, query, nil, doc, 1, upsert)
+	res, err := c.engine.Update(c.handle, query, nil, doc, 1, upsert)
 	if err != nil {
 		return nil, err
 	}

@@ -46,18 +46,18 @@ func CreateEngine(store Store) (*Engine, error) {
 	return e, nil
 }
 
-func (e *Engine) Find(ns NS, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
+func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
-	if e.dataset.Namespaces[ns] == nil {
+	if e.dataset.Namespaces[handle] == nil {
 		return &Result{}, nil
 	}
 
 	// get documents
-	list := e.dataset.Namespaces[ns].Documents.List
+	list := e.dataset.Namespaces[handle].Documents.List
 
 	// sort documents
 	var err error
@@ -84,7 +84,7 @@ func (e *Engine) Find(ns NS, query, sort bsonkit.Doc, skip, limit int) (*Result,
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Insert(ns NS, list bsonkit.List, ordered bool) (*Result, error) {
+func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -108,12 +108,12 @@ func (e *Engine) Insert(ns NS, list bsonkit.List, ordered bool) (*Result, error)
 
 	// create or clone namespace
 	var namespace *Namespace
-	if clone.Namespaces[ns] == nil {
+	if clone.Namespaces[handle] == nil {
 		namespace = NewNamespace()
-		clone.Namespaces[ns] = namespace
+		clone.Namespaces[handle] = namespace
 	} else {
-		namespace = clone.Namespaces[ns].Clone()
-		clone.Namespaces[ns] = namespace
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
 	}
 
 	// prepare result
@@ -123,7 +123,7 @@ func (e *Engine) Insert(ns NS, list bsonkit.List, ordered bool) (*Result, error)
 	for _, doc := range list {
 		// list uniqueness pre-check
 		if _, ok := namespace.Documents.Index[doc]; ok {
-			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", ns.String()))
+			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", handle.String()))
 			if ordered {
 				break
 			} else {
@@ -169,7 +169,7 @@ func (e *Engine) Insert(ns NS, list bsonkit.List, ordered bool) (*Result, error)
 	return result, nil
 }
 
-func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
+func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -179,8 +179,8 @@ func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Re
 
 	// get documents
 	var list bsonkit.List
-	if e.dataset.Namespaces[ns] != nil {
-		list = e.dataset.Namespaces[ns].Documents.List
+	if e.dataset.Namespaces[handle] != nil {
+		list = e.dataset.Namespaces[handle].Documents.List
 	}
 
 	// sort documents
@@ -202,7 +202,7 @@ func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Re
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(ns, query, repl, nil)
+			return e.upsert(handle, query, repl, nil)
 		}
 
 		return &Result{}, nil
@@ -223,8 +223,8 @@ func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Re
 	clone := e.dataset.Clone()
 
 	// clone namespace
-	namespace := clone.Namespaces[ns].Clone()
-	clone.Namespaces[ns] = namespace
+	namespace := clone.Namespaces[handle].Clone()
+	clone.Namespaces[handle] = namespace
 
 	// update indexes
 	for name, index := range namespace.Indexes {
@@ -255,15 +255,15 @@ func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Re
 	}, nil
 }
 
-func (e *Engine) Update(ns NS, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
+func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// get documents
 	var list bsonkit.List
-	if e.dataset.Namespaces[ns] != nil {
-		list = e.dataset.Namespaces[ns].Documents.List
+	if e.dataset.Namespaces[handle] != nil {
+		list = e.dataset.Namespaces[handle].Documents.List
 	}
 
 	// sort documents
@@ -285,7 +285,7 @@ func (e *Engine) Update(ns NS, query, sort, update bsonkit.Doc, limit int, upser
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(ns, query, nil, update)
+			return e.upsert(handle, query, nil, update)
 		}
 
 		return &Result{}, nil
@@ -311,8 +311,8 @@ func (e *Engine) Update(ns NS, query, sort, update bsonkit.Doc, limit int, upser
 	clone := e.dataset.Clone()
 
 	// clone namespace
-	namespace := clone.Namespaces[ns].Clone()
-	clone.Namespaces[ns] = namespace
+	namespace := clone.Namespaces[handle].Clone()
+	clone.Namespaces[handle] = namespace
 
 	// remove old docs from indexes
 	for _, doc := range list {
@@ -350,7 +350,7 @@ func (e *Engine) Update(ns NS, query, sort, update bsonkit.Doc, limit int, upser
 	}, nil
 }
 
-func (e *Engine) upsert(ns NS, query, repl, update bsonkit.Doc) (*Result, error) {
+func (e *Engine) upsert(handle Handle, query, repl, update bsonkit.Doc) (*Result, error) {
 	// extract query
 	doc, err := mongokit.Extract(query)
 	if err != nil {
@@ -408,12 +408,12 @@ func (e *Engine) upsert(ns NS, query, repl, update bsonkit.Doc) (*Result, error)
 
 	// create or clone namespace
 	var namespace *Namespace
-	if clone.Namespaces[ns] == nil {
+	if clone.Namespaces[handle] == nil {
 		namespace = NewNamespace()
-		clone.Namespaces[ns] = namespace
+		clone.Namespaces[handle] = namespace
 	} else {
-		namespace = clone.Namespaces[ns].Clone()
-		clone.Namespaces[ns] = namespace
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
 	}
 
 	// add document to indexes
@@ -440,18 +440,18 @@ func (e *Engine) upsert(ns NS, query, repl, update bsonkit.Doc) (*Result, error)
 	}, nil
 }
 
-func (e *Engine) Delete(ns NS, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
-	if e.dataset.Namespaces[ns] == nil {
+	if e.dataset.Namespaces[handle] == nil {
 		return &Result{}, nil
 	}
 
 	// get documents
-	list := e.dataset.Namespaces[ns].Documents.List
+	list := e.dataset.Namespaces[handle].Documents.List
 
 	// sort documents
 	var err error
@@ -472,8 +472,8 @@ func (e *Engine) Delete(ns NS, query, sort bsonkit.Doc, limit int) (*Result, err
 	clone := e.dataset.Clone()
 
 	// clone namespace
-	namespace := clone.Namespaces[ns].Clone()
-	clone.Namespaces[ns] = namespace
+	namespace := clone.Namespaces[handle].Clone()
+	clone.Namespaces[handle] = namespace
 
 	// remove documents
 	for _, doc := range list {
@@ -499,7 +499,7 @@ func (e *Engine) Delete(ns NS, query, sort bsonkit.Doc, limit int) (*Result, err
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Drop(ns NS) error {
+func (e *Engine) Drop(handle Handle) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -508,9 +508,9 @@ func (e *Engine) Drop(ns NS) error {
 	clone := e.dataset.Clone()
 
 	// drop all matching namespaces
-	for _ns := range clone.Namespaces {
-		if _ns == ns || ns[1] == "" && _ns[0] == ns[0] {
-			delete(clone.Namespaces, _ns)
+	for ns := range clone.Namespaces {
+		if ns == handle || handle[1] == "" && ns[0] == handle[0] {
+			delete(clone.Namespaces, ns)
 		}
 	}
 
@@ -605,13 +605,13 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	return list, nil
 }
 
-func (e *Engine) NumDocuments(ns NS) int {
+func (e *Engine) NumDocuments(handle Handle) int {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
-	namespace, ok := e.dataset.Namespaces[ns]
+	namespace, ok := e.dataset.Namespaces[handle]
 	if !ok {
 		return 0
 	}
@@ -619,18 +619,18 @@ func (e *Engine) NumDocuments(ns NS) int {
 	return len(namespace.Documents.List)
 }
 
-func (e *Engine) ListIndexes(ns NS) (bsonkit.List, error) {
+func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
-	if e.dataset.Namespaces[ns] == nil {
-		return nil, fmt.Errorf("missing namespace %q", ns.String())
+	if e.dataset.Namespaces[handle] == nil {
+		return nil, fmt.Errorf("missing namespace %q", handle.String())
 	}
 
 	// get namespace
-	namespace := e.dataset.Namespaces[ns]
+	namespace := e.dataset.Namespaces[handle]
 
 	// prepare list
 	var list bsonkit.List
@@ -656,7 +656,7 @@ func (e *Engine) ListIndexes(ns NS) (bsonkit.List, error) {
 			bson.E{Key: "v", Value: 2},
 			bson.E{Key: "key", Value: key},
 			bson.E{Key: "name", Value: name},
-			bson.E{Key: "ns", Value: ns.String()},
+			bson.E{Key: "ns", Value: handle.String()},
 		}
 
 		// add uniqueness
@@ -676,7 +676,7 @@ func (e *Engine) ListIndexes(ns NS) (bsonkit.List, error) {
 	return list, nil
 }
 
-func (e *Engine) CreateIndex(ns NS, keys bsonkit.Doc, name string, unique bool) (string, error) {
+func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, unique bool) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -707,12 +707,12 @@ func (e *Engine) CreateIndex(ns NS, keys bsonkit.Doc, name string, unique bool) 
 
 	// create or clone namespace
 	var namespace *Namespace
-	if clone.Namespaces[ns] == nil {
+	if clone.Namespaces[handle] == nil {
 		namespace = NewNamespace()
-		clone.Namespaces[ns] = namespace
+		clone.Namespaces[handle] = namespace
 	} else {
-		namespace = clone.Namespaces[ns].Clone()
-		clone.Namespaces[ns] = namespace
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
 	}
 
 	// create index
@@ -738,28 +738,28 @@ func (e *Engine) CreateIndex(ns NS, keys bsonkit.Doc, name string, unique bool) 
 	return name, nil
 }
 
-func (e *Engine) DropIndex(ns NS, name string) error {
+func (e *Engine) DropIndex(handle Handle, name string) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
-	if e.dataset.Namespaces[ns] == nil {
-		return fmt.Errorf("missing namespace %q", ns.String())
+	if e.dataset.Namespaces[handle] == nil {
+		return fmt.Errorf("missing namespace %q", handle.String())
 	}
 
 	// clone dataset
 	clone := e.dataset.Clone()
 
 	// clone namespace
-	namespace := clone.Namespaces[ns].Clone()
-	clone.Namespaces[ns] = namespace
+	namespace := clone.Namespaces[handle].Clone()
+	clone.Namespaces[handle] = namespace
 
 	// delete single index
 	if name != "*" {
 		// check existence
 		if _, ok := namespace.Indexes[name]; !ok {
-			return fmt.Errorf("missing index %q", ns.String())
+			return fmt.Errorf("missing index %q", handle.String())
 		}
 
 		// drop index
