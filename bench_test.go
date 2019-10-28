@@ -31,7 +31,7 @@ func BenchmarkMemoryStoreWrite(b *testing.B) {
 
 		_, err = client.Database("foo").Collection("foo").DeleteMany(nil, bson.M{
 			"n": bson.M{
-				"$lt": i - 1000,
+				"$lt": i - 100,
 			},
 		})
 		if err != nil {
