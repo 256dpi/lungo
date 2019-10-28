@@ -10,8 +10,13 @@ func Example() {
 		Title string `bson:"title"`
 	}
 
+	// prepare options
+	opts := Options{
+		Store: NewMemoryStore(),
+	}
+
 	// open database
-	client, err := Open(nil, NewMemoryStore())
+	client, err := Open(nil, opts)
 	if err != nil {
 		panic(err)
 	}

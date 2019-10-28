@@ -30,6 +30,12 @@ type Result struct {
 	Errors []error
 }
 
+// Options is used to configure an engine.
+type Options struct {
+	// The store used by the engine to load and store the dataset.
+	Store Store
+}
+
 // Engine manages the dataset loaded from a store and provides the various
 // MongoDB style CRUD operations.
 type Engine struct {
@@ -40,10 +46,10 @@ type Engine struct {
 
 // CreateEngine will create and return an engine with a loaded dataset from the
 // store.
-func CreateEngine(store Store) (*Engine, error) {
+func CreateEngine(opts Options) (*Engine, error) {
 	// create engine
 	e := &Engine{
-		store: store,
+		store: opts.Store,
 	}
 
 	// load dataset
