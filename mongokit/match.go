@@ -50,7 +50,7 @@ func init() {
 // document.
 func Match(doc, query bsonkit.Doc) (bool, error) {
 	// match document to query
-	err := Process(&Context{
+	err := Process(Context{
 		TopLevel:   TopLevelQueryOperators,
 		Expression: ExpressionQueryOperators,
 	}, doc, *query, "", true)
@@ -63,7 +63,7 @@ func Match(doc, query bsonkit.Doc) (bool, error) {
 	return true, nil
 }
 
-func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
+func matchAnd(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	array, ok := v.(bson.A)
 	if !ok {
@@ -93,7 +93,7 @@ func matchAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) erro
 	return nil
 }
 
-func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
+func matchOr(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	array, ok := v.(bson.A)
 	if !ok {
@@ -127,13 +127,13 @@ func matchOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error
 	return ErrNotMatched
 }
 
-func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchNor(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchNegate(func() error {
 		return matchOr(ctx, doc, name, path, v)
 	})
 }
 
-func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
+func matchComp(_ Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, false, func(field interface{}) error {
 		// check classes (type bracketing)
 		lc, _ := bsonkit.Inspect(field)
@@ -171,7 +171,7 @@ func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) erro
 	})
 }
 
-func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchNot(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// coerce item
 	query, ok := v.(bson.D)
 	if !ok {
@@ -198,7 +198,7 @@ func matchNot(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 	return ErrNotMatched
 }
 
-func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchIn(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, false, func(field interface{}) error {
 		// get array
 		array, ok := v.(bson.A)
@@ -219,13 +219,13 @@ func matchIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) erro
 	})
 }
 
-func matchNin(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchNin(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchNegate(func() error {
 		return matchIn(ctx, doc, name, path, v)
 	})
 }
 
-func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchExists(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get boolean
 	exists := true
 	if b, ok := v.(bool); ok {
@@ -249,7 +249,7 @@ func matchExists(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	return ErrNotMatched
 }
 
-func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// check value type
 	switch value := v.(type) {
 	case string:
@@ -294,7 +294,7 @@ func matchType(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	return ErrNotMatched
 }
 
-func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchAll(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, false, true, func(field interface{}) error {
 		// get array
 		array, ok := v.(bson.A)
@@ -337,7 +337,7 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 	})
 }
 
-func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchSize(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, false, false, func(field interface{}) error {
 		// check value
 		vc, _ := bsonkit.Inspect(v)
@@ -357,7 +357,7 @@ func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	})
 }
 
-func matchElem(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchElem(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get query
 	query, ok := v.(bson.D)
 	if !ok {

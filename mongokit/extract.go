@@ -34,7 +34,7 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	doc := &bson.D{}
 
 	// match document to query
-	err := Process(&Context{
+	err := Process(Context{
 		TopLevel:   TopLevelExtractOperators,
 		Expression: ExpressionExtractOperators,
 	}, doc, *query, "", true)
@@ -45,7 +45,7 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	return doc, nil
 }
 
-func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
+func extractAnd(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	array, ok := v.(bson.A)
 	if !ok {
@@ -75,7 +75,7 @@ func extractAnd(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) er
 	return nil
 }
 
-func extractOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
+func extractOr(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
 	// get array
 	array, ok := v.(bson.A)
 	if !ok {
@@ -107,11 +107,11 @@ func extractOr(ctx *Context, doc bsonkit.Doc, name, _ string, v interface{}) err
 	return nil
 }
 
-func extractEq(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func extractEq(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func extractIn(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func extractIn(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get array
 	array, ok := v.(bson.A)
 	if !ok {

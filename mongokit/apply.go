@@ -37,14 +37,14 @@ func init() {
 // update operators. The document is updated in place.
 func Apply(doc, update bsonkit.Doc, upsert bool) error {
 	// update document according to update
-	return Process(&Context{
+	return Process(Context{
 		Upsert:   upsert,
 		TopLevel: FieldUpdateOperators,
 	}, doc, *update, "", true)
 }
 
 func applyAll(name string, operator Operator) Operator {
-	return func(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
+	return func(ctx Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 		// get update document
 		update, ok := v.(bson.D)
 		if !ok {
@@ -63,11 +63,11 @@ func applyAll(name string, operator Operator) Operator {
 	}
 }
 
-func applySet(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applySet(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Put(doc, path, v, false)
 }
 
-func applySetOnInsert(ctx *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applySetOnInsert(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	if ctx.Upsert {
 		return bsonkit.Put(doc, path, v, false)
 	}
@@ -75,12 +75,12 @@ func applySetOnInsert(ctx *Context, doc bsonkit.Doc, _, path string, v interface
 	return nil
 }
 
-func applyUnset(_ *Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
+func applyUnset(_ Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
 	bsonkit.Unset(doc, path)
 	return nil
 }
 
-func applyRename(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get new path
 	newPath, ok := v.(string)
 	if !ok {
@@ -105,15 +105,15 @@ func applyRename(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) 
 	return nil
 }
 
-func applyInc(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyInc(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Increment(doc, path, v)
 }
 
-func applyMul(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMul(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	return bsonkit.Multiply(doc, path, v)
 }
 
-func applyMax(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMax(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
@@ -131,7 +131,7 @@ func applyMax(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error 
 	return nil
 }
 
-func applyMin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMin(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
@@ -149,7 +149,7 @@ func applyMin(_ *Context, doc bsonkit.Doc, _, path string, v interface{}) error 
 	return nil
 }
 
-func applyCurrentDate(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// check if boolean
 	value, ok := v.(bool)
 	if ok {
