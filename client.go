@@ -41,7 +41,11 @@ func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDataba
 	opt := options.MergeDatabaseOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"ReadConcern":    ignored,
+		"WriteConcern":   ignored,
+		"ReadPreference": ignored,
+	})
 
 	return &Database{
 		name:   name,

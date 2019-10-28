@@ -34,7 +34,11 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	opt := options.MergeCollectionOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"ReadConcern":    ignored,
+		"WriteConcern":   ignored,
+		"ReadPreference": ignored,
+	})
 
 	return &Collection{
 		engine: c.engine,

@@ -38,7 +38,11 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	opt := options.MergeCollectionOptions(opts...)
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(opt, map[string]string{
+		"ReadConcern":    ignored,
+		"WriteConcern":   ignored,
+		"ReadPreference": ignored,
+	})
 
 	return &Collection{
 		engine: d.engine,
