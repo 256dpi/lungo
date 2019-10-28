@@ -146,9 +146,8 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		clone.Namespaces[handle] = namespace
 	}
 
-	// prepare results
-	mergedResult := &Result{}
-	var firstError error
+	// prepare result
+	result := &Result{}
 
 	// insert documents
 	for _, doc := range list {
@@ -156,8 +155,8 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		res, err := e.insert(namespace, doc)
 		if err != nil {
 			// set error
-			if firstError == nil {
-				firstError = err
+			if result.Error == nil {
+				result.Error = err
 			}
 
 			// stop if ordered
@@ -166,12 +165,12 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 			}
 		} else {
 			// merge result
-			mergedResult.Modified = append(mergedResult.Modified, res.Modified...)
+			result.Modified = append(result.Modified, res.Modified...)
 		}
 	}
 
 	// check if documents have been inserted
-	if len(mergedResult.Modified) > 0 {
+	if len(result.Modified) > 0 {
 		// write dataset
 		err := e.store.Store(clone)
 		if err != nil {
@@ -182,7 +181,7 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		e.dataset = clone
 	}
 
-	return mergedResult, firstError
+	return result, nil
 }
 
 func (e *Engine) insert(namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
