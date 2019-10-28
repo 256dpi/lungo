@@ -6,6 +6,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Select will return a list of documents selected by the specified selector.
+// Limit may be specified to break early if the the list reached the limit.
 func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
 	result := make(List, 0, len(list))
@@ -40,6 +42,8 @@ func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	return result
 }
 
+// Pick will get the value specified by path from each document and return a
+// list of values. If compact is specified, Missing values are removed.
 func Pick(list List, path string, compact bool) bson.A {
 	// prepare result
 	result := make(bson.A, 0, len(list))
@@ -57,6 +61,13 @@ func Pick(list List, path string, compact bool) bson.A {
 	return result
 }
 
+// Collect will get the value specified by path from each document and return a
+// list of values. Different to Pick this function will also collect values from
+// arrays of embedded documents. If compact is specified, Missing values are
+// removed and intermediary arrays flattened. By enabling merge, a resulting array
+// of embedded documents may be merged to on array containing all values. Flatten
+// may flatten the resulting arrays per document to one array of values. Distinct
+// may finally sort and remove duplicate values from the list.
 func Collect(list List, path string, compact, merge, flatten, distinct bool) bson.A {
 	// prepare result
 	result := make(bson.A, 0, len(list))

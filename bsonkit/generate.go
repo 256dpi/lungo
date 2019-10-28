@@ -27,7 +27,7 @@ func Generate() primitive.Timestamp {
 	}
 
 	// increment counter
-	tsCounter += 1
+	tsCounter++
 
 	return primitive.Timestamp{
 		T: tsSeconds,

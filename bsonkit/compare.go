@@ -107,9 +107,8 @@ func compareDocuments(lv, rv interface{}) int {
 	if len(l) == 0 {
 		if len(r) == 0 {
 			return 0
-		} else {
-			return -1
 		}
+		return -1
 	} else if len(r) == 0 {
 		return 1
 	}
@@ -120,9 +119,8 @@ func compareDocuments(lv, rv interface{}) int {
 		if i == len(l) {
 			if i == len(r) {
 				return 0
-			} else {
-				return -1
 			}
+			return -1
 		} else if i == len(r) {
 			return 1
 		}
@@ -150,9 +148,8 @@ func compareArrays(lv, rv interface{}) int {
 	if len(l) == 0 {
 		if len(r) == 0 {
 			return 0
-		} else {
-			return -1
 		}
+		return -1
 	} else if len(r) == 0 {
 		return 1
 	}
@@ -163,9 +160,8 @@ func compareArrays(lv, rv interface{}) int {
 		if i == len(l) {
 			if i == len(r) {
 				return 0
-			} else {
-				return -1
 			}
+			return -1
 		} else if i == len(r) {
 			return 1
 		}
@@ -305,9 +301,8 @@ func compareFloat64s(l float64, r float64) int {
 	if math.IsNaN(l) {
 		if math.IsNaN(r) {
 			return 0
-		} else {
-			return -1
 		}
+		return -1
 	}
 
 	return 1

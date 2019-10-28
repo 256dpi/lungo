@@ -128,7 +128,7 @@ func Put(doc Doc, path string, value interface{}, prepend bool) error {
 	return nil
 }
 
-// Put will remove the value at the location in the document specified by path.
+// Unset will remove the value at the location in the document specified by path.
 // If the path specifies an array element e.g. "foo.2" the element is nilled,
 // but not removed from the array. This prevents unintentional effects through
 // position shifts in the array.

@@ -1,10 +1,15 @@
 package bsonkit
 
+// Set is set of unique documents.
 type Set struct {
-	List  List        `bson:"list"`
+	// List is the list of documents.
+	List List `bson:"list"`
+
+	// Index maps documents to their index in the list.
 	Index map[Doc]int `bson:"index"`
 }
 
+// NewSet returns a new set from the specified list.
 func NewSet(list List) *Set {
 	// create set
 	set := &Set{
@@ -19,6 +24,8 @@ func NewSet(list List) *Set {
 	return set
 }
 
+// Add will add the document to set if has not already been added. It may return
+// false if the document has already been added.
 func (s *Set) Add(doc Doc) bool {
 	// check if already added
 	if _, ok := s.Index[doc]; ok {
@@ -32,6 +39,8 @@ func (s *Set) Add(doc Doc) bool {
 	return true
 }
 
+// Replace will replace the first document with the second. It may return false
+// if the first document has not been added and the second already has been added.
 func (s *Set) Replace(d1, d2 Doc) bool {
 	// get index
 	index, ok := s.Index[d1]
@@ -54,6 +63,8 @@ func (s *Set) Replace(d1, d2 Doc) bool {
 	return true
 }
 
+// Remove will remove the document from the set. It may return false if the
+// document has not been added to the set.
 func (s *Set) Remove(doc Doc) bool {
 	// check if document has been added
 	i, ok := s.Index[doc]
@@ -73,6 +84,8 @@ func (s *Set) Remove(doc Doc) bool {
 	return true
 }
 
+// Clone will clone the set. Mutating the new set will not mutate the original
+// set.
 func (s *Set) Clone() *Set {
 	// prepare clone
 	clone := &Set{
