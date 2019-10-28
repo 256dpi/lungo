@@ -244,9 +244,9 @@ func Increment(doc Doc, path string, increment interface{}) error {
 		case int32:
 			field = num + inc
 		case int64:
-			field = num + int32(inc)
+			field = int64(num) + inc
 		case float64:
-			field = num + int32(inc)
+			field = float64(num) + inc
 		default:
 			return fmt.Errorf("increment is not a number")
 		}
@@ -257,7 +257,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 		case int64:
 			field = num + inc
 		case float64:
-			field = num + int64(inc)
+			field = float64(num) + inc
 		default:
 			return fmt.Errorf("increment is not a number")
 		}
@@ -303,9 +303,9 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case int32:
 			field = num * mul
 		case int64:
-			field = num * int32(mul)
+			field = int64(num) * mul
 		case float64:
-			field = num * int32(mul)
+			field = float64(num) * mul
 		default:
 			return fmt.Errorf("multiplier is not a number")
 		}
@@ -316,7 +316,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case int64:
 			field = num * mul
 		case float64:
-			field = num * int64(mul)
+			field = float64(num) * mul
 		default:
 			return fmt.Errorf("multiplier is not a number")
 		}

@@ -262,13 +262,13 @@ func TestApplyRename(t *testing.T) {
 func TestApplyInc(t *testing.T) {
 	applyTest(t, false, bson.M{
 		"foo": bson.M{
-			"bar": int64(42),
+			"bar": int32(42),
 		},
 	}, func(fn func(bson.M, interface{})) {
 		// increment nested value
 		fn(bson.M{
 			"$inc": bson.M{
-				"foo.bar": int32(2),
+				"foo.bar": int64(2),
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
@@ -283,8 +283,19 @@ func TestApplyInc(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": int32(42),
 				"baz": int32(2),
+			},
+		}))
+
+		// increment with different type
+		fn(bson.M{
+			"$inc": bson.M{
+				"foo.bar": 1.5,
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.M{
+				"bar": 43.5,
 			},
 		}))
 	})
@@ -293,13 +304,13 @@ func TestApplyInc(t *testing.T) {
 func TestApplyMul(t *testing.T) {
 	applyTest(t, false, bson.M{
 		"foo": bson.M{
-			"bar": int64(42),
+			"bar": int32(42),
 		},
 	}, func(fn func(bson.M, interface{})) {
 		// multiply nested value
 		fn(bson.M{
 			"$mul": bson.M{
-				"foo.bar": int32(2),
+				"foo.bar": int64(2),
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
@@ -314,8 +325,19 @@ func TestApplyMul(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": int32(42),
 				"baz": int32(0),
+			},
+		}))
+
+		// multiply with different type
+		fn(bson.M{
+			"$mul": bson.M{
+				"foo.bar": 1.5,
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.M{
+				"bar": 63.0,
 			},
 		}))
 	})
