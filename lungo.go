@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
+// IClient defines a generic client.
 type IClient interface {
 	Connect(context.Context) error
 	Database(string, ...*options.DatabaseOptions) IDatabase
@@ -24,6 +25,7 @@ type IClient interface {
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 }
 
+// IDatabase defines a generic database.
 type IDatabase interface {
 	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error)
 	Client() IClient
@@ -40,6 +42,7 @@ type IDatabase interface {
 	WriteConcern() *writeconcern.WriteConcern
 }
 
+// ICollection defines a generic collection.
 type ICollection interface {
 	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error)
 	BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error)
@@ -66,6 +69,7 @@ type ICollection interface {
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 }
 
+// ICursor defines a generic cursor.
 type ICursor interface {
 	All(context.Context, interface{}) error
 	Close(context.Context) error
@@ -75,12 +79,14 @@ type ICursor interface {
 	Next(context.Context) bool
 }
 
+// ISingleResult defines a generic single result
 type ISingleResult interface {
 	Decode(interface{}) error
 	DecodeBytes() (bson.Raw, error)
 	Err() error
 }
 
+// IIndexView defines a generic index view.
 type IIndexView interface {
 	CreateMany(context.Context, []mongo.IndexModel, ...*options.CreateIndexesOptions) ([]string, error)
 	CreateOne(context.Context, mongo.IndexModel, ...*options.CreateIndexesOptions) (string, error)
