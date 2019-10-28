@@ -18,6 +18,9 @@ func BenchmarkMemoryStoreWrite(b *testing.B) {
 
 	defer engine.Close()
 
+	b.ResetTimer()
+	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
 		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
 			"n": i,
@@ -57,6 +60,7 @@ func BenchmarkMemoryStoreRead(b *testing.B) {
 	}
 
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		_, err = client.Database("foo").Collection("foo").Find(nil, bson.M{
@@ -79,6 +83,9 @@ func BenchmarkSingleFileStoreWrite(b *testing.B) {
 	}
 
 	defer engine.Close()
+
+	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
@@ -121,6 +128,7 @@ func BenchmarkFileStoreRead(b *testing.B) {
 	}
 
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		_, err = client.Database("foo").Collection("foo").Find(nil, bson.M{
