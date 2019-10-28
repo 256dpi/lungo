@@ -6,6 +6,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// Columns will return columns from a MongoDb sort document.
 func Columns(doc bsonkit.Doc) ([]bsonkit.Column, error) {
 	// prepare columns
 	columns := make([]bsonkit.Column, 0, len(*doc))
@@ -38,6 +39,8 @@ func Columns(doc bsonkit.Doc) ([]bsonkit.Column, error) {
 	return columns, nil
 }
 
+// Sort will sort a list based on a MongoDB sort document and return a new
+// list with sorted documents.
 func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 	// copy list
 	result := make(bsonkit.List, len(list))

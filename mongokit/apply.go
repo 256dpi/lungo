@@ -12,6 +12,7 @@ import (
 
 // TODO: Support array update operators.
 
+// FieldUpdateOperators defines the field update operators.
 var FieldUpdateOperators = map[string]Operator{}
 
 func init() {
@@ -32,6 +33,8 @@ func init() {
 	}
 }
 
+// Apply will apply a MongoDB update document on a document using the various
+// update operators. The document is updated in place.
 func Apply(doc, update bsonkit.Doc, upsert bool) error {
 	// update document according to update
 	return Process(&Context{

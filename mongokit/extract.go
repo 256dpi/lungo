@@ -10,7 +10,10 @@ import (
 
 // https://github.com/mongodb/mongo/blob/master/src/mongo/db/extracter/expression_leaf.cpp
 
+// TopLevelExtractOperators defines the top level extract operators.
 var TopLevelExtractOperators = map[string]Operator{}
+
+// ExpressionExtractOperators defines the expression extract operators.
 var ExpressionExtractOperators = map[string]Operator{}
 
 func init() {
@@ -24,6 +27,8 @@ func init() {
 	ExpressionExtractOperators["$in"] = extractIn
 }
 
+// Extract will extract the constant parts of a MongoDB query. The returned
+// document may be used as the basis of an upsert operation.
 func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 	// prepare doc
 	doc := &bson.D{}

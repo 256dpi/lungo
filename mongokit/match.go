@@ -11,9 +11,13 @@ import (
 
 // https://github.com/mongodb/mongo/blob/master/src/mongo/db/matcher/expression_leaf.cpp
 
+// TopLevelQueryOperators defines the top level query operators
 var TopLevelQueryOperators = map[string]Operator{}
+
+// ExpressionQueryOperators defines the expression query operators.
 var ExpressionQueryOperators = map[string]Operator{}
 
+// ErrNotMatched may be returned by query operators id the document does not match.
 var ErrNotMatched = errors.New("not matched")
 
 func init() {
@@ -42,6 +46,8 @@ func init() {
 	ExpressionQueryOperators["$elemMatch"] = matchElem
 }
 
+// Match will test if the supplied MongoDB query document matches the specified
+// document.
 func Match(doc, query bsonkit.Doc) (bool, error) {
 	// match document to query
 	err := Process(&Context{

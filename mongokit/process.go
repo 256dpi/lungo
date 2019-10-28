@@ -8,14 +8,23 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// Operator is a generic operator.
 type Operator func(ctx *Context, doc bsonkit.Doc, op, path string, v interface{}) error
 
+// Context is the context passed to operators.
 type Context struct {
-	TopLevel   map[string]Operator
+	// The available top level operators.
+	TopLevel map[string]Operator
+
+	// the available expression operators.
 	Expression map[string]Operator
-	Upsert     bool
+
+	// Whether this is an upsert operation.
+	Upsert bool
 }
 
+// Process will process a document with a query using the MongoDB operator
+// algorithm.
 func Process(ctx *Context, doc bsonkit.Doc, query bson.D, prefix string, root bool) error {
 	// process all expressions (implicit and)
 	for _, exp := range query {
@@ -28,6 +37,8 @@ func Process(ctx *Context, doc bsonkit.Doc, query bson.D, prefix string, root bo
 	return nil
 }
 
+// ProcessExpression will process a document with a query using the MongoDB
+// operator algorithm.
 func ProcessExpression(ctx *Context, doc bsonkit.Doc, prefix string, pair bson.E, root bool) error {
 	// check for top level operators which may appear together with field
 	// expressions in the document, or force top level operators if there are
