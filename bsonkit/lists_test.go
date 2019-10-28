@@ -95,11 +95,11 @@ func TestCollectEmbedded(t *testing.T) {
 
 	// raw values
 	res := Collect(List{a1, a2, a3}, "a.b", false, false, false, false)
-	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{bson.A{"1", "2"}}, bson.A{"1","2"}}, res)
+	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{bson.A{"1", "2"}}, bson.A{"1", "2"}}, res)
 
 	// merged values
 	res = Collect(List{a1, a2, a3}, "a.b", false, true, false, false)
-	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{"1", "2"}, bson.A{"1","2"}}, res)
+	assert.Equal(t, bson.A{bson.A{"1"}, bson.A{"1", "2"}, bson.A{"1", "2"}}, res)
 
 	// flattened values
 	res = Collect(List{a1, a2, a3}, "a.b", false, true, true, false)
