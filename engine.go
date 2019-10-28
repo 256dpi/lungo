@@ -826,10 +826,8 @@ func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, uniqu
 	namespace.Indexes[name] = index
 
 	// fill index
-	for _, doc := range namespace.Documents.List {
-		if !index.Add(doc) {
-			return "", fmt.Errorf("duplicate document for index %q", name)
-		}
+	if !index.Build(namespace.Documents.List) {
+		return "", fmt.Errorf("duplicate document for index %q", name)
 	}
 
 	// write dataset

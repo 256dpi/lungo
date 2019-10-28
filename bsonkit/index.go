@@ -6,8 +6,6 @@ import (
 	"github.com/tidwall/btree"
 )
 
-// TODO: Add a fast build method.
-
 type entry struct {
 	set *Set
 }
@@ -28,40 +26,48 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 // Index is a basic btree based index for documents.
 type Index struct {
 	// Whether documents must have unique value.
-	Unique bool `bson:"unique"`
+	Unique bool
 
 	// The columns that specify the index.
-	Columns []Column `bson:"columns"`
+	Columns []Column
 
-	btree    *btree.BTree `bson:"-"`
-	sentinel *entry       `bson:"-"`
-	mutex    sync.Mutex   `bson:"-"`
+	btree    *btree.BTree
+	sentinel *entry
+	mutex    sync.Mutex
 }
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
-	return (&Index{
+	// create index
+	index := &Index{
 		Unique:  unique,
 		Columns: columns,
-	}).Prepare(nil)
-}
+	}
 
-// Prepare will reset the index and build it form the specified list of documents.
-func (i *Index) Prepare(list List) *Index {
 	// create btree
-	i.btree = btree.New(64, i)
+	index.btree = btree.New(64, index)
 
 	// create sentinel
-	i.sentinel = &entry{
+	index.sentinel = &entry{
 		set: NewSet(make(List, 1)),
 	}
 
+	return index
+}
+
+// Build will build the index from the specified list. It may return false if
+// there was an unique constraint error when building the index.
+func (i *Index) Build(list List) bool {
+	// TODO: Add a fast build method.
+
 	// add documents
 	for _, doc := range list {
-		i.Add(doc)
+		if !i.Add(doc) {
+			return false
+		}
 	}
 
-	return i
+	return true
 }
 
 // Add will add the document to index. May return false if the document has

@@ -17,35 +17,20 @@ func (h Handle) String() string {
 
 // Dataset is the top level object per database that contains all data.
 type Dataset struct {
-	Namespaces map[Handle]*Namespace `bson:"namespaces"`
+	Namespaces map[Handle]*Namespace
 }
 
 // NewDataset creates and returns a new dataset.
 func NewDataset() *Dataset {
-	return (&Dataset{}).Prepare()
-}
-
-// Prepare will prepare the dataset.
-func (d *Dataset) Prepare() *Dataset {
-	// ensure namespaces
-	if d.Namespaces == nil {
-		d.Namespaces = make(map[Handle]*Namespace)
+	return &Dataset{
+		Namespaces: make(map[Handle]*Namespace),
 	}
-
-	// init namespaces
-	for _, namespace := range d.Namespaces {
-		namespace.Prepare()
-	}
-
-	return d
 }
 
 // Clone will cone the dataset. Namespaces need to be cloned separately.
 func (d *Dataset) Clone() *Dataset {
 	// create clone
-	clone := &Dataset{
-		Namespaces: map[Handle]*Namespace{},
-	}
+	clone := NewDataset()
 
 	// copy namespaces
 	for name, namespace := range d.Namespaces {
@@ -58,32 +43,22 @@ func (d *Dataset) Clone() *Dataset {
 // Namespace holds documents and indexes.
 type Namespace struct {
 	// The document set.
-	Documents *bsonkit.Set `bson:"documents"`
+	Documents *bsonkit.Set
 
 	// The indexes.
-	Indexes map[string]*bsonkit.Index `bson:"indexes"`
+	Indexes map[string]*bsonkit.Index
 }
 
 // NewNamespace creates and returns a new namespace.
 func NewNamespace() *Namespace {
-	return (&Namespace{
+	return &Namespace{
 		Documents: bsonkit.NewSet(nil),
 		Indexes: map[string]*bsonkit.Index{
 			"_id_": bsonkit.NewIndex(true, []bsonkit.Column{
 				{Path: "_id"},
 			}),
 		},
-	}).Prepare()
-}
-
-// Prepare will prepare the namespace.
-func (n *Namespace) Prepare() *Namespace {
-	// prepare indexes
-	for _, index := range n.Indexes {
-		index.Prepare(n.Documents.List)
 	}
-
-	return n
 }
 
 // Clone will clone the namespace.

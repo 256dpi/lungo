@@ -3,10 +3,10 @@ package bsonkit
 // Set is set of unique documents.
 type Set struct {
 	// List is the list of documents.
-	List List `bson:"list"`
+	List List
 
 	// Index maps documents to their index in the list.
-	Index map[Doc]int `bson:"index"`
+	Index map[Doc]int
 }
 
 // NewSet returns a new set from the specified list.

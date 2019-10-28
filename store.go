@@ -2,12 +2,16 @@ package lungo
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/dbkit"
+	"github.com/256dpi/lungo/mongokit"
 )
 
 // Store is the interface that describes storage adapters.
@@ -39,6 +43,23 @@ func (m MemoryStore) Store(data *Dataset) error {
 	return nil
 }
 
+// File is the format of the file stored by the file store.
+type File struct {
+	Namespaces map[string]FileNamespace `bson:"namespaces"`
+}
+
+// FileNamespace is a single namespace stored in a file by the file store.
+type FileNamespace struct {
+	Documents bsonkit.List         `bson:"documents"`
+	Indexes   map[string]FileIndex `bson:"indexes"`
+}
+
+// FileIndex is a single index stored in a file by the file store.
+type FileIndex struct {
+	Key    bson.D `bson:"key"`
+	Unique bool   `bson:"unique"`
+}
+
 // FileStore writes the dataset to a single file on disk.
 type FileStore struct {
 	path string
@@ -63,23 +84,104 @@ func (s *FileStore) Load() (*Dataset, error) {
 		return nil, err
 	}
 
-	// decode dataset
-	var dataset Dataset
-	err = bson.Unmarshal(buf, &dataset)
+	// decode file
+	var file File
+	err = bson.Unmarshal(buf, &file)
 	if err != nil {
 		return nil, err
 	}
 
-	// prepare
-	dataset.Prepare()
+	// create dataset
+	dataset := NewDataset()
 
-	return &dataset, nil
+	// process namespaces
+	for name, ns := range file.Namespaces {
+		// create handle
+		segments := strings.Split(name, ".")
+		handle := Handle{segments[0], segments[1]}
+
+		// create namespace
+		namespace := NewNamespace()
+
+		// add documents
+		namespace.Documents = bsonkit.NewSet(ns.Documents)
+
+		// build default index
+		if !namespace.Indexes["_id_"].Build(ns.Documents) {
+			return nil, fmt.Errorf("duplicate document for index %q", "_id_")
+		}
+
+		// add indexes
+		for name, idx := range ns.Indexes {
+			// get columns
+			columns, err := mongokit.Columns(&idx.Key)
+			if err != nil {
+				return nil, err
+			}
+
+			// create index
+			index := bsonkit.NewIndex(idx.Unique, columns)
+
+			// build index
+			if !index.Build(ns.Documents) {
+				return nil, fmt.Errorf("duplicate document for index %q", name)
+			}
+
+			// add index
+			namespace.Indexes[name] = index
+		}
+
+		// add namespace
+		dataset.Namespaces[handle] = namespace
+	}
+
+	return dataset, nil
 }
 
 // Store will atomically write the dataset to disk.
 func (s *FileStore) Store(data *Dataset) error {
-	// encode dataset
-	buf, err := bson.Marshal(data)
+	// create file
+	file := File{
+		Namespaces: map[string]FileNamespace{},
+	}
+
+	// add namespaces
+	for handle, namespace := range data.Namespaces {
+		// collect indexes
+		indexes := map[string]FileIndex{}
+		for name, index := range namespace.Indexes {
+			// create key
+			key := bson.D{}
+			for _, column := range index.Columns {
+				// get direction
+				dir := 1
+				if column.Reverse {
+					dir = -1
+				}
+
+				// add key
+				key = append(key, bson.E{
+					Key:   column.Path,
+					Value: dir,
+				})
+			}
+
+			// add index
+			indexes[name] = FileIndex{
+				Key:    key,
+				Unique: index.Unique,
+			}
+		}
+
+		// add namespace
+		file.Namespaces[handle.String()] = FileNamespace{
+			Documents: namespace.Documents.List,
+			Indexes:   indexes,
+		}
+	}
+
+	// encode file
+	buf, err := bson.Marshal(file)
 	if err != nil {
 		return err
 	}

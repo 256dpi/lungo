@@ -5,10 +5,10 @@ import "sort"
 // Column defines a column for ordering.
 type Column struct {
 	// The path of the document field.
-	Path string `bson:"path"`
+	Path string
 
 	// Whether the ordering should be reverse.
-	Reverse bool `bson:"reverse"`
+	Reverse bool
 }
 
 // Sort will sort the list of documents in-place based on the specified columns.

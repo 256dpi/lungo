@@ -28,8 +28,10 @@ func BenchmarkMemoryStore(b *testing.B) {
 }
 
 func BenchmarkSingleFileStore(b *testing.B) {
+	_ = os.Remove("./bench.bson")
+
 	client, engine, err := Open(nil, Options{
-		Store: NewFileStore("./bench", 0666),
+		Store: NewFileStore("./bench.bson", 0666),
 	})
 	if err != nil {
 		panic(err)
@@ -44,10 +46,5 @@ func BenchmarkSingleFileStore(b *testing.B) {
 		if err != nil {
 			panic(err)
 		}
-	}
-
-	err = os.Remove("./bench")
-	if err != nil {
-		panic(err)
 	}
 }
