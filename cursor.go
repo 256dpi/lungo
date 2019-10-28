@@ -8,24 +8,24 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-var errCursorClosed = errors.New("cursor closed")
-var errCursorExhausted = errors.New("cursor exhausted")
+var ErrCursorClosed = errors.New("cursor closed")
+var ErrCursorExhausted = errors.New("cursor exhausted")
 
-type staticCursor struct {
+type Cursor struct {
 	list   bsonkit.List
 	pos    int
 	closed bool
 	mutex  sync.Mutex
 }
 
-func (c *staticCursor) All(ctx context.Context, out interface{}) error {
+func (c *Cursor) All(ctx context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	// check if closed
 	if c.closed {
-		return errCursorClosed
+		return ErrCursorClosed
 	}
 
 	// decode items
@@ -40,7 +40,7 @@ func (c *staticCursor) All(ctx context.Context, out interface{}) error {
 	return nil
 }
 
-func (c *staticCursor) Close(ctx context.Context) error {
+func (c *Cursor) Close(ctx context.Context) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -51,19 +51,19 @@ func (c *staticCursor) Close(ctx context.Context) error {
 	return nil
 }
 
-func (c *staticCursor) Decode(out interface{}) error {
+func (c *Cursor) Decode(out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	// check if closed
 	if c.closed {
-		return errCursorClosed
+		return ErrCursorClosed
 	}
 
 	// check if exhausted
 	if c.pos > len(c.list) {
-		return errCursorExhausted
+		return ErrCursorExhausted
 	}
 
 	// decode item
@@ -75,15 +75,15 @@ func (c *staticCursor) Decode(out interface{}) error {
 	return nil
 }
 
-func (c *staticCursor) Err() error {
+func (c *Cursor) Err() error {
 	return nil
 }
 
-func (c *staticCursor) ID() int64 {
+func (c *Cursor) ID() int64 {
 	return 0
 }
 
-func (c *staticCursor) Next(context.Context) bool {
+func (c *Cursor) Next(context.Context) bool {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

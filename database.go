@@ -60,7 +60,7 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	}
 
 	// convert cursor
-	csr := res.(*staticCursor)
+	csr := res.(*Cursor)
 
 	// collect names
 	names := make([]string, 0)
@@ -90,7 +90,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 		return nil, err
 	}
 
-	return &staticCursor{list: list}, nil
+	return &Cursor{list: list}, nil
 }
 
 func (d *Database) Name() string {

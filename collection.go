@@ -265,7 +265,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		return nil, err
 	}
 
-	return &staticCursor{list: res.Matched}, nil
+	return &Cursor{list: res.Matched}, nil
 }
 
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {

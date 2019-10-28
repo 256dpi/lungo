@@ -153,5 +153,5 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 		return nil, err
 	}
 
-	return &staticCursor{list: list}, nil
+	return &Cursor{list: list}, nil
 }
