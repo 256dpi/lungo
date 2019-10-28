@@ -3,13 +3,13 @@ package lungo
 import (
 	"context"
 	"errors"
+	"io"
 	"sync"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
 
 var ErrCursorClosed = errors.New("cursor closed")
-var ErrCursorExhausted = errors.New("cursor exhausted")
 
 type Cursor struct {
 	list   bsonkit.List
@@ -63,7 +63,7 @@ func (c *Cursor) Decode(out interface{}) error {
 
 	// check if exhausted
 	if c.pos > len(c.list) {
-		return ErrCursorExhausted
+		return io.EOF
 	}
 
 	// decode item
