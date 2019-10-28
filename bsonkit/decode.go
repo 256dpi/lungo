@@ -7,6 +7,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Decode will decode the specified document to an arbitrary value which may be
+// a struct with bson tags in most cases.
 func Decode(doc Doc, out interface{}) error {
 	// TODO: This approach is slow, we should do it directly in memory if possible.
 
@@ -25,6 +27,7 @@ func Decode(doc Doc, out interface{}) error {
 	return nil
 }
 
+// DecodeList will decode a list of documents to an arbitrary value.
 func DecodeList(list List, out interface{}) error {
 	// get out value
 	outValue := reflect.ValueOf(out)

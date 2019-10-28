@@ -8,17 +8,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// MissingType is the type of the Missing value.
 type MissingType struct{}
 
+// Missing is returned by Get if the value cannot be found in the document.
 var Missing = MissingType{}
 
 var unsetValue interface{} = struct{}{}
 
+// Get returns the value in the document specified by path. It returns Missing
+// if the value has not been found. Dots may be used to descend into nested
+// documents e.g. "foo.bar.baz" and numbers may be used to descend into arrays
+// e.g. "foo.2.bar".
 func Get(doc Doc, path string) interface{} {
 	value, _ := get(*doc, strings.Split(path, "."), false, false)
 	return value
 }
 
+// All has the basic behaviour as Get but additionally collects values from
+// embedded documents in arrays. It returns and array and true if values from
+// multiple documents haven been collected. Missing values are skipped and
+// intermediary arrays flattened if compact is set to true. By enabling merge,
+// a resulting array of embedded document may be merged to on array containing
+// all values.
 func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	// get value
 	value, nested := get(*doc, strings.Split(path, "."), true, compact)
@@ -99,6 +111,12 @@ func get(v interface{}, path []string, collect, compact bool) (interface{}, bool
 	return Missing, false
 }
 
+// Put will store the value in the document at the location specified by path.
+// It will automatically create document fields, array elements and embedded
+// documents to fulfill the request. If prepends is set to true, new values are
+// inserted at the beginning of the array or document. If the path contains
+// a number e.g. "foo.1.bar" and no array exists at that levels, a document with
+// the key "1" is created.
 func Put(doc Doc, path string, value interface{}, prepend bool) error {
 	ok := put(*doc, strings.Split(path, "."), value, prepend, func(v interface{}) {
 		*doc = v.(bson.D)
@@ -110,6 +128,10 @@ func Put(doc Doc, path string, value interface{}, prepend bool) error {
 	return nil
 }
 
+// Put will remove the value at the location in the document specified by path.
+// If the path specifies an array element e.g. "foo.2" the element is nilled,
+// but not removed from the array. This prevents unintentional effects through
+// position shifts in the array.
 func Unset(doc Doc, path string) {
 	_ = put(*doc, strings.Split(path, "."), unsetValue, false, func(v interface{}) {
 		*doc = v.(bson.D)
@@ -233,6 +255,9 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 	return false
 }
 
+// Increment will add the increment to the value at the location in the document
+// specified by path. If the value is missing, the increment is added to the
+// document. The type of the field may be lifted as part of the operation.
 func Increment(doc Doc, path string, increment interface{}) error {
 	// get field
 	field := Get(doc, path)
@@ -292,6 +317,9 @@ func Increment(doc Doc, path string, increment interface{}) error {
 	return nil
 }
 
+// Multiply will multiply the multiplier with the value at the location in the
+// document specified by path. If the value is missing, a zero is added to the
+// document. The type of the field may be lifted as part of the operation.
 func Multiply(doc Doc, path string, multiplier interface{}) error {
 	// get field
 	field := Get(doc, path)

@@ -11,6 +11,7 @@ var tsSeconds uint32
 var tsCounter uint32
 var tsMutex sync.Mutex
 
+// Generate will generate a locally monotonic timestamp.
 func Generate() primitive.Timestamp {
 	// acquire mutex
 	tsMutex.Lock()

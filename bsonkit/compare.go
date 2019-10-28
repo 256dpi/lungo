@@ -9,6 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Compare will compare two bson values and return their order according to the
+// BSON type comparison order specification:
+// https://docs.mongodb.com/manual/reference/bson-type-comparison-order/.
 func Compare(lv, rv interface{}) int {
 	// get types
 	lt, _ := Inspect(lv)

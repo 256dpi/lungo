@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Convert will convert a simple map to a document.
 func Convert(m bson.M) Doc {
 	d := convertMap(m)
 	return &d

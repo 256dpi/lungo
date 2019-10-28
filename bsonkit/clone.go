@@ -7,6 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Clone will clone the specified document. The returned document can be safely
+// mutated without mutating the original document with one exception: the content
+// of primitive.Binary values is not cloned and references the same byte slice
+// as the original.
 func Clone(doc Doc) Doc {
 	// clone document
 	clone := cloneValue(*doc).(bson.D)
@@ -14,6 +18,7 @@ func Clone(doc Doc) Doc {
 	return &clone
 }
 
+// CloneList will clone a list of documents.
 func CloneList(list List) List {
 	// prepare clone
 	clone := make(List, 0, len(list))
