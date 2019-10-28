@@ -15,19 +15,31 @@ import (
 
 // TODO: Combine ListDatabases(), ListCollections(), NumDocuments() into Info().
 
+// Result is returned by some engine operations.
 type Result struct {
-	Matched  bsonkit.List
+	// The list of matched documents.
+	Matched bsonkit.List
+
+	// The list of inserted, replace or updated documents.
 	Modified bsonkit.List
+
+	// The upserted document.
 	Upserted bsonkit.Doc
-	Errors   []error
+
+	// The errors that occurred during the operation.
+	Errors []error
 }
 
+// Engine manages the dataset loaded from a store and provides the various
+// MongoDB style CRUD operations.
 type Engine struct {
 	store   Store
 	dataset *Dataset
 	mutex   sync.Mutex
 }
 
+// CreateEngine will create and return an engine with a loaded dataset from the
+// store.
 func CreateEngine(store Store) (*Engine, error) {
 	// create engine
 	e := &Engine{
@@ -46,6 +58,9 @@ func CreateEngine(store Store) (*Engine, error) {
 	return e, nil
 }
 
+// Find will query documents from a namespace. Sort, skip and limit may be
+// supplied to modify the result. The returned results will contain the matched
+// list of documents.
 func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -84,6 +99,11 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 	return &Result{Matched: list}, nil
 }
 
+// Insert will insert the specified documents into the namespace. The engine
+// will automatically generate an object id per document if it is missing. If
+// ordered ist enabled the operation is aborted on the first error and the
+// result returned. Otherwise, the engine will try to insert all documents. The
+// returned results will contain the inserted documents and potential errors.
 func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -169,6 +189,10 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	return result, nil
 }
 
+// Replace will replace the first matching document with the specified
+// replacement document. If upsert is enabled, it will insert the replacement
+// document if it is missing. The returned result will contain the matched
+// and modified or upserted document.
 func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -255,6 +279,11 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	}, nil
 }
 
+// Update will apply the update to all matching document. Sort, skip and limit
+// may be supplied to modify the result. If upsert is enabled, it will extract
+// constant parts of the query and apply the update and insert the document if
+// it is missing. The returned result will contain the matched and modified or
+// upserted document.
 func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -440,6 +469,9 @@ func (e *Engine) upsert(handle Handle, query, repl, update bsonkit.Doc) (*Result
 	}, nil
 }
 
+// Delete will remove all matching documents from the namespace. Sort, skip and
+// limit may be supplied to modify the result. The returned result will contain
+// the matched documents.
 func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -499,6 +531,9 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	return &Result{Matched: list}, nil
 }
 
+// Drop will return the namespace with the specified handle from the dataset.
+// If the second part of the handle is empty, it will drop all namespaces
+// matching the first part.
 func (e *Engine) Drop(handle Handle) error {
 	// acquire mutex
 	e.mutex.Lock()
@@ -526,6 +561,7 @@ func (e *Engine) Drop(handle Handle) error {
 	return nil
 }
 
+// ListDatabases will return a list of all databases in the dataset.
 func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -565,6 +601,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	return list, nil
 }
 
+// ListCollections will return a list of all collections in the specified db.
 func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -605,6 +642,7 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	return list, nil
 }
 
+// NumDocuments will return the number of documents in the specified namespace.
 func (e *Engine) NumDocuments(handle Handle) int {
 	// acquire mutex
 	e.mutex.Lock()
@@ -619,6 +657,7 @@ func (e *Engine) NumDocuments(handle Handle) int {
 	return len(namespace.Documents.List)
 }
 
+// ListIndexes will return a list of indexes in the specified namespace.
 func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -676,6 +715,7 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	return list, nil
 }
 
+// CreateIndex will create the specified index in the specified namespace.
 func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, unique bool) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -738,6 +778,7 @@ func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, uniqu
 	return name, nil
 }
 
+// DropIndex will drop the specified index in the specified namespace.
 func (e *Engine) DropIndex(handle Handle, name string) error {
 	// acquire mutex
 	e.mutex.Lock()
