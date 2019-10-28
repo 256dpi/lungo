@@ -16,8 +16,8 @@ var _ IDatabase = &Database{}
 
 // Database wraps an Engine to be mongo compatible.
 type Database struct {
-	name   string
 	engine *Engine
+	name   string
 }
 
 // Aggregate implements the IDatabase.Aggregate method.
@@ -41,16 +41,15 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	assertOptions(opt, map[string]string{})
 
 	return &Collection{
-		ns:     d.name + "." + name,
-		name:   name,
 		engine: d.engine,
+		ns:     NS{d.name, name},
 	}
 }
 
 // Drop implements the IDatabase.Drop method.
 func (d *Database) Drop(context.Context) error {
 	// drop all namespaces with database prefix
-	err := d.engine.Drop(d.name + ".*")
+	err := d.engine.Drop(NS{d.name, ""})
 	if err != nil {
 		return err
 	}

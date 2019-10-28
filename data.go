@@ -1,11 +1,19 @@
 package lungo
 
 import (
+	"strings"
+
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+type NS [2]string
+
+func (ns NS) String() string {
+	return strings.Join(ns[:], ".")
+}
+
 type Data struct {
-	Namespaces map[string]*Namespace `bson:"namespaces"`
+	Namespaces map[NS]*Namespace `bson:"namespaces"`
 }
 
 func NewData() *Data {
@@ -15,7 +23,7 @@ func NewData() *Data {
 func (d *Data) Prepare() *Data {
 	// ensure namespaces
 	if d.Namespaces == nil {
-		d.Namespaces = make(map[string]*Namespace)
+		d.Namespaces = make(map[NS]*Namespace)
 	}
 
 	// init namespaces
@@ -29,7 +37,7 @@ func (d *Data) Prepare() *Data {
 func (d *Data) Clone() *Data {
 	// create clone
 	clone := &Data{
-		Namespaces: map[string]*Namespace{},
+		Namespaces: map[NS]*Namespace{},
 	}
 
 	// copy namespaces
@@ -41,14 +49,12 @@ func (d *Data) Clone() *Data {
 }
 
 type Namespace struct {
-	Name      string                    `bson:"name"`
 	Documents *bsonkit.Set              `bson:"documents"`
 	Indexes   map[string]*bsonkit.Index `bson:"indexes"`
 }
 
-func NewNamespace(name string) *Namespace {
+func NewNamespace(name NS) *Namespace {
 	return (&Namespace{
-		Name:      name,
 		Documents: bsonkit.NewSet(nil),
 		Indexes: map[string]*bsonkit.Index{
 			"_id_": bsonkit.NewIndex(true, []bsonkit.Column{
@@ -70,7 +76,6 @@ func (n *Namespace) Prepare() *Namespace {
 func (n *Namespace) Clone() *Namespace {
 	// create new namespace
 	clone := &Namespace{
-		Name:      n.Name,
 		Documents: n.Documents.Clone(),
 		Indexes:   map[string]*bsonkit.Index{},
 	}

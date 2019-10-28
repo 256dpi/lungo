@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -47,7 +46,7 @@ func CreateEngine(store Store) (*Engine, error) {
 	return e, nil
 }
 
-func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
+func (e *Engine) Find(ns NS, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -85,7 +84,7 @@ func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Res
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, error) {
+func (e *Engine) Insert(ns NS, list bsonkit.List, ordered bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -124,7 +123,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	for _, doc := range list {
 		// list uniqueness pre-check
 		if _, ok := namespace.Documents.Index[doc]; ok {
-			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", namespace.Name))
+			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", ns.String()))
 			if ordered {
 				break
 			} else {
@@ -170,7 +169,7 @@ func (e *Engine) Insert(ns string, list bsonkit.List, ordered bool) (*Result, er
 	return result, nil
 }
 
-func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
+func (e *Engine) Replace(ns NS, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -256,7 +255,7 @@ func (e *Engine) Replace(ns string, query, sort, repl bsonkit.Doc, upsert bool) 
 	}, nil
 }
 
-func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
+func (e *Engine) Update(ns NS, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -351,7 +350,7 @@ func (e *Engine) Update(ns string, query, sort, update bsonkit.Doc, limit int, u
 	}, nil
 }
 
-func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, error) {
+func (e *Engine) upsert(ns NS, query, repl, update bsonkit.Doc) (*Result, error) {
 	// extract query
 	doc, err := mongokit.Extract(query)
 	if err != nil {
@@ -441,7 +440,7 @@ func (e *Engine) upsert(ns string, query, repl, update bsonkit.Doc) (*Result, er
 	}, nil
 }
 
-func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (e *Engine) Delete(ns NS, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -500,27 +499,18 @@ func (e *Engine) Delete(ns string, query, sort bsonkit.Doc, limit int) (*Result,
 	return &Result{Matched: list}, nil
 }
 
-func (e *Engine) Drop(ns string) error {
+func (e *Engine) Drop(ns NS) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-
-	// quote all meta characters
-	pattern := regexp.QuoteMeta(ns)
-
-	// replace wildcards
-	pattern = strings.ReplaceAll(pattern, `\*`, ".*")
-
-	// compile regexp
-	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
 
 	// clone data
 	clone := e.data.Clone()
 
 	// drop all matching namespaces
-	for name := range clone.Namespaces {
-		if regex.MatchString(name) {
-			delete(clone.Namespaces, name)
+	for _ns := range clone.Namespaces {
+		if _ns == ns || ns[1] == "" && _ns[0] == ns[0] {
+			delete(clone.Namespaces, _ns)
 		}
 	}
 
@@ -543,9 +533,8 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 
 	// sort namespaces
 	sort := map[string][]*Namespace{}
-	for _, ns := range e.data.Namespaces {
-		name := strings.Split(ns.Name, ".")[0]
-		sort[name] = append(sort[name], ns)
+	for ns, namespace := range e.data.Namespaces {
+		sort[ns[0]] = append(sort[ns[0]], namespace)
 	}
 
 	// prepare list
@@ -585,14 +574,14 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	list := make(bsonkit.List, 0, len(e.data.Namespaces))
 
 	// add documents
-	for _, ns := range e.data.Namespaces {
-		if strings.HasPrefix(ns.Name, db+".") {
+	for ns := range e.data.Namespaces {
+		if ns[0] == db {
 			list = append(list, &bson.D{
-				bson.E{Key: "name", Value: strings.TrimPrefix(ns.Name, db)[1:]},
+				bson.E{Key: "name", Value: ns[1]},
 				bson.E{Key: "type", Value: "collection"},
 				bson.E{Key: "options", Value: bson.D{}},
 				bson.E{Key: "info", Value: bson.D{
-					bson.E{Key: "uuid", Value: ns.Name},
+					bson.E{Key: "uuid", Value: ns.String()},
 					bson.E{Key: "readOnly", Value: false},
 				}},
 				bson.E{Key: "idIndex", Value: bson.D{
@@ -601,7 +590,7 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 						bson.E{Key: "_id", Value: 1},
 					}},
 					bson.E{Key: "name", Value: "_id_"},
-					bson.E{Key: "ns", Value: ns.Name},
+					bson.E{Key: "namespace", Value: ns.String()},
 				}},
 			})
 		}
@@ -616,7 +605,7 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	return list, nil
 }
 
-func (e *Engine) NumDocuments(ns string) int {
+func (e *Engine) NumDocuments(ns NS) int {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -630,14 +619,14 @@ func (e *Engine) NumDocuments(ns string) int {
 	return len(namespace.Documents.List)
 }
 
-func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
+func (e *Engine) ListIndexes(ns NS) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return nil, fmt.Errorf("missing namespace %q", ns)
+		return nil, fmt.Errorf("missing namespace %q", ns.String())
 	}
 
 	// get namespace
@@ -667,7 +656,7 @@ func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
 			bson.E{Key: "v", Value: 2},
 			bson.E{Key: "key", Value: key},
 			bson.E{Key: "name", Value: name},
-			bson.E{Key: "ns", Value: ns},
+			bson.E{Key: "ns", Value: ns.String()},
 		}
 
 		// add uniqueness
@@ -687,7 +676,7 @@ func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
 	return list, nil
 }
 
-func (e *Engine) CreateIndex(ns string, keys bsonkit.Doc, name string, unique bool) (string, error) {
+func (e *Engine) CreateIndex(ns NS, keys bsonkit.Doc, name string, unique bool) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -749,14 +738,14 @@ func (e *Engine) CreateIndex(ns string, keys bsonkit.Doc, name string, unique bo
 	return name, nil
 }
 
-func (e *Engine) DropIndex(ns, name string) error {
+func (e *Engine) DropIndex(ns NS, name string) error {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check namespace
 	if e.data.Namespaces[ns] == nil {
-		return fmt.Errorf("missing namespace %q", ns)
+		return fmt.Errorf("missing namespace %q", ns.String())
 	}
 
 	// clone data
@@ -770,7 +759,7 @@ func (e *Engine) DropIndex(ns, name string) error {
 	if name != "*" {
 		// check existence
 		if _, ok := namespace.Indexes[name]; !ok {
-			return fmt.Errorf("missing index %q", ns)
+			return fmt.Errorf("missing index %q", ns.String())
 		}
 
 		// drop index

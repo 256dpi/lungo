@@ -14,8 +14,8 @@ var _ IIndexView = &IndexView{}
 
 // IndexView wraps an Engine to be mongo compatible.
 type IndexView struct {
-	ns     string
 	engine *Engine
+	ns     NS
 }
 
 // CreateMany implements the IIndexView.CreateMany method.

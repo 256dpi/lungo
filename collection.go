@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"context"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,9 +14,8 @@ var _ ICollection = &Collection{}
 
 // Collection wraps an Engine to be mongo compatible.
 type Collection struct {
-	ns     string
-	name   string
 	engine *Engine
+	ns     NS
 }
 
 // Aggregate implements the ICollection.Aggregate method.
@@ -39,9 +37,8 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	assertOptions(opt, map[string]string{})
 
 	return &Collection{
-		ns:     c.ns,
-		name:   c.name,
 		engine: c.engine,
+		ns:     c.ns,
 	}, nil
 }
 
@@ -92,7 +89,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 // Database implements the ICollection.Database method.
 func (c *Collection) Database() IDatabase {
 	return &Database{
-		name:   strings.Split(c.ns, ".")[0],
+		name:   c.ns[0],
 		engine: c.engine,
 	}
 }
@@ -645,7 +642,7 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 
 // Name implements the ICollection.Name method.
 func (c *Collection) Name() string {
-	return c.name
+	return c.ns[1]
 }
 
 // ReplaceOne implements the ICollection.ReplaceOne method.
