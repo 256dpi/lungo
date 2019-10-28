@@ -16,16 +16,16 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	// coerce item
 	j := item.(*entry)
 
-	// coerce index
-	index := ctx.(*Index)
+	// coerce tree
+	tree := ctx.(*Tree)
 
 	// get order
-	order := Order(i.set.List[0], j.set.List[0], index.Columns)
+	order := Order(i.set.List[0], j.set.List[0], tree.Columns)
 
 	return order < 0
 }
 
-type Index struct {
+type Tree struct {
 	Unique  bool     `bson:"unique"`
 	Columns []Column `bson:"columns"`
 
@@ -34,51 +34,51 @@ type Index struct {
 	mutex    sync.Mutex   `bson:"-"`
 }
 
-func NewIndex(unique bool, columns []Column) *Index {
-	return (&Index{
+func NewTree(unique bool, columns []Column) *Tree {
+	return (&Tree{
 		Unique:  unique,
 		Columns: columns,
 	}).Prepare(nil)
 }
 
-func (i *Index) Prepare(list List) *Index {
+func (t *Tree) Prepare(list List) *Tree {
 	// create btree
-	i.btree = btree.New(64, i)
+	t.btree = btree.New(64, t)
 
 	// create sentinel
-	i.sentinel = &entry{
+	t.sentinel = &entry{
 		set: NewSet(make(List, 1)),
 	}
 
 	// add documents
 	for _, doc := range list {
-		i.Add(doc)
+		t.Add(doc)
 	}
 
-	return i
+	return t
 }
 
-func (i *Index) Add(doc Doc) bool {
+func (t *Tree) Add(doc Doc) bool {
 	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	t.sentinel.set.List[0] = doc
 
-	// check if index already has an item
-	item := i.btree.Get(i.sentinel)
+	// check if tree already has an item
+	item := t.btree.Get(t.sentinel)
 
 	// just add a new entry if missing
 	if item == nil {
-		i.btree.ReplaceOrInsert(&entry{
+		t.btree.ReplaceOrInsert(&entry{
 			set: NewSet(List{doc}),
 		})
 		return true
 	}
 
-	// return false if index is unique
-	if i.Unique {
+	// return false if tree is unique
+	if t.Unique {
 		return false
 	}
 
@@ -94,16 +94,16 @@ func (i *Index) Add(doc Doc) bool {
 	return true
 }
 
-func (i *Index) Has(doc Doc) bool {
+func (t *Tree) Has(doc Doc) bool {
 	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	t.sentinel.set.List[0] = doc
 
-	// check if index already has an item
-	item := i.btree.Get(i.sentinel)
+	// check if tree already has an item
+	item := t.btree.Get(t.sentinel)
 
 	// return if there is no item
 	if item == nil {
@@ -111,7 +111,7 @@ func (i *Index) Has(doc Doc) bool {
 	}
 
 	// do not check identify if unique
-	if i.Unique {
+	if t.Unique {
 		return true
 	}
 
@@ -124,16 +124,16 @@ func (i *Index) Has(doc Doc) bool {
 	return ok
 }
 
-func (i *Index) Remove(doc Doc) bool {
+func (t *Tree) Remove(doc Doc) bool {
 	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	t.sentinel.set.List[0] = doc
 
-	// check if index already has an item
-	item := i.btree.Get(i.sentinel)
+	// check if tree already has an item
+	item := t.btree.Get(t.sentinel)
 
 	// return if there is no item
 	if item == nil {
@@ -151,7 +151,7 @@ func (i *Index) Remove(doc Doc) bool {
 
 	// remove entry if last in list
 	if len(entry.set.List) == 1 {
-		i.btree.Delete(entry)
+		t.btree.Delete(entry)
 		return true
 	}
 
@@ -164,16 +164,16 @@ func (i *Index) Remove(doc Doc) bool {
 	return true
 }
 
-func (i *Index) Clone() *Index {
+func (t *Tree) Clone() *Tree {
 	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
 	// create clone
-	clone := NewIndex(i.Unique, i.Columns)
+	clone := NewTree(t.Unique, t.Columns)
 
 	// copy entries
-	i.btree.Ascend(func(i btree.Item) bool {
+	t.btree.Ascend(func(i btree.Item) bool {
 		clone.btree.ReplaceOrInsert(&entry{
 			set: i.(*entry).set.Clone(),
 		})
