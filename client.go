@@ -25,9 +25,14 @@ func Open(ctx context.Context, store Store) (IClient, error) {
 		return nil, err
 	}
 
+	return NewClient(engine), nil
+}
+
+// NewClient will create and return a new client.
+func NewClient(engine *Engine) IClient {
 	return &Client{
 		engine: engine,
-	}, nil
+	}
 }
 
 // Connect implements the IClient.Connect method.
