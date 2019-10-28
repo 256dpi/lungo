@@ -29,7 +29,7 @@ func BenchmarkMemoryStore(b *testing.B) {
 
 func BenchmarkSingleFileStore(b *testing.B) {
 	client, engine, err := Open(nil, Options{
-		Store: NewSingleFileStore("./bench", 0666),
+		Store: NewFileStore("./bench", 0666),
 	})
 	if err != nil {
 		panic(err)

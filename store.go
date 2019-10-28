@@ -39,22 +39,22 @@ func (m MemoryStore) Store(data *Dataset) error {
 	return nil
 }
 
-// SingleFileStore writes the dataset to a single file on disk.
-type SingleFileStore struct {
+// FileStore writes the dataset to a single file on disk.
+type FileStore struct {
 	path string
 	mode os.FileMode
 }
 
-// NewSingleFileStore creates and returns a new single file store.
-func NewSingleFileStore(path string, mode os.FileMode) *SingleFileStore {
-	return &SingleFileStore{
+// NewFileStore creates and returns a new file store.
+func NewFileStore(path string, mode os.FileMode) *FileStore {
+	return &FileStore{
 		path: path,
 		mode: mode,
 	}
 }
 
 // Load will read the dataset from disk and return it.
-func (s *SingleFileStore) Load() (*Dataset, error) {
+func (s *FileStore) Load() (*Dataset, error) {
 	// load file
 	buf, err := ioutil.ReadFile(s.path)
 	if os.IsNotExist(err) {
@@ -77,7 +77,7 @@ func (s *SingleFileStore) Load() (*Dataset, error) {
 }
 
 // Store will atomically write the dataset to disk.
-func (s *SingleFileStore) Store(data *Dataset) error {
+func (s *FileStore) Store(data *Dataset) error {
 	// encode dataset
 	buf, err := bson.Marshal(data)
 	if err != nil {
