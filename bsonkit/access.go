@@ -16,12 +16,32 @@ var Missing = MissingType{}
 
 var unsetValue interface{} = struct{}{}
 
+var pathEnd = "$$end$$"
+
+func pathShorten(path string) string {
+	i := strings.Index(path, ".")
+	if i >= 0 {
+		return path[i+1:]
+	}
+
+	return pathEnd
+}
+
+func pathKey(path string) string {
+	i := strings.Index(path, ".")
+	if i >= 0 {
+		return path[:i]
+	}
+
+	return path
+}
+
 // Get returns the value in the document specified by path. It returns Missing
 // if the value has not been found. Dots may be used to descend into nested
 // documents e.g. "foo.bar.baz" and numbers may be used to descend into arrays
 // e.g. "foo.2.bar".
 func Get(doc Doc, path string) interface{} {
-	value, _ := get(*doc, strings.Split(path, "."), false, false)
+	value, _ := get(*doc, path, false, false)
 	return value
 }
 
@@ -33,7 +53,7 @@ func Get(doc Doc, path string) interface{} {
 // all values.
 func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	// get value
-	value, nested := get(*doc, strings.Split(path, "."), true, compact)
+	value, nested := get(*doc, path, true, compact)
 	if !nested || !merge {
 		return value, nested
 	}
@@ -61,22 +81,22 @@ func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	return result, nested
 }
 
-func get(v interface{}, path []string, collect, compact bool) (interface{}, bool) {
+func get(v interface{}, path string, collect, compact bool) (interface{}, bool) {
 	// check path
-	if len(path) == 0 {
+	if path == pathEnd {
 		return v, false
 	}
 
 	// check if empty
-	if path[0] == "" {
+	if path == "" {
 		return Missing, false
 	}
 
 	// get document field
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
-			if el.Key == path[0] {
-				return get(el.Value, path[1:], collect, compact)
+			if el.Key == pathKey(path) {
+				return get(el.Value, pathShorten(path), collect, compact)
 			}
 		}
 	}
@@ -84,9 +104,9 @@ func get(v interface{}, path []string, collect, compact bool) (interface{}, bool
 	// get array field
 	if arr, ok := v.(bson.A); ok {
 		// get indexed array element
-		index, err := strconv.ParseInt(path[0], 10, 64)
+		index, err := strconv.ParseInt(pathKey(path), 10, 64)
 		if err == nil && index >= 0 && index < int64(len(arr)) {
-			return get(arr[index], path[1:], collect, compact)
+			return get(arr[index], pathShorten(path), collect, compact)
 		}
 
 		// collect values from embedded documents
@@ -118,7 +138,7 @@ func get(v interface{}, path []string, collect, compact bool) (interface{}, bool
 // a number e.g. "foo.1.bar" and no array exists at that levels, a document with
 // the key "1" is created.
 func Put(doc Doc, path string, value interface{}, prepend bool) error {
-	ok := put(*doc, strings.Split(path, "."), value, prepend, func(v interface{}) {
+	ok := put(*doc, path, value, prepend, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
 	if !ok {
@@ -133,28 +153,28 @@ func Put(doc Doc, path string, value interface{}, prepend bool) error {
 // but not removed from the array. This prevents unintentional effects through
 // position shifts in the array.
 func Unset(doc Doc, path string) {
-	_ = put(*doc, strings.Split(path, "."), unsetValue, false, func(v interface{}) {
+	_ = put(*doc, path, unsetValue, false, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
 }
 
-func put(v interface{}, path []string, value interface{}, prepend bool, set func(interface{})) bool {
+func put(v interface{}, path string, value interface{}, prepend bool, set func(interface{})) bool {
 	// check path
-	if len(path) == 0 {
+	if path == pathEnd {
 		set(value)
 		return true
 	}
 
 	// check if empty
-	if path[0] == "" {
+	if path == "" {
 		return false
 	}
 
 	// put document field
 	if doc, ok := v.(bson.D); ok {
 		for i, el := range doc {
-			if el.Key == path[0] {
-				return put(doc[i].Value, path[1:], value, prepend, func(v interface{}) {
+			if el.Key == pathKey(path) {
+				return put(doc[i].Value, pathShorten(path), value, prepend, func(v interface{}) {
 					if v == unsetValue {
 						set(append(doc[:i], doc[i+1:]...))
 					} else {
@@ -170,8 +190,8 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		}
 
 		// capture value
-		e := bson.E{Key: path[0]}
-		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
+		e := bson.E{Key: pathKey(path)}
+		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
@@ -190,14 +210,14 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 
 	// put array field
 	if arr, ok := v.(bson.A); ok {
-		index, err := strconv.Atoi(path[0])
+		index, err := strconv.Atoi(pathKey(path))
 		if err != nil || index < 0 {
 			return false
 		}
 
 		// update existing element
 		if index < len(arr) {
-			return put(arr[index], path[1:], value, prepend, func(v interface{}) {
+			return put(arr[index], pathShorten(path), value, prepend, func(v interface{}) {
 				if v == unsetValue {
 					arr[index] = nil
 				} else {
@@ -217,7 +237,7 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 		}
 
 		// put in last element
-		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
+		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			arr[index] = v
 		})
 		if !ok {
@@ -238,8 +258,8 @@ func put(v interface{}, path []string, value interface{}, prepend bool, set func
 	// put new document
 	if v == Missing {
 		// capture value
-		e := bson.E{Key: path[0]}
-		ok := put(Missing, path[1:], value, prepend, func(v interface{}) {
+		e := bson.E{Key: pathKey(path)}
+		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
