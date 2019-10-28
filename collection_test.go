@@ -389,7 +389,8 @@ func TestCollectionFind(t *testing.T) {
 		// cursor
 		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
-		for csr.Next(nil) {}
+		for csr.Next(nil) {
+		}
 		assert.NoError(t, csr.Err())
 		var m bson.M
 		err = csr.Decode(&m)

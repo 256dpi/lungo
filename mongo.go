@@ -9,7 +9,7 @@ import (
 
 var _ IClient = &MongoClient{}
 
-// MongoClients wraps a mongo.Client to be lungo compatible.
+// MongoClient wraps a mongo.Client to be lungo compatible.
 type MongoClient struct {
 	*mongo.Client
 }
