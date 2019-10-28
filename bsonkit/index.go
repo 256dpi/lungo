@@ -25,8 +25,12 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	return order < 0
 }
 
+// Index is a basic btree based index for documents.
 type Index struct {
-	Unique  bool     `bson:"unique"`
+	// Whether documents must have unique value.
+	Unique bool `bson:"unique"`
+
+	// The columns that specify the index.
 	Columns []Column `bson:"columns"`
 
 	btree    *btree.BTree `bson:"-"`
@@ -34,6 +38,7 @@ type Index struct {
 	mutex    sync.Mutex   `bson:"-"`
 }
 
+// NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
 	return (&Index{
 		Unique:  unique,
@@ -41,6 +46,7 @@ func NewIndex(unique bool, columns []Column) *Index {
 	}).Prepare(nil)
 }
 
+// Prepare will reset the index and build it form the specified list of documents.
 func (i *Index) Prepare(list List) *Index {
 	// create btree
 	i.btree = btree.New(64, i)
@@ -58,6 +64,8 @@ func (i *Index) Prepare(list List) *Index {
 	return i
 }
 
+// Add will add the document to index. May return false if the document has
+// already been added to the index.
 func (i *Index) Add(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
@@ -94,6 +102,7 @@ func (i *Index) Add(doc Doc) bool {
 	return true
 }
 
+// Has returns whether the specified document has been added to the index.
 func (i *Index) Has(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
@@ -124,6 +133,8 @@ func (i *Index) Has(doc Doc) bool {
 	return ok
 }
 
+// Remove will remove a document from the index. May return false if the document
+// has not yet been added to the index.
 func (i *Index) Remove(doc Doc) bool {
 	// acquire mutex
 	i.mutex.Lock()
@@ -164,6 +175,8 @@ func (i *Index) Remove(doc Doc) bool {
 	return true
 }
 
+// Clone will clone the index. Mutating the new index will not mutate the original
+// index.
 func (i *Index) Clone() *Index {
 	// acquire mutex
 	i.mutex.Lock()
