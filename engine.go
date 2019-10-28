@@ -30,8 +30,8 @@ type Result struct {
 	// The upserted document.
 	Upserted bsonkit.Doc
 
-	// The errors that occurred during the operation.
-	Errors []error
+	// The error that occurred during the operation.
+	Error error
 }
 
 // Options is used to configure an engine.
@@ -133,17 +133,6 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	// clone list
 	list = bsonkit.CloneList(list)
 
-	// ensure ids
-	for _, doc := range list {
-		// ensure object id
-		if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-			err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// clone dataset
 	clone := e.dataset.Clone()
 
@@ -157,46 +146,32 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		clone.Namespaces[handle] = namespace
 	}
 
-	// prepare result
-	result := &Result{}
+	// prepare results
+	mergedResult := &Result{}
+	var firstError error
 
 	// insert documents
 	for _, doc := range list {
-		// list uniqueness pre-check
-		if _, ok := namespace.Documents.Index[doc]; ok {
-			result.Errors = append(result.Errors, fmt.Errorf("duplicate document in namespace %q", handle.String()))
+		// perform insert
+		res, err := e.insert(namespace, doc)
+		if err != nil {
+			// set error
+			if firstError == nil {
+				firstError = err
+			}
+
+			// stop if ordered
 			if ordered {
 				break
-			} else {
-				continue
 			}
+		} else {
+			// merge result
+			mergedResult.Modified = append(mergedResult.Modified, res.Modified...)
 		}
-
-		// add document to all indexes
-		var duplicateIndex string
-		for name, index := range namespace.Indexes {
-			if !index.Add(doc) {
-				duplicateIndex = name
-			}
-		}
-		if duplicateIndex != "" {
-			result.Errors = append(result.Errors, fmt.Errorf("duplicate document for index %q", duplicateIndex))
-			if ordered {
-				break
-			} else {
-				continue
-			}
-		}
-
-		// add document
-		namespace.Documents.Add(doc)
-
-		// add to list
-		result.Modified = append(result.Modified, doc)
 	}
 
 	// check if documents have been inserted
-	if len(result.Modified) > 0 {
+	if len(mergedResult.Modified) > 0 {
 		// write dataset
 		err := e.store.Store(clone)
 		if err != nil {
@@ -207,7 +182,36 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		e.dataset = clone
 	}
 
-	return result, nil
+	return mergedResult, firstError
+}
+
+func (e *Engine) insert(namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
+	// ensure object id
+	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
+		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// list uniqueness pre-check
+	if _, ok := namespace.Documents.Index[doc]; ok {
+		return nil, fmt.Errorf("duplicate document in namespace")
+	}
+
+	// add document to all indexes
+	for name, index := range namespace.Indexes {
+		if !index.Add(doc) {
+			return nil, fmt.Errorf("duplicate document for index %q", name)
+		}
+	}
+
+	// add document
+	namespace.Documents.Add(doc)
+
+	return &Result{
+		Modified: bsonkit.List{doc},
+	}, nil
 }
 
 // Replace will replace the first matching document with the specified
@@ -224,14 +228,51 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 		return nil, ErrEngineClosed
 	}
 
+	// check namespace
+	if e.dataset.Namespaces[handle] == nil && !upsert {
+		return &Result{}, nil
+	}
+
 	// clone replacement
 	repl = bsonkit.Clone(repl)
 
-	// get documents
-	var list bsonkit.List
-	if e.dataset.Namespaces[handle] != nil {
-		list = e.dataset.Namespaces[handle].Documents.List
+	// clone dataset
+	clone := e.dataset.Clone()
+
+	// create or clone namespace
+	var namespace *Namespace
+	if clone.Namespaces[handle] == nil {
+		namespace = NewNamespace()
+		clone.Namespaces[handle] = namespace
+	} else {
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
 	}
+
+	// perform replace
+	res, err := e.replace(namespace, query, repl, sort, upsert)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if modified
+	if len(res.Modified) > 0 || res.Upserted != nil {
+		// write dataset
+		err = e.store.Store(clone)
+		if err != nil {
+			return nil, err
+		}
+
+		// set new dataset
+		e.dataset = clone
+	}
+
+	return res, nil
+}
+
+func (e *Engine) replace(namespace *Namespace, query, repl, sort bsonkit.Doc, upsert bool) (*Result, error) {
+	// get documents
+	list := namespace.Documents.List
 
 	// sort documents
 	var err error
@@ -252,7 +293,7 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(handle, query, repl, nil)
+			return e.upsert(namespace, query, repl, nil)
 		}
 
 		return &Result{}, nil
@@ -269,13 +310,6 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 		return nil, fmt.Errorf("document _id is immutable")
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
-
-	// clone namespace
-	namespace := clone.Namespaces[handle].Clone()
-	clone.Namespaces[handle] = namespace
-
 	// update indexes
 	for name, index := range namespace.Indexes {
 		// remove old document
@@ -289,15 +323,6 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 
 	// replace document
 	namespace.Documents.Replace(list[0], repl)
-
-	// write dataset
-	err = e.store.Store(clone)
-	if err != nil {
-		return nil, err
-	}
-
-	// set new dataset
-	e.dataset = clone
 
 	return &Result{
 		Matched:  list,
@@ -320,11 +345,48 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 		return nil, ErrEngineClosed
 	}
 
-	// get documents
-	var list bsonkit.List
-	if e.dataset.Namespaces[handle] != nil {
-		list = e.dataset.Namespaces[handle].Documents.List
+	// check namespace
+	if e.dataset.Namespaces[handle] == nil && !upsert {
+		return &Result{}, nil
 	}
+
+	// clone dataset
+	clone := e.dataset.Clone()
+
+	// create or clone namespace
+	var namespace *Namespace
+	if clone.Namespaces[handle] == nil {
+		namespace = NewNamespace()
+		clone.Namespaces[handle] = namespace
+	} else {
+		namespace = clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
+	}
+
+	// perform replace
+	res, err := e.update(namespace, query, update, sort, upsert, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if modified
+	if len(res.Modified) > 0 || res.Upserted != nil {
+		// write dataset
+		err = e.store.Store(clone)
+		if err != nil {
+			return nil, err
+		}
+
+		// set new dataset
+		e.dataset = clone
+	}
+
+	return res, nil
+}
+
+func (e *Engine) update(namespace *Namespace, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
+	// get documents
+	list := namespace.Documents.List
 
 	// sort documents
 	var err error
@@ -345,7 +407,7 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(handle, query, nil, update)
+			return e.upsert(namespace, query, nil, update)
 		}
 
 		return &Result{}, nil
@@ -366,13 +428,6 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 			return nil, fmt.Errorf("document _id is immutable")
 		}
 	}
-
-	// clone dataset
-	clone := e.dataset.Clone()
-
-	// clone namespace
-	namespace := clone.Namespaces[handle].Clone()
-	clone.Namespaces[handle] = namespace
 
 	// remove old docs from indexes
 	for _, doc := range list {
@@ -395,22 +450,13 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 		namespace.Documents.Replace(list[i], doc)
 	}
 
-	// write dataset
-	err = e.store.Store(clone)
-	if err != nil {
-		return nil, err
-	}
-
-	// set new dataset
-	e.dataset = clone
-
 	return &Result{
 		Matched:  list,
 		Modified: newList,
 	}, nil
 }
 
-func (e *Engine) upsert(handle Handle, query, repl, update bsonkit.Doc) (*Result, error) {
+func (e *Engine) upsert(namespace *Namespace, query, repl, update bsonkit.Doc) (*Result, error) {
 	// extract query
 	doc, err := mongokit.Extract(query)
 	if err != nil {
@@ -463,19 +509,6 @@ func (e *Engine) upsert(handle Handle, query, repl, update bsonkit.Doc) (*Result
 		}
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
-
-	// create or clone namespace
-	var namespace *Namespace
-	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace()
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
-
 	// add document to indexes
 	for name, index := range namespace.Indexes {
 		if !index.Add(doc) {
@@ -485,15 +518,6 @@ func (e *Engine) upsert(handle Handle, query, repl, update bsonkit.Doc) (*Result
 
 	// add document
 	namespace.Documents.Add(doc)
-
-	// write dataset
-	err = e.store.Store(clone)
-	if err != nil {
-		return nil, err
-	}
-
-	// set new dataset
-	e.dataset = clone
 
 	return &Result{
 		Upserted: doc,
@@ -518,8 +542,37 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 		return &Result{}, nil
 	}
 
+	// clone dataset
+	clone := e.dataset.Clone()
+
+	// clone namespace
+	namespace := clone.Namespaces[handle].Clone()
+	clone.Namespaces[handle] = namespace
+
+	// perform delete
+	res, err := e.delete(namespace, query, sort, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if matched
+	if len(res.Matched) > 0 {
+		// write dataset
+		err = e.store.Store(clone)
+		if err != nil {
+			return nil, err
+		}
+
+		// set new dataset
+		e.dataset = clone
+	}
+
+	return res, nil
+}
+
+func (e *Engine) delete(namespace *Namespace, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// get documents
-	list := e.dataset.Namespaces[handle].Documents.List
+	list := namespace.Documents.List
 
 	// sort documents
 	var err error
@@ -536,13 +589,6 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 		return nil, err
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
-
-	// clone namespace
-	namespace := clone.Namespaces[handle].Clone()
-	clone.Namespaces[handle] = namespace
-
 	// remove documents
 	for _, doc := range list {
 		namespace.Documents.Remove(doc)
@@ -555,16 +601,9 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 		}
 	}
 
-	// write dataset
-	err = e.store.Store(clone)
-	if err != nil {
-		return nil, err
-	}
-
-	// set new dataset
-	e.dataset = clone
-
-	return &Result{Matched: list}, nil
+	return &Result{
+		Matched: list,
+	}, nil
 }
 
 // Drop will return the namespace with the specified handle from the dataset.

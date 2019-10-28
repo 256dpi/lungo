@@ -601,13 +601,8 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 
 	// insert documents
 	res, err := c.engine.Insert(c.handle, list, ordered)
-	if err != nil {
+	if res == nil {
 		return nil, err
-	}
-
-	// get first error
-	if len(res.Errors) > 0 {
-		err = res.Errors[0]
 	}
 
 	return &mongo.InsertManyResult{
@@ -638,13 +633,11 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	res, err := c.engine.Insert(c.handle, bsonkit.List{doc}, true)
 	if err != nil {
 		return nil, err
-	} else if len(res.Errors) > 0 {
-		return nil, res.Errors[0]
 	}
 
 	return &mongo.InsertOneResult{
 		InsertedID: bsonkit.Get(res.Modified[0], "_id"),
-	}, nil
+	}, err
 }
 
 // Name implements the ICollection.Name method.
