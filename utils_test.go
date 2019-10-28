@@ -28,7 +28,7 @@ func init() {
 
 	testMongoClient = mongoClient
 
-	lungoClient, err := Open(nil, Options{
+	lungoClient, _, err := Open(nil, Options{
 		Store: NewMemoryStore(),
 	})
 	if err != nil {

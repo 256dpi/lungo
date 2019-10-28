@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,6 +15,9 @@ import (
 )
 
 // TODO: Combine ListDatabases(), ListCollections(), NumDocuments() into Info().
+
+// ErrEngineClosed is returned if the engine has been closed.
+var ErrEngineClosed = errors.New("engine closed")
 
 // Result is returned by some engine operations.
 type Result struct {
@@ -41,6 +45,7 @@ type Options struct {
 type Engine struct {
 	store   Store
 	dataset *Dataset
+	closed  bool
 	mutex   sync.Mutex
 }
 
@@ -71,6 +76,11 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
@@ -114,6 +124,11 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// clone list
 	list = bsonkit.CloneList(list)
@@ -203,6 +218,11 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// clone replacement
 	repl = bsonkit.Clone(repl)
@@ -294,6 +314,11 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// get documents
 	var list bsonkit.List
@@ -483,6 +508,11 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
+
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
 		return &Result{}, nil
@@ -545,6 +575,11 @@ func (e *Engine) Drop(handle Handle) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// check if closed
+	if e.closed {
+		return ErrEngineClosed
+	}
+
 	// clone dataset
 	clone := e.dataset.Clone()
 
@@ -572,6 +607,11 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// sort namespaces
 	sort := map[string][]*Namespace{}
@@ -613,6 +653,11 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
+
 	// prepare list
 	list := make(bsonkit.List, 0, len(e.dataset.Namespaces))
 
@@ -649,18 +694,23 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 }
 
 // NumDocuments will return the number of documents in the specified namespace.
-func (e *Engine) NumDocuments(handle Handle) int {
+func (e *Engine) NumDocuments(handle Handle) (int, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// check if closed
+	if e.closed {
+		return 0, ErrEngineClosed
+	}
+
 	// check namespace
 	namespace, ok := e.dataset.Namespaces[handle]
 	if !ok {
-		return 0
+		return 0, nil
 	}
 
-	return len(namespace.Documents.List)
+	return len(namespace.Documents.List), nil
 }
 
 // ListIndexes will return a list of indexes in the specified namespace.
@@ -668,6 +718,11 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
 
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
@@ -726,6 +781,11 @@ func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, uniqu
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return "", ErrEngineClosed
+	}
 
 	// get columns
 	columns, err := mongokit.Columns(keys)
@@ -790,6 +850,11 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	// check if closed
+	if e.closed {
+		return ErrEngineClosed
+	}
+
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
 		return fmt.Errorf("missing namespace %q", handle.String())
@@ -832,4 +897,19 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	e.dataset = clone
 
 	return nil
+}
+
+// Close will close the engine.
+func (e *Engine) Close() {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return
+	}
+
+	// set flag
+	e.closed = true
 }

@@ -16,10 +16,13 @@ func Example() {
 	}
 
 	// open database
-	client, err := Open(nil, opts)
+	client, engine, err := Open(nil, opts)
 	if err != nil {
 		panic(err)
 	}
+
+	// ensure engine is closed
+	defer engine.Close()
 
 	// get db
 	foo := client.Database("foo")

@@ -18,14 +18,14 @@ type Client struct {
 }
 
 // Open will open a lungo database using the provided store.
-func Open(ctx context.Context, opts Options) (IClient, error) {
+func Open(ctx context.Context, opts Options) (IClient, *Engine, error) {
 	// create engine
 	engine, err := CreateEngine(opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return NewClient(engine), nil
+	return NewClient(engine), engine, nil
 }
 
 // NewClient will create and return a new client.

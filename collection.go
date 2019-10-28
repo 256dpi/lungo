@@ -218,7 +218,10 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 	})
 
 	// get num documents
-	num := c.engine.NumDocuments(c.handle)
+	num, err := c.engine.NumDocuments(c.handle)
+	if err != nil {
+		return 0, err
+	}
 
 	return int64(num), nil
 }

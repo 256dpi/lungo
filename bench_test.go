@@ -8,12 +8,14 @@ import (
 )
 
 func BenchmarkMemoryStore(b *testing.B) {
-	client, err := Open(nil, Options{
+	client, engine, err := Open(nil, Options{
 		Store: NewMemoryStore(),
 	})
 	if err != nil {
 		panic(err)
 	}
+
+	defer engine.Close()
 
 	doc := bson.M{"foo": "bar"}
 
@@ -26,12 +28,14 @@ func BenchmarkMemoryStore(b *testing.B) {
 }
 
 func BenchmarkSingleFileStore(b *testing.B) {
-	client, err := Open(nil, Options{
+	client, engine, err := Open(nil, Options{
 		Store: NewSingleFileStore("./bench", 0666),
 	})
 	if err != nil {
 		panic(err)
 	}
+
+	defer engine.Close()
 
 	doc := bson.M{"foo": "bar"}
 
