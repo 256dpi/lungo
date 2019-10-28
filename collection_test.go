@@ -98,7 +98,7 @@ func TestCollectionBulkWrite(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, &mongo.BulkWriteResult{
 			InsertedCount: 1,
-			UpsertedIDs:  map[int64]interface{}{},
+			UpsertedIDs:   map[int64]interface{}{},
 		}, res)
 		assert.Equal(t, []bson.M{
 			{
