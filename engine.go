@@ -47,100 +47,6 @@ func CreateEngine(store Store) (*Engine, error) {
 	return e, nil
 }
 
-func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// sort namespaces
-	sort := map[string][]*Namespace{}
-	for _, ns := range e.data.Namespaces {
-		name := strings.Split(ns.Name, ".")[0]
-		sort[name] = append(sort[name], ns)
-	}
-
-	// prepare list
-	var list bsonkit.List
-	for name, nss := range sort {
-		// check emptiness
-		empty := true
-		for _, ns := range nss {
-			if len(ns.Documents.List) > 0 {
-				empty = false
-			}
-		}
-
-		// add specification
-		list = append(list, &bson.D{
-			bson.E{Key: "name", Value: name},
-			bson.E{Key: "sizeOnDisk", Value: 0},
-			bson.E{Key: "empty", Value: empty},
-		})
-	}
-
-	// filter list
-	list, err := mongokit.Filter(list, query, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// prepare list
-	list := make(bsonkit.List, 0, len(e.data.Namespaces))
-
-	// add documents
-	for _, ns := range e.data.Namespaces {
-		if strings.HasPrefix(ns.Name, db+".") {
-			list = append(list, &bson.D{
-				bson.E{Key: "name", Value: strings.TrimPrefix(ns.Name, db)[1:]},
-				bson.E{Key: "type", Value: "collection"},
-				bson.E{Key: "options", Value: bson.D{}},
-				bson.E{Key: "info", Value: bson.D{
-					bson.E{Key: "uuid", Value: ns.Name},
-					bson.E{Key: "readOnly", Value: false},
-				}},
-				bson.E{Key: "idIndex", Value: bson.D{
-					bson.E{Key: "v", Value: 2},
-					bson.E{Key: "key", Value: bson.D{
-						bson.E{Key: "_id", Value: 1},
-					}},
-					bson.E{Key: "name", Value: "_id_"},
-					bson.E{Key: "ns", Value: ns.Name},
-				}},
-			})
-		}
-	}
-
-	// filter list
-	list, err := mongokit.Filter(list, query, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-func (e *Engine) NumDocuments(ns string) int {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	// check namespace
-	namespace, ok := e.data.Namespaces[ns]
-	if !ok {
-		return 0
-	}
-
-	return len(namespace.Documents.List)
-}
-
 func (e *Engine) Find(ns string, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -628,6 +534,100 @@ func (e *Engine) Drop(ns string) error {
 	e.data = clone
 
 	return nil
+}
+
+func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// sort namespaces
+	sort := map[string][]*Namespace{}
+	for _, ns := range e.data.Namespaces {
+		name := strings.Split(ns.Name, ".")[0]
+		sort[name] = append(sort[name], ns)
+	}
+
+	// prepare list
+	var list bsonkit.List
+	for name, nss := range sort {
+		// check emptiness
+		empty := true
+		for _, ns := range nss {
+			if len(ns.Documents.List) > 0 {
+				empty = false
+			}
+		}
+
+		// add specification
+		list = append(list, &bson.D{
+			bson.E{Key: "name", Value: name},
+			bson.E{Key: "sizeOnDisk", Value: 0},
+			bson.E{Key: "empty", Value: empty},
+		})
+	}
+
+	// filter list
+	list, err := mongokit.Filter(list, query, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// prepare list
+	list := make(bsonkit.List, 0, len(e.data.Namespaces))
+
+	// add documents
+	for _, ns := range e.data.Namespaces {
+		if strings.HasPrefix(ns.Name, db+".") {
+			list = append(list, &bson.D{
+				bson.E{Key: "name", Value: strings.TrimPrefix(ns.Name, db)[1:]},
+				bson.E{Key: "type", Value: "collection"},
+				bson.E{Key: "options", Value: bson.D{}},
+				bson.E{Key: "info", Value: bson.D{
+					bson.E{Key: "uuid", Value: ns.Name},
+					bson.E{Key: "readOnly", Value: false},
+				}},
+				bson.E{Key: "idIndex", Value: bson.D{
+					bson.E{Key: "v", Value: 2},
+					bson.E{Key: "key", Value: bson.D{
+						bson.E{Key: "_id", Value: 1},
+					}},
+					bson.E{Key: "name", Value: "_id_"},
+					bson.E{Key: "ns", Value: ns.Name},
+				}},
+			})
+		}
+	}
+
+	// filter list
+	list, err := mongokit.Filter(list, query, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (e *Engine) NumDocuments(ns string) int {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check namespace
+	namespace, ok := e.data.Namespaces[ns]
+	if !ok {
+		return 0
+	}
+
+	return len(namespace.Documents.List)
 }
 
 func (e *Engine) ListIndexes(ns string) (bsonkit.List, error) {
