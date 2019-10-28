@@ -14,18 +14,18 @@ import (
 // https://docs.mongodb.com/manual/reference/bson-type-comparison-order/.
 func Compare(lv, rv interface{}) int {
 	// get types
-	lt, _ := Inspect(lv)
-	rt, _ := Inspect(rv)
+	lc, _ := Inspect(lv)
+	rc, _ := Inspect(rv)
 
-	// check type equality
-	if lt > rt {
+	// check class equality
+	if lc > rc {
 		return 1
-	} else if lt < rt {
+	} else if lc < rc {
 		return -1
 	}
 
 	// check value equality
-	switch lt {
+	switch lc {
 	case Null:
 		return 0
 	case Number:

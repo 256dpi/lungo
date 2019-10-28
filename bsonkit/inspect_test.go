@@ -12,30 +12,30 @@ import (
 func TestInspect(t *testing.T) {
 	table := []struct {
 		in interface{}
-		t1 Type
-		t2 bsontype.Type
+		vc Class
+		vt bsontype.Type
 	}{
-		{in: nil, t1: Null, t2: bsontype.Null},
-		{in: primitive.Null{}, t1: Null, t2: bsontype.Null},
-		{in: int32(42), t1: Number, t2: bsontype.Int32},
-		{in: int64(42), t1: Number, t2: bsontype.Int64},
-		{in: 4.2, t1: Number, t2: bsontype.Double},
-		{in: "", t1: String, t2: bsontype.String},
-		{in: "foo", t1: String, t2: bsontype.String},
-		{in: bson.D{}, t1: Document, t2: bsontype.EmbeddedDocument},
-		{in: bson.A{}, t1: Array, t2: bsontype.Array},
-		{in: primitive.Binary{}, t1: Binary, t2: bsontype.Binary},
-		{in: primitive.NewObjectID(), t1: ObjectID, t2: bsontype.ObjectID},
-		{in: true, t1: Boolean, t2: bsontype.Boolean},
-		{in: false, t1: Boolean, t2: bsontype.Boolean},
-		{in: primitive.DateTime(1570729020000), t1: Date, t2: bsontype.DateTime},
-		{in: primitive.Timestamp{}, t1: Timestamp, t2: bsontype.Timestamp},
-		{in: primitive.Regex{}, t1: Regex, t2: bsontype.Regex},
+		{in: nil, vc: Null, vt: bsontype.Null},
+		{in: primitive.Null{}, vc: Null, vt: bsontype.Null},
+		{in: int32(42), vc: Number, vt: bsontype.Int32},
+		{in: int64(42), vc: Number, vt: bsontype.Int64},
+		{in: 4.2, vc: Number, vt: bsontype.Double},
+		{in: "", vc: String, vt: bsontype.String},
+		{in: "foo", vc: String, vt: bsontype.String},
+		{in: bson.D{}, vc: Document, vt: bsontype.EmbeddedDocument},
+		{in: bson.A{}, vc: Array, vt: bsontype.Array},
+		{in: primitive.Binary{}, vc: Binary, vt: bsontype.Binary},
+		{in: primitive.NewObjectID(), vc: ObjectID, vt: bsontype.ObjectID},
+		{in: true, vc: Boolean, vt: bsontype.Boolean},
+		{in: false, vc: Boolean, vt: bsontype.Boolean},
+		{in: primitive.DateTime(1570729020000), vc: Date, vt: bsontype.DateTime},
+		{in: primitive.Timestamp{}, vc: Timestamp, vt: bsontype.Timestamp},
+		{in: primitive.Regex{}, vc: Regex, vt: bsontype.Regex},
 	}
 
 	for i, item := range table {
-		t1, t2 := Inspect(item.in)
-		assert.Equal(t, item.t1, t1, i)
-		assert.Equal(t, item.t2, t2, i)
+		vc, vt := Inspect(item.in)
+		assert.Equal(t, item.vc, vc, i)
+		assert.Equal(t, item.vt, vt, i)
 	}
 }

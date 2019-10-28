@@ -129,10 +129,10 @@ func matchNor(ctx *Context, doc bsonkit.Doc, name, path string, v interface{}) e
 
 func matchComp(_ *Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, false, func(field interface{}) error {
-		// check types (type bracketing)
-		lt, _ := bsonkit.Inspect(field)
-		rt, _ := bsonkit.Inspect(v)
-		if lt != rt {
+		// check classes (type bracketing)
+		lc, _ := bsonkit.Inspect(field)
+		rc, _ := bsonkit.Inspect(v)
+		if lc != rc {
 			return ErrNotMatched
 		}
 
@@ -334,8 +334,8 @@ func matchAll(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) err
 func matchSize(_ *Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	return matchUnwind(doc, path, false, false, func(field interface{}) error {
 		// check value
-		t, _ := bsonkit.Inspect(v)
-		if t != bsonkit.Number {
+		vc, _ := bsonkit.Inspect(v)
+		if vc != bsonkit.Number {
 			return fmt.Errorf("%s: expected number", name)
 		}
 

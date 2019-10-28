@@ -10,10 +10,12 @@ import (
 
 // TODO: Add support for decimal128 type.
 
-type Type int
+// Class is describes the class of one or more BSON types.
+type Class int
 
+// The available BSON type classes.
 const (
-	Null Type = iota
+	Null Class = iota
 	Number
 	String
 	Document
@@ -26,7 +28,10 @@ const (
 	Regex
 )
 
+// TypeString is a map from BSON type strings to BSON types.
 var TypeString = map[string]bsontype.Type{}
+
+// TypeNumber is a map from BSON type numbers to BSON types.
 var TypeNumber = map[byte]bsontype.Type{}
 
 func init() {
@@ -62,7 +67,9 @@ func init() {
 	}
 }
 
-func Inspect(v interface{}) (Type, bsontype.Type) {
+// Inspect wil return the BSON type class and concrete type of the specified
+// value.
+func Inspect(v interface{}) (Class, bsontype.Type) {
 	switch v.(type) {
 	case nil, primitive.Null, MissingType:
 		return Null, bsontype.Null
