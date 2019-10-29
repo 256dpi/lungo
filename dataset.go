@@ -45,11 +45,8 @@ func (d *Dataset) Clone() *Dataset {
 
 // Namespace holds documents and indexes.
 type Namespace struct {
-	// The document set.
 	Documents *bsonkit.Set
-
-	// The indexes.
-	Indexes map[string]*mongokit.Index
+	Indexes   map[string]*mongokit.Index
 }
 
 // NewNamespace creates and returns a new namespace.
