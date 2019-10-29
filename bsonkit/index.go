@@ -7,20 +7,26 @@ import (
 )
 
 type entry struct {
-	set *Set
+	idx *Index
+	doc Doc
 }
 
 func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	// coerce item
 	j := item.(*entry)
 
-	// coerce index
-	index := ctx.(*Index)
-
 	// get order
-	order := Order(i.set.List[0], j.set.List[0], index.columns)
+	order := Order(i.doc, j.doc, i.idx.columns)
+	if order != 0 {
+		return order < 0
+	}
 
-	return order < 0
+	// check document identity if not unique
+	if !i.idx.unique && i.doc != j.doc {
+		return true
+	}
+
+	return false
 }
 
 // Index is a basic btree based index for documents.
@@ -34,21 +40,12 @@ type Index struct {
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
-	// create index
-	index := &Index{
-		unique:  unique,
-		columns: columns,
+	return &Index{
+		unique:   unique,
+		columns:  columns,
+		btree:    btree.New(64, nil),
+		sentinel: &entry{},
 	}
-
-	// create btree
-	index.btree = btree.New(64, index)
-
-	// create sentinel
-	index.sentinel = &entry{
-		set: NewSet(make(List, 1)),
-	}
-
-	return index
 }
 
 // Build will build the index from the specified list. It may return false if
@@ -72,32 +69,17 @@ func (i *Index) Add(doc Doc) bool {
 	defer i.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	i.sentinel.idx = i
+	i.sentinel.doc = doc
 
-	// check if index already has an item
+	// check if index already has an entry
 	item := i.btree.Get(i.sentinel)
-
-	// just add a new entry if missing
-	if item == nil {
-		i.btree.ReplaceOrInsert(&entry{
-			set: NewSet(List{doc}),
-		})
-		return true
-	}
-
-	// return false if index is unique
-	if i.unique {
+	if item != nil {
 		return false
 	}
 
-	// get existing entry
-	entry := item.(*entry)
-
-	// add document to existing entry
-	ok := entry.set.Add(doc)
-	if !ok {
-		return false
-	}
+	// otherwise add entry
+	i.btree.ReplaceOrInsert(&entry{idx: i, doc: doc})
 
 	return true
 }
@@ -109,28 +91,16 @@ func (i *Index) Has(doc Doc) bool {
 	defer i.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	i.sentinel.idx = i
+	i.sentinel.doc = doc
 
 	// check if index already has an item
 	item := i.btree.Get(i.sentinel)
-
-	// return if there is no item
-	if item == nil {
-		return false
-	}
-
-	// do not check identify if unique
-	if i.unique {
+	if item != nil {
 		return true
 	}
 
-	// get entry
-	entry := item.(*entry)
-
-	// check index
-	_, ok := entry.set.Index[doc]
-
-	return ok
+	return false
 }
 
 // Remove will remove a document from the index. May return false if the document
@@ -141,36 +111,17 @@ func (i *Index) Remove(doc Doc) bool {
 	defer i.mutex.Unlock()
 
 	// prepare sentinel entry
-	i.sentinel.set.List[0] = doc
+	i.sentinel.idx = i
+	i.sentinel.doc = doc
 
 	// check if index already has an item
 	item := i.btree.Get(i.sentinel)
-
-	// return if there is no item
 	if item == nil {
 		return false
 	}
 
-	// get entry
-	entry := item.(*entry)
-
-	// check existence
-	_, ok := entry.set.Index[doc]
-	if !ok {
-		return false
-	}
-
-	// remove entry if last in list
-	if len(entry.set.List) == 1 {
-		i.btree.Delete(entry)
-		return true
-	}
-
-	// remove from set
-	ok = entry.set.Remove(doc)
-	if !ok {
-		return false
-	}
+	// otherwise remove entry
+	i.btree.Delete(item)
 
 	return true
 }
@@ -182,16 +133,10 @@ func (i *Index) Clone() *Index {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	// create clone
-	clone := NewIndex(i.unique, i.columns)
-
-	// copy entries
-	i.btree.Ascend(func(i btree.Item) bool {
-		clone.btree.ReplaceOrInsert(&entry{
-			set: i.(*entry).set.Clone(),
-		})
-		return true
-	})
-
-	return clone
+	return &Index{
+		unique:   i.unique,
+		columns:  i.columns,
+		btree:    i.btree.Clone(),
+		sentinel: &entry{},
+	}
 }
