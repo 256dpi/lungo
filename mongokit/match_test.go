@@ -218,7 +218,7 @@ func TestMatchAnd(t *testing.T) {
 			},
 		}, false)
 
-		// nested
+		// as expression
 		fn(bson.M{
 			"foo": bson.M{
 				"$and": bson.A{
@@ -312,7 +312,7 @@ func TestMatchOr(t *testing.T) {
 			},
 		}, false)
 
-		// nested
+		// as expression
 		fn(bson.M{
 			"foo": bson.M{
 				"$or": bson.A{
@@ -406,7 +406,7 @@ func TestMatchNor(t *testing.T) {
 			},
 		}, true)
 
-		// nested
+		// as expression
 		fn(bson.M{
 			"foo": bson.M{
 				"$nor": bson.A{

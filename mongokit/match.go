@@ -17,7 +17,7 @@ var TopLevelQueryOperators = map[string]Operator{}
 // ExpressionQueryOperators defines the expression query operators.
 var ExpressionQueryOperators = map[string]Operator{}
 
-// ErrNotMatched may be returned by query operators id the document does not match.
+// ErrNotMatched is returned by query operators if the document does not match.
 var ErrNotMatched = errors.New("not matched")
 
 func init() {
