@@ -56,8 +56,9 @@ type FileNamespace struct {
 
 // FileIndex is a single index stored in a file by the file store.
 type FileIndex struct {
-	Key    bson.D `bson:"key"`
-	Unique bool   `bson:"unique"`
+	Key     bsonkit.Doc `bson:"key"`
+	Unique  bool        `bson:"unique"`
+	Partial bsonkit.Doc `bson:"partial"`
 }
 
 // FileStore writes the dataset to a single file on disk.
@@ -114,7 +115,11 @@ func (s *FileStore) Load() (*Dataset, error) {
 		// add indexes
 		for name, idx := range ns.Indexes {
 			// create index
-			index, err := mongokit.CreateIndex(&idx.Key, idx.Unique)
+			index, err := mongokit.CreateIndex(mongokit.IndexConfig{
+				Key:     idx.Key,
+				Unique:  idx.Unique,
+				Partial: idx.Partial,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -148,12 +153,13 @@ func (s *FileStore) Store(data *Dataset) error {
 		indexes := map[string]FileIndex{}
 		for name, index := range namespace.Indexes {
 			// get config
-			key, unique := index.Config()
+			config := index.Config()
 
 			// add index
 			indexes[name] = FileIndex{
-				Key:    *key,
-				Unique: unique,
+				Key:     config.Key,
+				Unique:  config.Unique,
+				Partial: config.Partial,
 			}
 		}
 

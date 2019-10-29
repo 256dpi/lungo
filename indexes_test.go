@@ -28,7 +28,7 @@ func TestIndexViewCreateMany(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, names)
 
-		// unique and normal index
+		// basic and advanced index
 		names, err = c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
 			{
 				Keys: bson.D{
@@ -40,7 +40,9 @@ func TestIndexViewCreateMany(t *testing.T) {
 				Keys: bson.M{
 					"foo": 1,
 				},
-				Options: options.Index().SetName("foo").SetUnique(true),
+				Options: options.Index().SetName("foo").SetUnique(true).SetPartialFilterExpression(bson.M{
+					"bar": "baz",
+				}),
 			},
 		})
 		assert.NoError(t, err)
@@ -79,7 +81,10 @@ func TestIndexViewCreateMany(t *testing.T) {
 				"name":   "foo",
 				"ns":     ns,
 				"unique": true,
-				"v":      int32(2),
+				"partialFilterExpression": bson.M{
+					"bar": "baz",
+				},
+				"v": int32(2),
 			},
 		}, readAll(csr))
 	})

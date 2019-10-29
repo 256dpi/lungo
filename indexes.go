@@ -62,18 +62,18 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	// assert supported index options
 	if index.Options != nil {
 		assertOptions(index.Options, map[string]string{
-			"Background": ignored,
-			"Name":       supported,
-			"Unique":     supported,
-			"Version":    ignored,
+			"Background":              ignored,
+			"Name":                    supported,
+			"Unique":                  supported,
+			"Version":                 ignored,
+			"PartialFilterExpression": supported,
 		})
 
 		// TODO: Support ExpireAfterSeconds.
-		// TODO: Support PartialFilterExpression.
 	}
 
-	// transform keys
-	keys, err := bsonkit.Transform(index.Keys)
+	// transform key
+	key, err := bsonkit.Transform(index.Keys)
 	if err != nil {
 		return "", err
 	}
@@ -90,8 +90,17 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 		unique = *index.Options.Unique
 	}
 
+	// get partial
+	var partial bsonkit.Doc
+	if index.Options != nil && index.Options.PartialFilterExpression != nil {
+		partial, err = bsonkit.Transform(index.Options.PartialFilterExpression)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// create index
-	name, err = v.engine.CreateIndex(v.handle, keys, name, unique)
+	name, err = v.engine.CreateIndex(v.handle, key, name, unique, partial)
 	if err != nil {
 		return "", err
 	}

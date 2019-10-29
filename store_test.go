@@ -41,7 +41,7 @@ func TestFileStore(t *testing.T) {
 
 	name, err := engine.CreateIndex(handle, bsonkit.Convert(bson.M{
 		"foo": int32(-1),
-	}), "idx", false)
+	}), "idx", false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, "idx", name)
 
@@ -72,12 +72,14 @@ func TestFileStore(t *testing.T) {
 							"_id": int32(1),
 						},
 						"unique": true,
+						"partial": nil,
 					},
 					"idx": bson.M{
 						"key": bson.M{
 							"foo": int32(-1),
 						},
 						"unique": false,
+						"partial": nil,
 					},
 				},
 			},

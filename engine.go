@@ -876,19 +876,24 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	var list bsonkit.List
 	for name, index := range namespace.Indexes {
 		// get config
-		key, unique := index.Config()
+		config := index.Config()
 
 		// create spec
 		spec := bson.D{
 			bson.E{Key: "v", Value: 2},
-			bson.E{Key: "key", Value: *key},
+			bson.E{Key: "key", Value: *config.Key},
 			bson.E{Key: "name", Value: name},
 			bson.E{Key: "ns", Value: handle.String()},
 		}
 
-		// add uniqueness
-		if unique && name != "_id_" {
+		// add unique
+		if config.Unique && name != "_id_" {
 			spec = append(spec, bson.E{Key: "unique", Value: true})
+		}
+
+		// add partial
+		if config.Partial != nil {
+			spec = append(spec, bson.E{Key: "partialFilterExpression", Value: *config.Partial})
 		}
 
 		// add specification
@@ -904,7 +909,7 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 }
 
 // CreateIndex will create the specified index in the specified namespace.
-func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool) (string, error) {
+func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -930,7 +935,11 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 	}
 
 	// create index
-	index, err := mongokit.CreateIndex(key, unique)
+	index, err := mongokit.CreateIndex(mongokit.IndexConfig{
+		Key:     key,
+		Unique:  unique,
+		Partial: partial,
+	})
 	if err != nil {
 		return "", err
 	}

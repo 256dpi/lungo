@@ -55,7 +55,12 @@ type Namespace struct {
 // NewNamespace creates and returns a new namespace.
 func NewNamespace() *Namespace {
 	// create default index
-	index, err := mongokit.CreateIndex(bsonkit.Convert(bson.M{"_id": int32(1)}), true)
+	index, err := mongokit.CreateIndex(mongokit.IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"_id": int32(1),
+		}),
+		Unique: true,
+	})
 	if err != nil {
 		panic(err) // should not happen
 	}

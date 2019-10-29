@@ -13,9 +13,11 @@ func TestIndex(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1"})
 	d2 := bsonkit.Convert(bson.M{"a": "1"})
 
-	index, err := CreateIndex(bsonkit.Convert(bson.M{
-		"a": int32(1),
-	}), false)
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+		}),
+	})
 	assert.NoError(t, err)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
@@ -55,10 +57,12 @@ func TestIndexCompound(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
 	d2 := bsonkit.Convert(bson.M{"a": "1", "b": false})
 
-	index, err := CreateIndex(bsonkit.Convert(bson.M{
-		"a": int32(1),
-		"b": int32(1),
-	}), false)
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+			"b": int32(1),
+		}),
+	})
 	assert.NoError(t, err)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
@@ -99,9 +103,12 @@ func TestIndexUnique(t *testing.T) {
 	d2 := bsonkit.Convert(bson.M{"a": "2"})
 	d3 := bsonkit.Convert(bson.M{"a": "2"})
 
-	index, err := CreateIndex(bsonkit.Convert(bson.M{
-		"a": int32(1),
-	}), true)
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+		}),
+		Unique: true,
+	})
 	assert.NoError(t, err)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
@@ -149,10 +156,13 @@ func TestIndexCompoundUnique(t *testing.T) {
 	d2 := bsonkit.Convert(bson.M{"a": "2", "b": true})
 	d3 := bsonkit.Convert(bson.M{"a": "2", "b": true})
 
-	index, err := CreateIndex(bsonkit.Convert(bson.M{
-		"a": int32(1),
-		"b": int32(1),
-	}), true)
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+			"b": int32(1),
+		}),
+		Unique: true,
+	})
 	assert.NoError(t, err)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
@@ -200,9 +210,11 @@ func TestIndexClone(t *testing.T) {
 	d2 := bsonkit.Convert(bson.M{"a": "2"})
 	d3 := bsonkit.Convert(bson.M{"a": "2"})
 
-	index1, err := CreateIndex(bsonkit.Convert(bson.M{
-		"a": int32(1),
-	}), false)
+	index1, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+		}),
+	})
 	assert.NoError(t, err)
 
 	index1.Add(d1)
@@ -219,4 +231,53 @@ func TestIndexClone(t *testing.T) {
 	assert.False(t, index2.Has(d1))
 	assert.True(t, index2.Has(d2))
 	assert.True(t, index2.Has(d3))
+}
+
+func TestIndexPartial(t *testing.T) {
+	d1 := bsonkit.Convert(bson.M{"a": "1", "b": 2.0})
+	d2 := bsonkit.Convert(bson.M{"a": "1", "b": 42.0})
+
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"a": int32(1),
+		}),
+		Partial: bsonkit.Convert(bson.M{
+			"b": bson.M{
+				"$gt": 7.0,
+			},
+		}),
+	})
+	assert.NoError(t, err)
+	assert.False(t, index.Has(d1))
+	assert.False(t, index.Has(d2))
+
+	ok := index.Add(d1)
+	assert.True(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.False(t, index.Has(d2))
+
+	ok = index.Add(d1)
+	assert.True(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.False(t, index.Has(d2))
+
+	ok = index.Add(d2)
+	assert.True(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.True(t, index.Has(d2))
+
+	ok = index.Remove(d1)
+	assert.True(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.True(t, index.Has(d2))
+
+	ok = index.Remove(d2)
+	assert.True(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.False(t, index.Has(d2))
+
+	ok = index.Remove(d2)
+	assert.False(t, ok)
+	assert.False(t, index.Has(d1))
+	assert.False(t, index.Has(d2))
 }
