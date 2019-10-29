@@ -9,6 +9,8 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// TODO: Convert into compatibility test?
+
 func TestSort(t *testing.T) {
 	a1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
 	a2 := bsonkit.Convert(bson.M{"a": "2", "b": false})
