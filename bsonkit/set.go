@@ -2,10 +2,7 @@ package bsonkit
 
 // Set is set of unique documents.
 type Set struct {
-	// List is the list of documents.
-	List List
-
-	// Index maps documents to their index in the list.
+	List  List
 	Index map[Doc]int
 }
 

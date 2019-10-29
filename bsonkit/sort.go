@@ -4,10 +4,7 @@ import "sort"
 
 // Column defines a column for ordering.
 type Column struct {
-	// The path of the document field.
-	Path string
-
-	// Whether the ordering should be reverse.
+	Path    string
 	Reverse bool
 }
 
