@@ -955,6 +955,13 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 		clone.Namespaces[handle] = namespace
 	}
 
+	// check duplicate
+	for name, index := range namespace.Indexes {
+		if bsonkit.Compare(*key, *index.Config().Key) == 0 {
+			return "", fmt.Errorf("existing index %q has same key", name)
+		}
+	}
+
 	// create index
 	index, err := mongokit.CreateIndex(mongokit.IndexConfig{
 		Key:     key,

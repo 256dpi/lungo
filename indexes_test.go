@@ -11,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// TODO: Test duplicate index.
-
 func TestIndexViewCreateMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
@@ -137,6 +135,15 @@ func TestIndexViewCreateOne(t *testing.T) {
 				"v":      int32(2),
 			},
 		}, readAll(csr))
+
+		// duplicate index (same key)
+		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+			Keys: bson.M{
+				"foo": 1,
+			},
+		})
+		assert.Error(t, err)
+		assert.Equal(t, "", name)
 	})
 }
 
