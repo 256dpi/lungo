@@ -58,7 +58,7 @@ func NewNamespace(handle Handle, idIndex bool) *Namespace {
 	ns := &Namespace{
 		Handle:    handle,
 		Documents: bsonkit.NewSet(nil),
-		Indexes: map[string]*mongokit.Index{},
+		Indexes:   map[string]*mongokit.Index{},
 	}
 
 	// add default index if requested
