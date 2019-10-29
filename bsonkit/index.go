@@ -118,14 +118,11 @@ func (i *Index) Remove(doc Doc) bool {
 	// prepare sentinel
 	i.sentinel.doc = doc
 
-	// check if index already has an item
-	item := i.btree.Get(i.sentinel)
+	// remove entry
+	item := i.btree.Delete(i.sentinel)
 	if item == nil {
 		return false
 	}
-
-	// otherwise remove entry
-	i.btree.Delete(item)
 
 	return true
 }
