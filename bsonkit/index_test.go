@@ -198,12 +198,19 @@ func TestIndexClone(t *testing.T) {
 		{Path: "a"},
 	})
 
-	index1.Add(d1)
-	index1.Add(d2)
+	ok := index1.Add(d1)
+	assert.True(t, ok)
+
+	ok = index1.Add(d2)
+	assert.True(t, ok)
 
 	index2 := index1.Clone()
-	index2.Add(d3)
-	index2.Remove(d1)
+
+	ok = index2.Add(d3)
+	assert.True(t, ok)
+
+	ok = index2.Remove(d1)
+	assert.True(t, ok)
 
 	assert.True(t, index1.Has(d1))
 	assert.True(t, index1.Has(d2))

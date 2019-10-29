@@ -54,8 +54,6 @@ func NewIndex(unique bool, columns []Column) *Index {
 // Build will build the index from the specified list. It may return false if
 // there was an unique constraint error when building the index.
 func (i *Index) Build(list List) bool {
-	// TODO: Add a fast build method.
-
 	// add documents
 	for _, doc := range list {
 		if !i.Add(doc) {
