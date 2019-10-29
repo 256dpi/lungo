@@ -12,6 +12,11 @@ import (
 // of primitive.Binary values is not cloned and references the same byte slice
 // as the original.
 func Clone(doc Doc) Doc {
+	// check if nil
+	if doc == nil {
+		return nil
+	}
+
 	// clone document
 	clone := cloneValue(*doc).(bson.D)
 
@@ -20,6 +25,11 @@ func Clone(doc Doc) Doc {
 
 // CloneList will clone a list of documents.
 func CloneList(list List) List {
+	// check if nil
+	if list == nil {
+		return nil
+	}
+
 	// prepare clone
 	clone := make(List, 0, len(list))
 

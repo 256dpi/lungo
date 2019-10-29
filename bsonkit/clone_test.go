@@ -8,6 +8,8 @@ import (
 )
 
 func TestClone(t *testing.T) {
+	assert.Nil(t, Clone(nil))
+
 	doc1 := Convert(bson.M{
 		"foo": bson.M{
 			"bar": "baz",
@@ -49,4 +51,8 @@ func TestClone(t *testing.T) {
 		},
 		"bar": bson.A{"foo", "bar", "baz"},
 	}), doc2)
+}
+
+func TestCloneList(t *testing.T) {
+	assert.Nil(t, CloneList(nil))
 }
