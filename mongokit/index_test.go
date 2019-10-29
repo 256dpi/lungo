@@ -9,8 +9,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Convert into compatibility tests?
-
 func TestIndex(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1"})
 	d2 := bsonkit.Convert(bson.M{"a": "1"})
@@ -53,7 +51,7 @@ func TestIndex(t *testing.T) {
 	assert.False(t, index.Has(d2))
 }
 
-func TestCompoundIndex(t *testing.T) {
+func TestIndexCompound(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
 	d2 := bsonkit.Convert(bson.M{"a": "1", "b": false})
 
@@ -96,7 +94,7 @@ func TestCompoundIndex(t *testing.T) {
 	assert.False(t, index.Has(d2))
 }
 
-func TestUniqueIndex(t *testing.T) {
+func TestIndexUnique(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1"})
 	d2 := bsonkit.Convert(bson.M{"a": "2"})
 	d3 := bsonkit.Convert(bson.M{"a": "2"})
@@ -146,7 +144,7 @@ func TestUniqueIndex(t *testing.T) {
 	assert.False(t, index.Has(d3))
 }
 
-func TestUniqueCompoundIndex(t *testing.T) {
+func TestIndexCompoundUnique(t *testing.T) {
 	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
 	d2 := bsonkit.Convert(bson.M{"a": "2", "b": true})
 	d3 := bsonkit.Convert(bson.M{"a": "2", "b": true})

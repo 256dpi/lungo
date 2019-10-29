@@ -48,7 +48,7 @@ func TestIndex(t *testing.T) {
 	assert.False(t, index.Has(d2))
 }
 
-func TestCompoundIndex(t *testing.T) {
+func TestIndexCompound(t *testing.T) {
 	d1 := Convert(bson.M{"a": "1", "b": true})
 	d2 := Convert(bson.M{"a": "1", "b": false})
 
@@ -90,7 +90,7 @@ func TestCompoundIndex(t *testing.T) {
 	assert.False(t, index.Has(d2))
 }
 
-func TestUniqueIndex(t *testing.T) {
+func TestIndexUnique(t *testing.T) {
 	d1 := Convert(bson.M{"a": "1"})
 	d2 := Convert(bson.M{"a": "2"})
 	d3 := Convert(bson.M{"a": "2"})
@@ -139,7 +139,7 @@ func TestUniqueIndex(t *testing.T) {
 	assert.False(t, index.Has(d3))
 }
 
-func TestUniqueCompoundIndex(t *testing.T) {
+func TestIndexCompoundUnique(t *testing.T) {
 	d1 := Convert(bson.M{"a": "1", "b": true})
 	d2 := Convert(bson.M{"a": "2", "b": true})
 	d3 := Convert(bson.M{"a": "2", "b": true})
