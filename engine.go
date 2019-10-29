@@ -183,6 +183,10 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		clone.Namespaces[handle] = namespace
 	}
 
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
 	// prepare results
 	results := make([]Result, 0, len(ops))
 
@@ -195,13 +199,13 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		// run operation
 		switch op.Opcode {
 		case Insert:
-			res, err = e.insert(namespace, op.Document)
+			res, err = e.insert(oplog, namespace, op.Document)
 		case Replace:
-			res, err = e.replace(namespace, op.Filter, op.Document, nil, op.Upsert)
+			res, err = e.replace(oplog, namespace, op.Filter, op.Document, nil, op.Upsert)
 		case Update:
-			res, err = e.update(namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
+			res, err = e.update(oplog, namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
 		case Delete:
-			res, err = e.delete(namespace, op.Filter, nil, op.Limit)
+			res, err = e.delete(oplog, namespace, op.Filter, nil, op.Limit)
 		default:
 			return nil, fmt.Errorf("unsupported bulk opcode %q", op.Opcode.String())
 		}
@@ -266,13 +270,17 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		clone.Namespaces[handle] = namespace
 	}
 
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
 	// prepare result
 	result := &Result{}
 
 	// insert documents
 	for _, doc := range list {
 		// perform insert
-		res, err := e.insert(namespace, doc)
+		res, err := e.insert(oplog, namespace, doc)
 		if err != nil {
 			// set error
 			if result.Error == nil {
@@ -304,7 +312,7 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	return result, nil
 }
 
-func (e *Engine) insert(namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
+func (e *Engine) insert(oplog, namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
 	// ensure object id
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
 		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
@@ -330,6 +338,9 @@ func (e *Engine) insert(namespace *Namespace, doc bsonkit.Doc) (*Result, error) 
 
 	// add document
 	namespace.Documents.Add(doc)
+
+	// append oplog
+	e.append(oplog, namespace.Handle, "insert", doc)
 
 	return &Result{
 		Modified: bsonkit.List{doc},
@@ -371,8 +382,12 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 		clone.Namespaces[handle] = namespace
 	}
 
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
 	// perform replace
-	res, err := e.replace(namespace, query, repl, sort, upsert)
+	res, err := e.replace(oplog, namespace, query, repl, sort, upsert)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +407,7 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	return res, nil
 }
 
-func (e *Engine) replace(namespace *Namespace, query, repl, sort bsonkit.Doc, upsert bool) (*Result, error) {
+func (e *Engine) replace(oplog, namespace *Namespace, query, repl, sort bsonkit.Doc, upsert bool) (*Result, error) {
 	// get documents
 	list := namespace.Documents.List
 
@@ -415,7 +430,7 @@ func (e *Engine) replace(namespace *Namespace, query, repl, sort bsonkit.Doc, up
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(namespace, query, repl, nil)
+			return e.upsert(oplog, namespace, query, repl, nil)
 		}
 
 		return &Result{}, nil
@@ -451,6 +466,9 @@ func (e *Engine) replace(namespace *Namespace, query, repl, sort bsonkit.Doc, up
 
 	// replace document
 	namespace.Documents.Replace(list[0], repl)
+
+	// append oplog
+	e.append(oplog, namespace.Handle, "replace", repl)
 
 	return &Result{
 		Matched:  list,
@@ -491,8 +509,12 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 		clone.Namespaces[handle] = namespace
 	}
 
-	// perform replace
-	res, err := e.update(namespace, query, update, sort, upsert, limit)
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
+	// perform update
+	res, err := e.update(oplog, namespace, query, update, sort, upsert, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +534,7 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	return res, nil
 }
 
-func (e *Engine) update(namespace *Namespace, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
+func (e *Engine) update(oplog, namespace *Namespace, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
 	// get documents
 	list := namespace.Documents.List
 
@@ -535,7 +557,7 @@ func (e *Engine) update(namespace *Namespace, query, update, sort bsonkit.Doc, u
 	if len(list) == 0 {
 		// handle upsert
 		if upsert {
-			return e.upsert(namespace, query, nil, update)
+			return e.upsert(oplog, namespace, query, nil, update)
 		}
 
 		return &Result{}, nil
@@ -584,13 +606,19 @@ func (e *Engine) update(namespace *Namespace, query, update, sort bsonkit.Doc, u
 		namespace.Documents.Replace(list[i], doc)
 	}
 
+	// append oplog
+	for _, doc := range newList {
+		// TODO: Add update description.
+		e.append(oplog, namespace.Handle, "update", doc)
+	}
+
 	return &Result{
 		Matched:  list,
 		Modified: newList,
 	}, nil
 }
 
-func (e *Engine) upsert(namespace *Namespace, query, repl, update bsonkit.Doc) (*Result, error) {
+func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit.Doc) (*Result, error) {
 	// extract query
 	doc, err := mongokit.Extract(query)
 	if err != nil {
@@ -656,6 +684,9 @@ func (e *Engine) upsert(namespace *Namespace, query, repl, update bsonkit.Doc) (
 	// add document
 	namespace.Documents.Add(doc)
 
+	// append oplog
+	e.append(oplog, namespace.Handle, "insert", doc)
+
 	return &Result{
 		Upserted: doc,
 	}, nil
@@ -686,8 +717,12 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	namespace := clone.Namespaces[handle].Clone()
 	clone.Namespaces[handle] = namespace
 
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
 	// perform delete
-	res, err := e.delete(namespace, query, sort, limit)
+	res, err := e.delete(oplog, namespace, query, sort, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -707,7 +742,7 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	return res, nil
 }
 
-func (e *Engine) delete(namespace *Namespace, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (e *Engine) delete(oplog, namespace *Namespace, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// get documents
 	list := namespace.Documents.List
 
@@ -741,6 +776,11 @@ func (e *Engine) delete(namespace *Namespace, query, sort bsonkit.Doc, limit int
 		}
 	}
 
+	// append oplog
+	for _, doc := range list {
+		e.append(oplog, namespace.Handle, "delete", doc)
+	}
+
 	return &Result{
 		Matched: list,
 	}, nil
@@ -762,11 +802,24 @@ func (e *Engine) Drop(handle Handle) error {
 	// clone dataset
 	clone := e.dataset.Clone()
 
+	// clone oplog
+	oplog := clone.Namespaces[LocalOplog].Clone()
+	clone.Namespaces[LocalOplog] = oplog
+
 	// drop all matching namespaces
 	for ns := range clone.Namespaces {
 		if ns == handle || handle[1] == "" && ns[0] == handle[0] {
+			// delete namespace
 			delete(clone.Namespaces, ns)
+
+			// append oplog
+			e.append(oplog, ns, "drop", nil)
 		}
+	}
+
+	// append oplog if database has been dropped
+	if handle[1] == "" {
+		e.append(oplog, handle, "dropDatabase", nil)
 	}
 
 	// write dataset
@@ -779,6 +832,48 @@ func (e *Engine) Drop(handle Handle) error {
 	e.dataset = clone
 
 	return nil
+}
+
+func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.Doc) {
+	// get time
+	now := bsonkit.Now()
+
+	// prepare ns
+	ns := bson.M{"db": handle[0]}
+	if handle[1] != "" {
+		ns["coll"] = handle[1]
+	}
+
+	// prepare event
+	event := bson.M{
+		"ns": ns,
+		"_id": bson.M{
+			"ts": now,
+		},
+		"clusterTime":   now,
+		"operationType": op,
+	}
+
+	// apply op specific data
+	switch op {
+	case "insert", "replace", "update":
+		event["documentKey"] = bson.M{
+			"_id": bsonkit.Get(doc, "_id"),
+		}
+		event["fullDocument"] = *doc
+	case "delete":
+		event["documentKey"] = bson.M{
+			"_id": bsonkit.Get(doc, "_id"),
+		}
+	}
+
+	// add event
+	oplog.Documents.Add(bsonkit.Convert(event))
+
+	// resize oplog
+	for len(oplog.Documents.List) > 1000 {
+		oplog.Documents.Remove(oplog.Documents.List[0])
+	}
 }
 
 // ListDatabases will return a list of all databases in the dataset.

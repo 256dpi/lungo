@@ -13,6 +13,8 @@ import (
 )
 
 func TestFileStore(t *testing.T) {
+	bsonkit.ResetCounter()
+
 	_ = os.Remove("./test.bson")
 
 	store := NewFileStore("./test.bson", 0666)
@@ -83,6 +85,47 @@ func TestFileStore(t *testing.T) {
 					},
 				},
 			},
+			"local.oplog": bson.M{
+				"documents": bson.A{
+					bson.M{
+						"_id": bson.M{
+							"ts": primitive.Timestamp{I: 1},
+						},
+						"clusterTime": primitive.Timestamp{I: 1},
+						"documentKey": bson.M{
+							"_id": id1,
+						},
+						"fullDocument": bson.M{
+							"_id": id1,
+							"foo": "bar",
+						},
+						"ns": bson.M{
+							"db":   "foo",
+							"coll": "bar",
+						},
+						"operationType": "insert",
+					},
+					bson.M{
+						"_id": bson.M{
+							"ts": primitive.Timestamp{I: 2},
+						},
+						"clusterTime": primitive.Timestamp{I: 2},
+						"documentKey": bson.M{
+							"_id": id2,
+						},
+						"fullDocument": bson.M{
+							"_id": id2,
+							"bar": "baz",
+						},
+						"ns": bson.M{
+							"db":   "foo",
+							"coll": "bar",
+						},
+						"operationType": "insert",
+					},
+				},
+				"indexes": bson.M{},
+			},
 		},
 	}, out)
 
@@ -104,9 +147,11 @@ func TestFileStore(t *testing.T) {
 	}, res.Matched)
 
 	databases, err := engine.ListDatabases(bsonkit.Convert(bson.M{}))
+	bsonkit.Sort(databases, []bsonkit.Column{{Path: "name"}})
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{
 		"foo",
+		"local",
 	}, bsonkit.Pick(databases, "name", false))
 
 	collections, err := engine.ListCollections("foo", bsonkit.Convert(bson.M{}))
