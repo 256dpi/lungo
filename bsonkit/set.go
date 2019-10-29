@@ -10,7 +10,7 @@ type Set struct {
 func NewSet(list List) *Set {
 	// create set
 	set := &Set{
-		Index: map[Doc]int{},
+		Index: make(map[Doc]int, len(list)),
 	}
 
 	// add documents
@@ -87,7 +87,7 @@ func (s *Set) Clone() *Set {
 	// prepare clone
 	clone := &Set{
 		List:  make(List, len(s.List)),
-		Index: map[Doc]int{},
+		Index: make(map[Doc]int, len(s.Index)),
 	}
 
 	// copy list
