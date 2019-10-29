@@ -18,18 +18,20 @@ func BenchmarkMemoryStoreWrite(b *testing.B) {
 
 	defer engine.Close()
 
+	coll := client.Database("foo").Collection("foo")
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
+		_, err = coll.InsertOne(nil, bson.M{
 			"n": i,
 		})
 		if err != nil {
 			panic(err)
 		}
 
-		_, err = client.Database("foo").Collection("foo").DeleteMany(nil, bson.M{
+		_, err = coll.DeleteMany(nil, bson.M{
 			"n": bson.M{
 				"$lt": i - 100,
 			},
@@ -50,8 +52,10 @@ func BenchmarkMemoryStoreRead(b *testing.B) {
 
 	defer engine.Close()
 
+	coll := client.Database("foo").Collection("foo")
+
 	for i := 0; i < 100; i++ {
-		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
+		_, err = coll.InsertOne(nil, bson.M{
 			"n": i,
 		})
 		if err != nil {
@@ -63,7 +67,7 @@ func BenchmarkMemoryStoreRead(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err = client.Database("foo").Collection("foo").Find(nil, bson.M{
+		_, err = coll.Find(nil, bson.M{
 			"n": rand.Intn(100),
 		})
 		if err != nil {
@@ -84,18 +88,20 @@ func BenchmarkSingleFileStoreWrite(b *testing.B) {
 
 	defer engine.Close()
 
+	coll := client.Database("foo").Collection("foo")
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
+		_, err = coll.InsertOne(nil, bson.M{
 			"n": i,
 		})
 		if err != nil {
 			panic(err)
 		}
 
-		_, err = client.Database("foo").Collection("foo").DeleteMany(nil, bson.M{
+		_, err = coll.DeleteMany(nil, bson.M{
 			"n": bson.M{
 				"$lt": i - 100,
 			},
@@ -118,8 +124,10 @@ func BenchmarkFileStoreRead(b *testing.B) {
 
 	defer engine.Close()
 
+	coll := client.Database("foo").Collection("foo")
+
 	for i := 0; i < 100; i++ {
-		_, err = client.Database("foo").Collection("foo").InsertOne(nil, bson.M{
+		_, err = coll.InsertOne(nil, bson.M{
 			"n": i,
 		})
 		if err != nil {
@@ -131,7 +139,7 @@ func BenchmarkFileStoreRead(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err = client.Database("foo").Collection("foo").Find(nil, bson.M{
+		_, err = coll.Find(nil, bson.M{
 			"n": rand.Intn(100),
 		})
 		if err != nil {
