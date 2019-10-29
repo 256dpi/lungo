@@ -71,14 +71,14 @@ func TestFileStore(t *testing.T) {
 						"key": bson.M{
 							"_id": int32(1),
 						},
-						"unique": true,
+						"unique":  true,
 						"partial": nil,
 					},
 					"idx": bson.M{
 						"key": bson.M{
 							"foo": int32(-1),
 						},
-						"unique": false,
+						"unique":  false,
 						"partial": nil,
 					},
 				},

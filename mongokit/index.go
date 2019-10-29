@@ -7,8 +7,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Return Match errors?
-
 // TODO: Whitelist Match operators?
 
 // IndexConfig defines an index configuration.
@@ -54,50 +52,66 @@ func CreateIndex(config IndexConfig) (*Index, error) {
 
 // Build will build the index from the specified list. It may return false if
 // there was an unique constraint error when building the index.
-func (i *Index) Build(list bsonkit.List) bool {
-	return i.base.Build(list)
+func (i *Index) Build(list bsonkit.List) (bool, error) {
+	// add documents
+	for _, doc := range list {
+		ok, err := i.Add(doc)
+		if err != nil {
+			return false, err
+		} else if !ok {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 // Add will add the document to index. May return false if the document has
 // already been added to the index. If the document has been skipped due to a
 // partial filter true is returned.
-func (i *Index) Add(doc bsonkit.Doc) bool {
+func (i *Index) Add(doc bsonkit.Doc) (bool, error) {
 	// skip documents that do not match partial expression
 	if i.config.Partial != nil {
-		ok, _ := Match(doc, i.config.Partial)
-		if !ok {
-			return true
+		ok, err := Match(doc, i.config.Partial)
+		if err != nil {
+			return false, err
+		} else if !ok {
+			return true, nil
 		}
 	}
 
-	return i.base.Add(doc)
+	return i.base.Add(doc), nil
 }
 
 // Has returns whether the specified document has been added to the index.
-func (i *Index) Has(doc bsonkit.Doc) bool {
+func (i *Index) Has(doc bsonkit.Doc) (bool, error) {
 	// skip documents that do not match partial expression
 	if i.config.Partial != nil {
-		ok, _ := Match(doc, i.config.Partial)
-		if !ok {
-			return false
+		ok, err := Match(doc, i.config.Partial)
+		if err != nil {
+			return false, err
+		} else if !ok {
+			return false, nil
 		}
 	}
 
-	return i.base.Has(doc)
+	return i.base.Has(doc), nil
 }
 
 // Remove will remove a document from the index. May return false if the document
 // has not yet been added to the index.
-func (i *Index) Remove(doc bsonkit.Doc) bool {
+func (i *Index) Remove(doc bsonkit.Doc) (bool, error) {
 	// skip documents that do not match partial expression
 	if i.config.Partial != nil {
-		ok, _ := Match(doc, i.config.Partial)
-		if !ok {
-			return true
+		ok, err := Match(doc, i.config.Partial)
+		if err != nil {
+			return false, err
+		} else if !ok {
+			return true, nil
 		}
 	}
 
-	return i.base.Remove(doc)
+	return i.base.Remove(doc), nil
 }
 
 // Config will return the index configuration.

@@ -302,7 +302,10 @@ func (e *Engine) insert(namespace *Namespace, doc bsonkit.Doc) (*Result, error) 
 
 	// add document to all indexes
 	for name, index := range namespace.Indexes {
-		if !index.Add(doc) {
+		ok, err := index.Add(doc)
+		if err != nil {
+			return nil, err
+		} else if !ok {
 			return nil, fmt.Errorf("duplicate document for index %q", name)
 		}
 	}
@@ -414,10 +417,16 @@ func (e *Engine) replace(namespace *Namespace, query, repl, sort bsonkit.Doc, up
 	// update indexes
 	for name, index := range namespace.Indexes {
 		// remove old document
-		index.Remove(list[0])
+		_, err := index.Remove(list[0])
+		if err != nil {
+			return nil, err
+		}
 
 		// add replacement
-		if !index.Add(repl) {
+		ok, err := index.Add(repl)
+		if err != nil {
+			return nil, err
+		} else if !ok {
 			return nil, fmt.Errorf("duplicate document for index %q", name)
 		}
 	}
@@ -533,14 +542,20 @@ func (e *Engine) update(namespace *Namespace, query, update, sort bsonkit.Doc, u
 	// remove old docs from indexes
 	for _, doc := range list {
 		for _, index := range namespace.Indexes {
-			index.Remove(doc)
+			_, err := index.Remove(doc)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	// add new docs to indexes
 	for _, doc := range newList {
 		for name, index := range namespace.Indexes {
-			if !index.Add(doc) {
+			ok, err := index.Add(doc)
+			if err != nil {
+				return nil, err
+			} else if !ok {
 				return nil, fmt.Errorf("duplicate document for index %q", name)
 			}
 		}
@@ -612,7 +627,10 @@ func (e *Engine) upsert(namespace *Namespace, query, repl, update bsonkit.Doc) (
 
 	// add document to indexes
 	for name, index := range namespace.Indexes {
-		if !index.Add(doc) {
+		ok, err := index.Add(doc)
+		if err != nil {
+			return nil, err
+		} else if !ok {
 			return nil, fmt.Errorf("duplicate document for index %q", name)
 		}
 	}
@@ -698,7 +716,10 @@ func (e *Engine) delete(namespace *Namespace, query, sort bsonkit.Doc, limit int
 	// update indexes
 	for _, doc := range list {
 		for _, index := range namespace.Indexes {
-			index.Remove(doc)
+			_, err := index.Remove(doc)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -952,8 +973,11 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 	// add index
 	namespace.Indexes[name] = index
 
-	// fill index
-	if !index.Build(namespace.Documents.List) {
+	// build index
+	ok, err := index.Build(namespace.Documents.List)
+	if err != nil {
+		return "", err
+	} else if !ok {
 		return "", fmt.Errorf("duplicate document for index %q", name)
 	}
 
