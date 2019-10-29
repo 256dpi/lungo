@@ -84,7 +84,7 @@ func matchAnd(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error
 		}
 
 		// match document
-		err := Process(ctx, doc, query, "", false)
+		err := Process(ctx, doc, query, "", true)
 		if err != nil {
 			return err
 		}
@@ -114,7 +114,7 @@ func matchOr(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) error 
 		}
 
 		// match document
-		err := Process(ctx, doc, query, "", false)
+		err := Process(ctx, doc, query, "", true)
 		if err == ErrNotMatched {
 			continue
 		} else if err != nil {

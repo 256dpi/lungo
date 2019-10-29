@@ -81,6 +81,17 @@ func TestMatch(t *testing.T) {
 			},
 		}, true)
 
+		// nested top level operators
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"$or": bson.A{
+						bson.M{"foo": bson.M{"$eq": "bar"}},
+					},
+				},
+			},
+		}, true)
+
 		// top level operator and field condition
 		fn(bson.M{
 			"foo": "bar",
@@ -228,6 +239,17 @@ func TestMatchAnd(t *testing.T) {
 				},
 			},
 		}, `unknown expression operator "$and"`)
+
+		// nesting
+		fn(bson.M{
+			"$and": bson.A{
+				bson.M{
+					"$and": bson.A{
+						bson.M{"foo": bson.M{"$eq": "bar"}},
+					},
+				},
+			},
+		}, true)
 	})
 }
 
@@ -322,6 +344,17 @@ func TestMatchOr(t *testing.T) {
 				},
 			},
 		}, `unknown expression operator "$or"`)
+
+		// nesting
+		fn(bson.M{
+			"$or": bson.A{
+				bson.M{
+					"$or": bson.A{
+						bson.M{"foo": bson.M{"$eq": "bar"}},
+					},
+				},
+			},
+		}, true)
 	})
 }
 
@@ -416,6 +449,17 @@ func TestMatchNor(t *testing.T) {
 				},
 			},
 		}, `unknown expression operator "$nor"`)
+
+		// nesting
+		fn(bson.M{
+			"$nor": bson.A{
+				bson.M{
+					"$nor": bson.A{
+						bson.M{"foo": bson.M{"$eq": "bar"}},
+					},
+				},
+			},
+		}, true)
 	})
 }
 
