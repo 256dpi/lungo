@@ -12,8 +12,7 @@ type Index struct {
 	key     bsonkit.Doc
 	columns []bsonkit.Column
 	unique  bool
-
-	*bsonkit.Index
+	base    *bsonkit.Index
 }
 
 // CreateIndex will create and return a new index.
@@ -32,10 +31,27 @@ func CreateIndex(key bsonkit.Doc, unique bool) (*Index, error) {
 		key:     key,
 		columns: columns,
 		unique:  unique,
-		Index:   bsonkit.NewIndex(unique, columns),
+		base:    bsonkit.NewIndex(unique, columns),
 	}
 
 	return index, nil
+}
+
+// Add will add the document to index. May return false if the document has
+// already been added to the index.
+func (i *Index) Add(doc bsonkit.Doc) bool {
+	return i.base.Add(doc)
+}
+
+// Has returns whether the specified document has been added to the index.
+func (i *Index) Has(doc bsonkit.Doc) bool {
+	return i.base.Has(doc)
+}
+
+// Remove will remove a document from the index. May return false if the document
+// has not yet been added to the index.
+func (i *Index) Remove(doc bsonkit.Doc) bool {
+	return i.base.Remove(doc)
 }
 
 // Config will return the index configuration.
@@ -68,6 +84,6 @@ func (i *Index) Clone() *Index {
 		key:     i.key,
 		columns: i.columns,
 		unique:  i.unique,
-		Index:   i.Index.Clone(),
+		base:    i.base.Clone(),
 	}
 }
