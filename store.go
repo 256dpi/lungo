@@ -102,7 +102,7 @@ func (s *FileStore) Load() (*Dataset, error) {
 		handle := Handle{segments[0], segments[1]}
 
 		// create namespace
-		namespace := NewNamespace(handle)
+		namespace := NewNamespace(handle, false)
 
 		// add documents
 		namespace.Documents = bsonkit.NewSet(ns.Documents)

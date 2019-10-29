@@ -160,7 +160,7 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace(handle)
+		namespace = NewNamespace(handle, true)
 		clone.Namespaces[handle] = namespace
 	} else {
 		namespace = clone.Namespaces[handle].Clone()
@@ -241,7 +241,7 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace(handle)
+		namespace = NewNamespace(handle, true)
 		clone.Namespaces[handle] = namespace
 	} else {
 		namespace = clone.Namespaces[handle].Clone()
@@ -346,7 +346,7 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace(handle)
+		namespace = NewNamespace(handle, true)
 		clone.Namespaces[handle] = namespace
 	} else {
 		namespace = clone.Namespaces[handle].Clone()
@@ -466,7 +466,7 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace(handle)
+		namespace = NewNamespace(handle, true)
 		clone.Namespaces[handle] = namespace
 	} else {
 		namespace = clone.Namespaces[handle].Clone()
@@ -948,7 +948,7 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = NewNamespace(handle)
+		namespace = NewNamespace(handle, true)
 		clone.Namespaces[handle] = namespace
 	} else {
 		namespace = clone.Namespaces[handle].Clone()

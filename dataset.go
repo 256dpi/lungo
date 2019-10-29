@@ -30,7 +30,7 @@ func NewDataset() *Dataset {
 	}
 }
 
-// Clone will cone the dataset. Namespaces need to be cloned separately.
+// Clone will clone the dataset. Namespaces need to be cloned separately.
 func (d *Dataset) Clone() *Dataset {
 	// create clone
 	clone := &Dataset{
@@ -53,25 +53,25 @@ type Namespace struct {
 }
 
 // NewNamespace creates and returns a new namespace.
-func NewNamespace(handle Handle) *Namespace {
-	// create default index
-	index, err := mongokit.CreateIndex(mongokit.IndexConfig{
-		Key: bsonkit.Convert(bson.M{
-			"_id": int32(1),
-		}),
-		Unique: true,
-	})
-	if err != nil {
-		panic(err) // should not happen
-	}
-
-	return &Namespace{
+func NewNamespace(handle Handle, idIndex bool) *Namespace {
+	// create namespace
+	ns := &Namespace{
 		Handle:    handle,
 		Documents: bsonkit.NewSet(nil),
-		Indexes: map[string]*mongokit.Index{
-			"_id_": index,
-		},
+		Indexes: map[string]*mongokit.Index{},
 	}
+
+	// add default index if requested
+	if idIndex {
+		ns.Indexes["_id_"], _ = mongokit.CreateIndex(mongokit.IndexConfig{
+			Key: bsonkit.Convert(bson.M{
+				"_id": int32(1),
+			}),
+			Unique: true,
+		})
+	}
+
+	return ns
 }
 
 // Clone will clone the namespace.
