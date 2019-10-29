@@ -107,14 +107,6 @@ func (s *FileStore) Load() (*Dataset, error) {
 		// add documents
 		namespace.Documents = bsonkit.NewSet(ns.Documents)
 
-		// build default index
-		ok, err := namespace.Indexes["_id_"].Build(ns.Documents)
-		if err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, fmt.Errorf("duplicate document for index %q", "_id_")
-		}
-
 		// add indexes
 		for name, idx := range ns.Indexes {
 			// create index
