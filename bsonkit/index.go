@@ -18,19 +18,15 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	index := ctx.(*Index)
 
 	// get order
-	order := Order(i.set.List[0], j.set.List[0], index.Columns)
+	order := Order(i.set.List[0], j.set.List[0], index.columns)
 
 	return order < 0
 }
 
 // Index is a basic btree based index for documents.
 type Index struct {
-	// Whether documents must have unique value.
-	Unique bool
-
-	// The columns that specify the index.
-	Columns []Column
-
+	unique   bool
+	columns  []Column
 	btree    *btree.BTree
 	sentinel *entry
 	mutex    sync.Mutex
@@ -40,8 +36,8 @@ type Index struct {
 func NewIndex(unique bool, columns []Column) *Index {
 	// create index
 	index := &Index{
-		Unique:  unique,
-		Columns: columns,
+		unique:  unique,
+		columns: columns,
 	}
 
 	// create btree
@@ -92,7 +88,7 @@ func (i *Index) Add(doc Doc) bool {
 	}
 
 	// return false if index is unique
-	if i.Unique {
+	if i.unique {
 		return false
 	}
 
@@ -126,7 +122,7 @@ func (i *Index) Has(doc Doc) bool {
 	}
 
 	// do not check identify if unique
-	if i.Unique {
+	if i.unique {
 		return true
 	}
 
@@ -189,7 +185,7 @@ func (i *Index) Clone() *Index {
 	defer i.mutex.Unlock()
 
 	// create clone
-	clone := NewIndex(i.Unique, i.Columns)
+	clone := NewIndex(i.unique, i.columns)
 
 	// copy entries
 	i.btree.Ascend(func(i btree.Item) bool {

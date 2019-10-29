@@ -3,8 +3,6 @@ package lungo
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -877,32 +875,19 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// prepare list
 	var list bsonkit.List
 	for name, index := range namespace.Indexes {
-		// prepare key
-		var key bson.D
-		for _, column := range index.Columns {
-			// get direction
-			direction := 1
-			if column.Reverse {
-				direction = -1
-			}
-
-			// add element
-			key = append(key, bson.E{
-				Key:   column.Path,
-				Value: direction,
-			})
-		}
+		// get config
+		key, unique := index.Config()
 
 		// create spec
 		spec := bson.D{
 			bson.E{Key: "v", Value: 2},
-			bson.E{Key: "key", Value: key},
+			bson.E{Key: "key", Value: *key},
 			bson.E{Key: "name", Value: name},
 			bson.E{Key: "ns", Value: handle.String()},
 		}
 
 		// add uniqueness
-		if index.Unique && name != "_id_" {
+		if unique && name != "_id_" {
 			spec = append(spec, bson.E{Key: "unique", Value: true})
 		}
 
@@ -919,7 +904,7 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 }
 
 // CreateIndex will create the specified index in the specified namespace.
-func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, unique bool) (string, error) {
+func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool) (string, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -927,25 +912,6 @@ func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, uniqu
 	// check if closed
 	if e.closed {
 		return "", ErrEngineClosed
-	}
-
-	// get columns
-	columns, err := mongokit.Columns(keys)
-	if err != nil {
-		return "", err
-	}
-
-	// generate name if missing
-	if name == "" {
-		segments := make([]string, 0, len(columns)*2)
-		for _, column := range columns {
-			var dir = 1
-			if column.Reverse {
-				dir = -1
-			}
-			segments = append(segments, column.Path, strconv.Itoa(dir))
-		}
-		name = strings.Join(segments, "_")
 	}
 
 	// clone dataset
@@ -964,7 +930,17 @@ func (e *Engine) CreateIndex(handle Handle, keys bsonkit.Doc, name string, uniqu
 	}
 
 	// create index
-	index := bsonkit.NewIndex(unique, columns)
+	index, err := mongokit.CreateIndex(key, unique)
+	if err != nil {
+		return "", err
+	}
+
+	// use generated name if missing
+	if name == "" {
+		name = index.Name()
+	}
+
+	// add index
 	namespace.Indexes[name] = index
 
 	// fill index

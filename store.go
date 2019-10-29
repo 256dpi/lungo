@@ -113,14 +113,11 @@ func (s *FileStore) Load() (*Dataset, error) {
 
 		// add indexes
 		for name, idx := range ns.Indexes {
-			// get columns
-			columns, err := mongokit.Columns(&idx.Key)
+			// create index
+			index, err := mongokit.CreateIndex(&idx.Key, idx.Unique)
 			if err != nil {
 				return nil, err
 			}
-
-			// create index
-			index := bsonkit.NewIndex(idx.Unique, columns)
 
 			// build index
 			if !index.Build(ns.Documents) {
@@ -150,26 +147,13 @@ func (s *FileStore) Store(data *Dataset) error {
 		// collect indexes
 		indexes := map[string]FileIndex{}
 		for name, index := range namespace.Indexes {
-			// create key
-			key := bson.D{}
-			for _, column := range index.Columns {
-				// get direction
-				dir := 1
-				if column.Reverse {
-					dir = -1
-				}
-
-				// add key
-				key = append(key, bson.E{
-					Key:   column.Path,
-					Value: dir,
-				})
-			}
+			// get config
+			key, unique := index.Config()
 
 			// add index
 			indexes[name] = FileIndex{
-				Key:    key,
-				Unique: index.Unique,
+				Key:    *key,
+				Unique: unique,
 			}
 		}
 
