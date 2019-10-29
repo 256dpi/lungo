@@ -29,6 +29,11 @@ func (c *MongoClient) Database(name string, opts ...*options.DatabaseOptions) ID
 	return &MongoDatabase{Database: c.Client.Database(name, opts...), client: c}
 }
 
+// Watch implements the IClient.Watch method.
+func (c *MongoClient) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+	return c.Client.Watch(ctx, pipeline, opts...)
+}
+
 var _ IDatabase = &MongoDatabase{}
 
 // MongoDatabase wraps a mongo.Database to be lungo compatible.
@@ -66,6 +71,11 @@ func (d *MongoDatabase) RunCommand(ctx context.Context, runCommand interface{}, 
 // RunCommandCursor implements the IDatabase.RunCommandCursor method.
 func (d *MongoDatabase) RunCommandCursor(ctx context.Context, filter interface{}, opts ...*options.RunCmdOptions) (ICursor, error) {
 	return d.Database.RunCommandCursor(ctx, filter, opts...)
+}
+
+// Watch implements the IDatabase.Watch method.
+func (d *MongoDatabase) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+	return d.Database.Watch(ctx, pipeline, opts...)
 }
 
 var _ ICollection = &MongoCollection{}
@@ -128,6 +138,11 @@ func (c *MongoCollection) Indexes() IIndexView {
 	return &MongoIndexView{
 		IndexView: &i,
 	}
+}
+
+// Watch implements the ICollection.Watch method.
+func (c *MongoCollection) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+	return c.Collection.Watch(ctx, pipeline, opts...)
 }
 
 var _ IIndexView = &MongoIndexView{}

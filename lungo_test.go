@@ -16,6 +16,7 @@ var interfaceReplacements = map[string]string{
 	"*mongo.Cursor":       "lungo.ICursor",
 	"*mongo.SingleResult": "lungo.ISingleResult",
 	"mongo.IndexView":     "lungo.IIndexView",
+	"*mongo.ChangeStream": "lungo.IChangeStream",
 }
 
 func TestClientInterface(t *testing.T) {
@@ -51,6 +52,12 @@ func TestSingleResultInterface(t *testing.T) {
 func TestIndexViewInterface(t *testing.T) {
 	a := reflect.TypeOf((*IIndexView)(nil)).Elem()
 	b := reflect.TypeOf(&mongo.IndexView{})
+	assert.Equal(t, listMethods(a, false), listMethods(b, true))
+}
+
+func TestChangeStreamInterface(t *testing.T) {
+	a := reflect.TypeOf((*IChangeStream)(nil)).Elem()
+	b := reflect.TypeOf(&mongo.ChangeStream{})
 	assert.Equal(t, listMethods(a, false), listMethods(b, true))
 }
 

@@ -143,6 +143,6 @@ func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions,
 }
 
 // Watch implements the IClient.Watch method.
-func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	panic("lungo: not implemented")
 }

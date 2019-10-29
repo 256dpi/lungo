@@ -22,7 +22,7 @@ type IClient interface {
 	StartSession(...*options.SessionOptions) (mongo.Session, error)
 	UseSession(context.Context, func(mongo.SessionContext) error) error
 	UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error
-	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
+	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
 }
 
 // IDatabase defines a generic database.
@@ -38,7 +38,7 @@ type IDatabase interface {
 	ReadPreference() *readpref.ReadPref
 	RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult
 	RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error)
-	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
+	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
 	WriteConcern() *writeconcern.WriteConcern
 }
 
@@ -66,7 +66,7 @@ type ICollection interface {
 	ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error)
 	UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
+	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
 }
 
 // ICursor defines a generic cursor.
@@ -93,4 +93,14 @@ type IIndexView interface {
 	DropAll(context.Context, ...*options.DropIndexesOptions) (bson.Raw, error)
 	DropOne(context.Context, string, ...*options.DropIndexesOptions) (bson.Raw, error)
 	List(context.Context, ...*options.ListIndexesOptions) (ICursor, error)
+}
+
+// IChangeStream defines a generic change stream.
+type IChangeStream interface {
+	Close(context.Context) error
+	Decode(interface{}) error
+	Err() error
+	ID() int64
+	Next(context.Context) bool
+	ResumeToken() bson.Raw
 }

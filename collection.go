@@ -978,6 +978,6 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 }
 
 // Watch implements the ICollection.Watch method.
-func (c *Collection) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	panic("lungo: not implemented")
 }

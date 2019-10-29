@@ -3,7 +3,6 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -130,7 +129,7 @@ func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.Ru
 }
 
 // Watch implements the IDatabase.Watch method.
-func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	panic("lungo: not implemented")
 }
 
