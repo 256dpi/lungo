@@ -37,6 +37,12 @@ func CreateIndex(key bsonkit.Doc, unique bool) (*Index, error) {
 	return index, nil
 }
 
+// Build will build the index from the specified list. It may return false if
+// there was an unique constraint error when building the index.
+func (i *Index) Build(list bsonkit.List) bool {
+	return i.base.Build(list)
+}
+
 // Add will add the document to index. May return false if the document has
 // already been added to the index.
 func (i *Index) Add(doc bsonkit.Doc) bool {
