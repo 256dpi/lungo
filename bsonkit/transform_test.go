@@ -97,3 +97,15 @@ func TestTransform(t *testing.T) {
 		assert.Equal(t, item.out, res, i)
 	}
 }
+
+func TestTransformList(t *testing.T) {
+	list, err := TransformList(bson.A{
+		bson.M{"foo": "bar"},
+		bson.M{"bar": "baz"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, List{
+		Convert(bson.M{"foo": "bar"}),
+		Convert(bson.M{"bar": "baz"}),
+	}, list)
+}
