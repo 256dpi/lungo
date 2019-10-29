@@ -7,7 +7,6 @@ import (
 )
 
 type entry struct {
-	idx *Index
 	doc Doc
 }
 
@@ -15,14 +14,17 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	// coerce item
 	j := item.(*entry)
 
+	// coerce index
+	index := ctx.(*Index)
+
 	// get order
-	order := Order(i.doc, j.doc, i.idx.columns)
+	order := Order(i.doc, j.doc, index.columns)
 	if order != 0 {
 		return order < 0
 	}
 
 	// check document identity if not unique
-	if !i.idx.unique && i.doc != j.doc {
+	if !index.unique && i.doc != j.doc {
 		return true
 	}
 
@@ -40,12 +42,17 @@ type Index struct {
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
-	return &Index{
+	// create index
+	index := &Index{
 		unique:   unique,
 		columns:  columns,
-		btree:    btree.New(64, nil),
 		sentinel: &entry{},
 	}
+
+	// create btree
+	index.btree = btree.New(64, index)
+
+	return index
 }
 
 // Build will build the index from the specified list. It may return false if
@@ -68,8 +75,7 @@ func (i *Index) Add(doc Doc) bool {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	// prepare sentinel entry
-	i.sentinel.idx = i
+	// prepare sentinel
 	i.sentinel.doc = doc
 
 	// check if index already has an entry
@@ -79,7 +85,7 @@ func (i *Index) Add(doc Doc) bool {
 	}
 
 	// otherwise add entry
-	i.btree.ReplaceOrInsert(&entry{idx: i, doc: doc})
+	i.btree.ReplaceOrInsert(&entry{doc: doc})
 
 	return true
 }
@@ -90,8 +96,7 @@ func (i *Index) Has(doc Doc) bool {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	// prepare sentinel entry
-	i.sentinel.idx = i
+	// prepare sentinel
 	i.sentinel.doc = doc
 
 	// check if index already has an item
@@ -110,8 +115,7 @@ func (i *Index) Remove(doc Doc) bool {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	// prepare sentinel entry
-	i.sentinel.idx = i
+	// prepare sentinel
 	i.sentinel.doc = doc
 
 	// check if index already has an item
@@ -133,10 +137,19 @@ func (i *Index) Clone() *Index {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
-	return &Index{
+	// create clone
+	clone := &Index{
 		unique:   i.unique,
 		columns:  i.columns,
 		btree:    i.btree.Clone(),
 		sentinel: &entry{},
 	}
+
+	// clone btree
+	clone.btree = i.btree.Clone()
+
+	// update context
+	clone.btree.SetContext(clone)
+
+	return clone
 }
