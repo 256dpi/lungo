@@ -177,7 +177,7 @@ func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface
 	case "date":
 		return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
 	case "timestamp":
-		return bsonkit.Put(doc, path, bsonkit.Generate(), false)
+		return bsonkit.Put(doc, path, bsonkit.Now(), false)
 	default:
 		return fmt.Errorf("%s: expected $type 'date' or 'timestamp'", name)
 	}
