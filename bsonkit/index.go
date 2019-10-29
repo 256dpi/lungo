@@ -3,7 +3,7 @@ package bsonkit
 import (
 	"sync"
 
-	"github.com/tidwall/btree"
+	"github.com/256dpi/btree"
 )
 
 type entry struct {
