@@ -45,7 +45,7 @@ func (c *Collection) BulkWrite(_ context.Context, models []mongo.WriteModel, opt
 	// transform models
 	for _, item := range models {
 		// prepare variables
-		var operation Command
+		var opcode Opcode
 		var document interface{}
 		var filter interface{}
 		var upsert *bool
@@ -54,41 +54,41 @@ func (c *Collection) BulkWrite(_ context.Context, models []mongo.WriteModel, opt
 		// set variables
 		switch model := item.(type) {
 		case *mongo.InsertOneModel:
-			operation = Insert
+			opcode = Insert
 			document = model.Document
 			limit = 1
 		case *mongo.ReplaceOneModel:
-			operation = Replace
+			opcode = Replace
 			filter = model.Filter
 			document = model.Replacement
 			upsert = model.Upsert
 			limit = 1
 		case *mongo.UpdateOneModel:
-			operation = Update
+			opcode = Update
 			filter = model.Filter
 			document = model.Update
 			upsert = model.Upsert
 			limit = 1
 		case *mongo.UpdateManyModel:
-			operation = Update
+			opcode = Update
 			filter = model.Filter
 			document = model.Update
 			upsert = model.Upsert
 			limit = 0
 		case *mongo.DeleteOneModel:
-			operation = Delete
+			opcode = Delete
 			filter = model.Filter
 			limit = 1
 		case *mongo.DeleteManyModel:
-			operation = Delete
+			opcode = Delete
 			filter = model.Filter
 			limit = 0
 		}
 
 		// prepare operation
 		op := Operation{
-			Command: operation,
-			Limit:   limit,
+			Opcode: opcode,
+			Limit:  limit,
 		}
 
 		// transform document
@@ -149,7 +149,8 @@ func (c *Collection) BulkWrite(_ context.Context, models []mongo.WriteModel, opt
 			continue
 		}
 
-		switch ops[i].Command {
+		// collect results
+		switch ops[i].Opcode {
 		case Insert:
 			result.InsertedCount += int64(len(res.Modified))
 		case Replace:

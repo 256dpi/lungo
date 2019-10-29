@@ -32,21 +32,37 @@ type Result struct {
 	Error error
 }
 
-// Command defines the type of an operation.
-type Command int
+// Opcode defines the type of an operation.
+type Opcode int
 
-// The available commands.
+// The available opcodes.
 const (
-	Insert Command = iota
+	Insert Opcode = iota
 	Replace
 	Update
 	Delete
 )
 
+// Strings returns the opcode name.
+func (c Opcode) String() string {
+	switch c {
+	case Insert:
+		return "insert"
+	case Replace:
+		return "replace"
+	case Update:
+		return "update"
+	case Delete:
+		return "delete"
+	default:
+		return ""
+	}
+}
+
 // Operation defines a single operation.
 type Operation struct {
-	// The command.
-	Command Command
+	// The opcode.
+	Opcode Opcode
 
 	// The filter document (replace, update, delete).
 	Filter bsonkit.Doc
@@ -177,7 +193,7 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		var err error
 
 		// run operation
-		switch op.Command {
+		switch op.Opcode {
 		case Insert:
 			res, err = e.insert(namespace, op.Document)
 		case Replace:
@@ -186,6 +202,8 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 			res, err = e.update(namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
 		case Delete:
 			res, err = e.delete(namespace, op.Filter, nil, op.Limit)
+		default:
+			return nil, fmt.Errorf("unsupported bulk opcode %q", op.Opcode.String())
 		}
 
 		// check error
