@@ -90,12 +90,10 @@ func (c *Cursor) Next(context.Context) bool {
 	}
 
 	// increment position
-	if c.pos < len(c.list)-1 {
+	if c.pos < len(c.list) {
 		c.pos++
+		return true
 	}
 
-	// determine whether the are more documents
-	more := c.pos < len(c.list)-1
-
-	return more
+	return false
 }
