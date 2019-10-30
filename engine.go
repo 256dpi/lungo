@@ -315,7 +315,7 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 func (e *Engine) insert(oplog, namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
 	// ensure object id
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
+		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -439,7 +439,7 @@ func (e *Engine) replace(oplog, namespace *Namespace, query, repl, sort bsonkit.
 	// set missing id or check existing id
 	replID := bsonkit.Get(repl, "_id")
 	if replID == bsonkit.Missing {
-		err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id"), true)
+		_, err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id"), true)
 		if err != nil {
 			return nil, err
 		}
@@ -643,12 +643,12 @@ func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit
 
 		// add repl or query id if present
 		if replID != bsonkit.Missing {
-			err = bsonkit.Put(doc, "_id", replID, true)
+			_, err = bsonkit.Put(doc, "_id", replID, true)
 			if err != nil {
 				return nil, err
 			}
 		} else if queryID != bsonkit.Missing {
-			err = bsonkit.Put(doc, "_id", queryID, true)
+			_, err = bsonkit.Put(doc, "_id", queryID, true)
 			if err != nil {
 				return nil, err
 			}
@@ -665,7 +665,7 @@ func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit
 
 	// generate object id if missing
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
+		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
 		if err != nil {
 			return nil, err
 		}

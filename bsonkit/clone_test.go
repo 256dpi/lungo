@@ -20,7 +20,7 @@ func TestClone(t *testing.T) {
 	doc2 := Clone(doc1)
 	assert.Equal(t, doc1, doc2)
 
-	err := Put(doc2, "foo.bar", "quz", false)
+	_, err := Put(doc2, "foo.bar", "quz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -37,7 +37,7 @@ func TestClone(t *testing.T) {
 
 	a := Get(doc2, "bar").(bson.A)
 	a = append(a, "baz")
-	err = Put(doc2, "bar", a, false)
+	_, err = Put(doc2, "bar", a, false)
 	assert.NoError(t, err)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{

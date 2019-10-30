@@ -38,7 +38,7 @@ func init() {
 func Apply(doc, update bsonkit.Doc, upsert bool) error {
 	// update document according to update
 	return Process(Context{
-		Upsert:   upsert,
+		Value:    upsert,
 		TopLevel: FieldUpdateOperators,
 	}, doc, *update, "", true)
 }
@@ -64,12 +64,14 @@ func applyAll(name string, operator Operator) Operator {
 }
 
 func applySet(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	return bsonkit.Put(doc, path, v, false)
+	_, err := bsonkit.Put(doc, path, v, false)
+	return err
 }
 
 func applySetOnInsert(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	if ctx.Upsert {
-		return bsonkit.Put(doc, path, v, false)
+	if ctx.Value.(bool) {
+		_, err := bsonkit.Put(doc, path, v, false)
+		return err
 	}
 
 	return nil
@@ -97,7 +99,7 @@ func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) e
 	bsonkit.Unset(doc, path)
 
 	// set new value
-	err := bsonkit.Put(doc, newPath, value, false)
+	_, err := bsonkit.Put(doc, newPath, value, false)
 	if err != nil {
 		return err
 	}
@@ -117,12 +119,13 @@ func applyMax(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
-		return bsonkit.Put(doc, path, v, false)
+		_, err := bsonkit.Put(doc, path, v, false)
+		return err
 	}
 
 	// replace value if smaller
 	if bsonkit.Compare(value, v) < 0 {
-		err := bsonkit.Put(doc, path, v, false)
+		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
@@ -135,12 +138,13 @@ func applyMin(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
-		return bsonkit.Put(doc, path, v, false)
+		_, err := bsonkit.Put(doc, path, v, false)
+		return err
 	}
 
 	// replace value if bigger
 	if bsonkit.Compare(value, v) > 0 {
-		err := bsonkit.Put(doc, path, v, false)
+		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
@@ -155,7 +159,8 @@ func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface
 	if ok {
 		// set to time if true
 		if value {
-			return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+			_, err := bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+			return err
 		}
 
 		return nil
@@ -175,9 +180,11 @@ func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface
 	// set date or timestamp
 	switch args[0].Value {
 	case "date":
-		return bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+		_, err := bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
+		return err
 	case "timestamp":
-		return bsonkit.Put(doc, path, bsonkit.Now(), false)
+		_, err := bsonkit.Put(doc, path, bsonkit.Now(), false)
+		return err
 	default:
 		return fmt.Errorf("%s: expected $type 'date' or 'timestamp'", name)
 	}

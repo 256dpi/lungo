@@ -137,15 +137,15 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 // inserted at the beginning of the array or document. If the path contains
 // a number e.g. "foo.1.bar" and no array exists at that levels, a document with
 // the key "1" is created.
-func Put(doc Doc, path string, value interface{}, prepend bool) error {
-	ok := put(*doc, path, value, prepend, func(v interface{}) {
+func Put(doc Doc, path string, value interface{}, prepend bool) (interface{}, error) {
+	res, ok := put(*doc, path, value, prepend, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
 	if !ok {
-		return fmt.Errorf("cannot put value at %s", path)
+		return nil, fmt.Errorf("cannot put value at %s", path)
 	}
 
-	return nil
+	return res, nil
 }
 
 // Unset will remove the value at the location in the document specified by path.
@@ -153,21 +153,21 @@ func Put(doc Doc, path string, value interface{}, prepend bool) error {
 // but not removed from the array. This prevents unintentional effects through
 // position shifts in the array.
 func Unset(doc Doc, path string) {
-	_ = put(*doc, path, unsetValue, false, func(v interface{}) {
+	_, _ = put(*doc, path, unsetValue, false, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
 }
 
-func put(v interface{}, path string, value interface{}, prepend bool, set func(interface{})) bool {
+func put(v interface{}, path string, value interface{}, prepend bool, set func(interface{})) (interface{}, bool) {
 	// check path
 	if path == pathEnd {
 		set(value)
-		return true
+		return v, true
 	}
 
 	// check if empty
 	if path == "" {
-		return false
+		return Missing, false
 	}
 
 	// put document field
@@ -186,16 +186,16 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 		// check if unset
 		if value == unsetValue {
-			return true
+			return Missing, false
 		}
 
 		// capture value
 		e := bson.E{Key: pathKey(path)}
-		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
-			return false
+			return res, false
 		}
 
 		// set appended/prepended document
@@ -205,14 +205,14 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 			set(append(doc, e))
 		}
 
-		return true
+		return Missing, true
 	}
 
 	// put array field
 	if arr, ok := v.(bson.A); ok {
 		index, err := strconv.Atoi(pathKey(path))
 		if err != nil || index < 0 {
-			return false
+			return Missing, false
 		}
 
 		// update existing element
@@ -228,7 +228,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 		// check if unset
 		if value == unsetValue {
-			return true
+			return Missing, false
 		}
 
 		// fill with nil elements
@@ -237,42 +237,42 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		}
 
 		// put in last element
-		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			arr[index] = v
 		})
 		if !ok {
-			return false
+			return res, false
 		}
 
 		// set array
 		set(arr)
 
-		return true
+		return Missing, true
 	}
 
 	// check if unset
 	if value == unsetValue {
-		return true
+		return Missing, false
 	}
 
 	// put new document
 	if v == Missing {
 		// capture value
 		e := bson.E{Key: pathKey(path)}
-		ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
-			return false
+			return res, false
 		}
 
 		// set document
 		set(bson.D{e})
 
-		return true
+		return Missing, true
 	}
 
-	return false
+	return Missing, false
 }
 
 // Increment will add the increment to the value at the location in the document
@@ -329,7 +329,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 	}
 
 	// update field
-	err := Put(doc, path, field, false)
+	_, err := Put(doc, path, field, false)
 	if err != nil {
 		return err
 	}
@@ -395,7 +395,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 	}
 
 	// update field
-	err := Put(doc, path, field, false)
+	_, err := Put(doc, path, field, false)
 	if err != nil {
 		return err
 	}

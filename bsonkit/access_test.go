@@ -192,23 +192,26 @@ func TestPut(t *testing.T) {
 	})
 
 	// replace final value
-	err := Put(doc, "foo", "baz", false)
+	res, err := Put(doc, "foo", "baz", false)
 	assert.NoError(t, err)
+	assert.Equal(t, "bar", res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": "baz",
 	}), doc)
 
 	// append field
-	err = Put(doc, "bar", "baz", false)
+	res, err = Put(doc, "bar", "baz", false)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, &bson.D{
 		bson.E{Key: "foo", Value: "baz"},
 		bson.E{Key: "bar", Value: "baz"},
 	}, doc)
 
 	// prepend field
-	err = Put(doc, "baz", "quz", true)
+	res, err = Put(doc, "baz", "quz", true)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, &bson.D{
 		bson.E{Key: "baz", Value: "quz"},
 		bson.E{Key: "foo", Value: "baz"},
@@ -224,8 +227,9 @@ func TestPut(t *testing.T) {
 	})
 
 	// replace nested final value
-	err = Put(doc, "foo.bar.baz", 7, false)
+	res, err = Put(doc, "foo.bar.baz", 7, false)
 	assert.NoError(t, err)
+	assert.Equal(t, 42, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -235,8 +239,9 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// append nested field
-	err = Put(doc, "foo.bar.quz", 42, false)
+	res, err = Put(doc, "foo.bar.quz", 42, false)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.D{
@@ -247,8 +252,9 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// prepend nested field
-	err = Put(doc, "foo.bar.qux", 42, true)
+	res, err = Put(doc, "foo.bar.qux", 42, true)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.D{
@@ -260,8 +266,13 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// replace tree
-	err = Put(doc, "foo.bar", 42, false)
+	res, err = Put(doc, "foo.bar", 42, false)
 	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		bson.E{Key: "qux", Value: 42},
+		bson.E{Key: "baz", Value: 7},
+		bson.E{Key: "quz", Value: 42},
+	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
@@ -269,8 +280,9 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// invalid type error
-	err = Put(doc, "foo.bar.baz", 42, false)
+	res, err = Put(doc, "foo.bar.baz", 42, false)
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, "cannot put value at foo.bar.baz", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -280,8 +292,9 @@ func TestPut(t *testing.T) {
 
 	// intermediary document creation
 	doc = &bson.D{}
-	err = Put(doc, "baz.bar.foo", 42, false)
+	res, err = Put(doc, "baz.bar.foo", 42, false)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"baz": bson.M{
 			"bar": bson.M{
@@ -302,8 +315,9 @@ func TestPutArray(t *testing.T) {
 	})
 
 	// negative index
-	err := Put(doc, "foo.-1", 7, false)
+	res, err := Put(doc, "foo.-1", 7, false)
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, "cannot put value at foo.-1", err.Error())
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
@@ -315,8 +329,9 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// first element
-	err = Put(doc, "foo.0", 7, false)
+	res, err = Put(doc, "foo.0", 7, false)
 	assert.NoError(t, err)
+	assert.Equal(t, "bar", res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			7,
@@ -327,10 +342,13 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// second element
-	err = Put(doc, "foo.1", *Convert(bson.M{
+	res, err = Put(doc, "foo.1", *Convert(bson.M{
 		"baz": 42,
 	}), false)
 	assert.NoError(t, err)
+	assert.Equal(t, bson.D{
+		bson.E{Key: "baz", Value: 42},
+	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			7,
@@ -341,8 +359,9 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// missing index
-	err = Put(doc, "foo.5", 7, false)
+	res, err = Put(doc, "foo.5", 7, false)
 	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			7,
@@ -357,8 +376,9 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// nested field
-	err = Put(doc, "foo.1.baz", 7, false)
+	res, err = Put(doc, "foo.1.baz", 7, false)
 	assert.NoError(t, err)
+	assert.Equal(t, 42, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			7,

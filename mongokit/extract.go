@@ -108,7 +108,8 @@ func extractOr(ctx Context, doc bsonkit.Doc, name, _ string, v interface{}) erro
 }
 
 func extractEq(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	return bsonkit.Put(doc, path, v, false)
+	_, err := bsonkit.Put(doc, path, v, false)
+	return err
 }
 
 func extractIn(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
@@ -120,7 +121,8 @@ func extractIn(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 
 	// check array
 	if len(array) == 1 {
-		return bsonkit.Put(doc, path, array[0], false)
+		_, err := bsonkit.Put(doc, path, array[0], false)
+		return err
 	}
 
 	return nil

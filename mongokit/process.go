@@ -16,11 +16,11 @@ type Context struct {
 	// The available top level operators.
 	TopLevel map[string]Operator
 
-	// the available expression operators.
+	// The available expression operators.
 	Expression map[string]Operator
 
-	// Whether this is an upsert operation.
-	Upsert bool
+	// A custom value available to the operators.
+	Value interface{}
 }
 
 // Process will process a document with a query using the MongoDB operator
