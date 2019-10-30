@@ -35,8 +35,9 @@ func Extract(query bsonkit.Doc) (bsonkit.Doc, error) {
 
 	// match document to query
 	err := Process(Context{
-		TopLevel:   TopLevelExtractOperators,
-		Expression: ExpressionExtractOperators,
+		TopLevel:    TopLevelExtractOperators,
+		Expression:  ExpressionExtractOperators,
+		SkipMissing: true,
 	}, doc, *query, "", true)
 	if err != nil {
 		return nil, err

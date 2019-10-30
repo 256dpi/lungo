@@ -124,5 +124,12 @@ func TestExtract(t *testing.T) {
 		}, bson.M{
 			"foo": "bar",
 		})
+
+		// unsupported operator
+		fn(bson.M{
+			"foo": bson.M{
+				"$gt": 1.0,
+			},
+		}, bson.M{})
 	})
 }

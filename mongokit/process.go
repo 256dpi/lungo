@@ -19,6 +19,9 @@ type Context struct {
 	// The available expression operators.
 	Expression map[string]Operator
 
+	// Whether missing operators should just be skipped.
+	SkipMissing bool
+
 	// A custom value available to the operators.
 	Value interface{}
 }
@@ -48,12 +51,16 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 		var operator Operator
 		if root {
 			operator = ctx.TopLevel[pair.Key]
-			if operator == nil {
+			if operator == nil && ctx.SkipMissing {
+				return nil
+			} else if operator == nil {
 				return fmt.Errorf("unknown top level operator %q", pair.Key)
 			}
 		} else {
 			operator = ctx.Expression[pair.Key]
-			if operator == nil {
+			if operator == nil && ctx.SkipMissing {
+				return nil
+			} else if operator == nil {
 				return fmt.Errorf("unknown expression operator %q", pair.Key)
 			}
 		}
@@ -86,7 +93,9 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 
 			// lookup operator
 			operator := ctx.Expression[exp.Key]
-			if operator == nil {
+			if operator == nil && ctx.SkipMissing {
+				return nil
+			} else if operator == nil {
 				return fmt.Errorf("unknown expression operator %q", exp.Key)
 			}
 
@@ -107,7 +116,9 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 
 	// get the default operator
 	operator := ctx.Expression[""]
-	if operator == nil {
+	if operator == nil && ctx.SkipMissing {
+		return nil
+	} else if operator == nil {
 		return fmt.Errorf("missing default operator")
 	}
 
