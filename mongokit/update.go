@@ -3,14 +3,18 @@ package mongokit
 import "github.com/256dpi/lungo/bsonkit"
 
 // Update will apply a MongoDB update document to a list of documents.
-func Update(list bsonkit.List, update bsonkit.Doc, upsert bool) error {
-	// apply update to all documents
+func Update(list bsonkit.List, update bsonkit.Doc, upsert bool) ([]*Changes, error) {
+	// prepare result
+	result := make([]*Changes, 0, len(list))
+
+	// apply update to all documents and collect changes
 	for _, item := range list {
-		err := Apply(item, update, upsert)
+		changes, err := Apply(item, update, upsert)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		result = append(result, changes)
 	}
 
-	return nil
+	return result, nil
 }

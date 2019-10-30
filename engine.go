@@ -567,7 +567,7 @@ func (e *Engine) update(oplog, namespace *Namespace, query, update, sort bsonkit
 	newList := bsonkit.CloneList(list)
 
 	// update documents
-	err = mongokit.Update(newList, update, false)
+	_, err = mongokit.Update(newList, update, false)
 	if err != nil {
 		return nil, err
 	}
@@ -657,7 +657,7 @@ func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit
 
 	// apply update if present
 	if update != nil {
-		err = mongokit.Apply(doc, update, true)
+		_, err = mongokit.Apply(doc, update, true)
 		if err != nil {
 			return nil, err
 		}

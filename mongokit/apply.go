@@ -33,14 +33,34 @@ func init() {
 	}
 }
 
+// Changes describes the applied changes to a document.
+type Changes struct {
+	Upsert  bool
+	Updated map[string]interface{}
+	Removed map[string]interface{}
+}
+
 // Apply will apply a MongoDB update document on a document using the various
-// update operators. The document is updated in place.
-func Apply(doc, update bsonkit.Doc, upsert bool) error {
+// update operators. The document is updated in place. The changes to the
+// document are collected and returned.
+func Apply(doc, update bsonkit.Doc, upsert bool) (*Changes, error) {
+	// prepare changes
+	changes := &Changes{
+		Upsert:  upsert,
+		Updated: map[string]interface{}{},
+		Removed: map[string]interface{}{},
+	}
+
 	// update document according to update
-	return Process(Context{
-		Value:    upsert,
+	err := Process(Context{
+		Value:    changes,
 		TopLevel: FieldUpdateOperators,
 	}, doc, *update, "", true)
+	if err != nil {
+		return nil, err
+	}
+
+	return changes, nil
 }
 
 func applyAll(name string, operator Operator) Operator {
@@ -63,26 +83,50 @@ func applyAll(name string, operator Operator) Operator {
 	}
 }
 
-func applySet(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applySet(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+	// set new value
 	_, err := bsonkit.Put(doc, path, v, false)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// record change
+	ctx.Value.(*Changes).Updated[path] = v
+
+	return nil
 }
 
 func applySetOnInsert(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	if ctx.Value.(bool) {
-		_, err := bsonkit.Put(doc, path, v, false)
+	// check if upsert
+	if !ctx.Value.(*Changes).Upsert {
+		return nil
+	}
+
+	// set new value
+	_, err := bsonkit.Put(doc, path, v, false)
+	if err != nil {
 		return err
+	}
+
+	// record change
+	ctx.Value.(*Changes).Updated[path] = v
+
+	return nil
+}
+
+func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
+	// remove value
+	res := bsonkit.Unset(doc, path)
+
+	// record change if value existed
+	if res != bsonkit.Missing {
+		ctx.Value.(*Changes).Removed[path] = res
 	}
 
 	return nil
 }
 
-func applyUnset(_ Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
-	bsonkit.Unset(doc, path)
-	return nil
-}
-
-func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// get new path
 	newPath, ok := v.(string)
 	if !ok {
@@ -96,7 +140,12 @@ func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) e
 	}
 
 	// unset old value
-	bsonkit.Unset(doc, path)
+	res := bsonkit.Unset(doc, path)
+
+	// record change if value existed
+	if res != bsonkit.Missing {
+		ctx.Value.(*Changes).Removed[path] = res
+	}
 
 	// set new value
 	_, err := bsonkit.Put(doc, newPath, value, false)
@@ -104,75 +153,117 @@ func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) e
 		return err
 	}
 
+	// record change
+	ctx.Value.(*Changes).Updated[newPath] = value
+
 	return nil
 }
 
-func applyInc(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyInc(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// increment value
-	_, err := bsonkit.Increment(doc, path, v)
+	res, err := bsonkit.Increment(doc, path, v)
 	if err != nil {
 		return err
 	}
 
+	// record change
+	ctx.Value.(*Changes).Updated[path] = res
+
 	return nil
 }
 
-func applyMul(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMul(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// multiply value
-	_, err := bsonkit.Multiply(doc, path, v)
+	res, err := bsonkit.Multiply(doc, path, v)
 	if err != nil {
 		return err
 	}
 
+	// record change
+	ctx.Value.(*Changes).Updated[path] = res
+
 	return nil
 }
 
-func applyMax(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMax(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
+		// set value
 		_, err := bsonkit.Put(doc, path, v, false)
-		return err
+		if err != nil {
+			return err
+		}
+
+		// record change
+		ctx.Value.(*Changes).Updated[path] = v
+
+		return nil
 	}
 
 	// replace value if smaller
 	if bsonkit.Compare(value, v) < 0 {
+		// replace value
 		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
+
+		// record change
+		ctx.Value.(*Changes).Updated[path] = v
 	}
 
 	return nil
 }
 
-func applyMin(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+func applyMin(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
+		// set value
 		_, err := bsonkit.Put(doc, path, v, false)
-		return err
+		if err != nil {
+			return err
+		}
+
+		// record change
+		ctx.Value.(*Changes).Updated[path] = v
+
+		return nil
 	}
 
 	// replace value if bigger
 	if bsonkit.Compare(value, v) > 0 {
+		// replace value
 		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
 			return err
 		}
+
+		// record change
+		ctx.Value.(*Changes).Updated[path] = v
 	}
 
 	return nil
 }
 
-func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// check if boolean
 	value, ok := v.(bool)
 	if ok {
 		// set to time if true
 		if value {
-			_, err := bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
-			return err
+			// get time
+			now := primitive.NewDateTimeFromTime(time.Now())
+
+			// set time
+			_, err := bsonkit.Put(doc, path, now, false)
+			if err != nil {
+				return err
+			}
+
+			// record change
+			ctx.Value.(*Changes).Updated[path] = now
 		}
 
 		return nil
@@ -189,15 +280,25 @@ func applyCurrentDate(_ Context, doc bsonkit.Doc, name, path string, v interface
 		return fmt.Errorf("%s: expected document with a single $type field", name)
 	}
 
-	// set date or timestamp
+	// get value
+	var now interface{}
 	switch args[0].Value {
 	case "date":
-		_, err := bsonkit.Put(doc, path, primitive.NewDateTimeFromTime(time.Now()), false)
-		return err
+		now = primitive.NewDateTimeFromTime(time.Now())
 	case "timestamp":
-		_, err := bsonkit.Put(doc, path, bsonkit.Now(), false)
-		return err
+		now = bsonkit.Now()
 	default:
 		return fmt.Errorf("%s: expected $type 'date' or 'timestamp'", name)
 	}
+
+	// set value
+	_, err := bsonkit.Put(doc, path, now, false)
+	if err == nil {
+		return err
+	}
+
+	// record change
+	ctx.Value.(*Changes).Updated[path] = now
+
+	return nil
 }
