@@ -12,8 +12,6 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
-// TODO: Combine ListDatabases(), ListCollections(), NumDocuments() into Info().
-
 // ErrEngineClosed is returned if the engine has been closed.
 var ErrEngineClosed = errors.New("engine closed")
 
