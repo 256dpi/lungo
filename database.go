@@ -129,8 +129,30 @@ func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.Ru
 }
 
 // Watch implements the IDatabase.Watch method.
-func (d *Database) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error) {
-	panic("lungo: not implemented")
+func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+	// merge options
+	opt := options.MergeChangeStreamOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"BatchSize":    ignored,
+		"FullDocument": ignored,
+		"MaxAwaitTime": ignored,
+	})
+
+	// transform pipeline
+	filter, err := bsonkit.TransformList(pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	// open stream
+	stream, err := d.engine.Watch(Handle{d.name}, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
 
 // WriteConcern implements the IDatabase.WriteConcern method.

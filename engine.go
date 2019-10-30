@@ -88,6 +88,7 @@ type Options struct {
 type Engine struct {
 	store   Store
 	dataset *Dataset
+	streams map[*Stream]struct{}
 	closed  bool
 	mutex   sync.Mutex
 }
@@ -97,7 +98,8 @@ type Engine struct {
 func CreateEngine(opts Options) (*Engine, error) {
 	// create engine
 	e := &Engine{
-		store: opts.Store,
+		store:   opts.Store,
+		streams: map[*Stream]struct{}{},
 	}
 
 	// load dataset
@@ -236,6 +238,9 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 	// set new dataset
 	e.dataset = clone
 
+	// broadcast change
+	e.broadcast()
+
 	return results, nil
 }
 
@@ -307,6 +312,9 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 
 		// set new dataset
 		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
 
 	return result, nil
@@ -340,7 +348,7 @@ func (e *Engine) insert(oplog, namespace *Namespace, doc bsonkit.Doc) (*Result, 
 	namespace.Documents.Add(doc)
 
 	// append oplog
-	e.append(oplog, namespace.Handle, "insert", doc)
+	e.append(oplog, namespace.Handle, "insert", doc, nil)
 
 	return &Result{
 		Modified: bsonkit.List{doc},
@@ -402,6 +410,9 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 
 		// set new dataset
 		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
 
 	return res, nil
@@ -468,7 +479,7 @@ func (e *Engine) replace(oplog, namespace *Namespace, query, repl, sort bsonkit.
 	namespace.Documents.Replace(list[0], repl)
 
 	// append oplog
-	e.append(oplog, namespace.Handle, "replace", repl)
+	e.append(oplog, namespace.Handle, "replace", repl, nil)
 
 	return &Result{
 		Matched:  list,
@@ -529,6 +540,9 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 
 		// set new dataset
 		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
 
 	return res, nil
@@ -567,7 +581,7 @@ func (e *Engine) update(oplog, namespace *Namespace, query, update, sort bsonkit
 	newList := bsonkit.CloneList(list)
 
 	// update documents
-	_, err = mongokit.Update(newList, update, false)
+	changes, err := mongokit.Update(newList, update, false)
 	if err != nil {
 		return nil, err
 	}
@@ -607,9 +621,8 @@ func (e *Engine) update(oplog, namespace *Namespace, query, update, sort bsonkit
 	}
 
 	// append oplog
-	for _, doc := range newList {
-		// TODO: Add update description.
-		e.append(oplog, namespace.Handle, "update", doc)
+	for i, doc := range newList {
+		e.append(oplog, namespace.Handle, "update", doc, changes[i])
 	}
 
 	return &Result{
@@ -685,7 +698,7 @@ func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit
 	namespace.Documents.Add(doc)
 
 	// append oplog
-	e.append(oplog, namespace.Handle, "insert", doc)
+	e.append(oplog, namespace.Handle, "insert", doc, nil)
 
 	return &Result{
 		Upserted: doc,
@@ -737,6 +750,9 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 
 		// set new dataset
 		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
 
 	return res, nil
@@ -778,7 +794,7 @@ func (e *Engine) delete(oplog, namespace *Namespace, query, sort bsonkit.Doc, li
 
 	// append oplog
 	for _, doc := range list {
-		e.append(oplog, namespace.Handle, "delete", doc)
+		e.append(oplog, namespace.Handle, "delete", doc, nil)
 	}
 
 	return &Result{
@@ -813,13 +829,13 @@ func (e *Engine) Drop(handle Handle) error {
 			delete(clone.Namespaces, ns)
 
 			// append oplog
-			e.append(oplog, ns, "drop", nil)
+			e.append(oplog, ns, "drop", nil, nil)
 		}
 	}
 
 	// append oplog if database has been dropped
 	if handle[1] == "" {
-		e.append(oplog, handle, "dropDatabase", nil)
+		e.append(oplog, handle, "dropDatabase", nil, nil)
 	}
 
 	// write dataset
@@ -831,10 +847,13 @@ func (e *Engine) Drop(handle Handle) error {
 	// set new dataset
 	e.dataset = clone
 
+	// broadcast change
+	e.broadcast()
+
 	return nil
 }
 
-func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.Doc) {
+func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.Doc, changes *mongokit.Changes) {
 	// get time
 	now := bsonkit.Now()
 
@@ -854,16 +873,31 @@ func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.
 		"operationType": op,
 	}
 
-	// apply op specific data
-	switch op {
-	case "insert", "replace", "update":
+	// add document info
+	if doc != nil {
+		// add document key
 		event["documentKey"] = bson.M{
 			"_id": bsonkit.Get(doc, "_id"),
 		}
-		event["fullDocument"] = *doc
-	case "delete":
-		event["documentKey"] = bson.M{
-			"_id": bsonkit.Get(doc, "_id"),
+
+		// add full document
+		if op == "insert" || op == "replace" || op == "update" {
+			event["fullDocument"] = *doc
+		}
+	}
+
+	// add changes
+	if changes != nil {
+		// collect remove fields
+		removed := make([]string, 0, len(changes.Removed))
+		for field := range changes.Removed {
+			removed = append(removed, field)
+		}
+
+		// add update description
+		event["updateDescription"] = bson.M{
+			"updatedFields": changes.Updated,
+			"removedFields": removed,
 		}
 	}
 
@@ -1166,6 +1200,56 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	e.dataset = clone
 
 	return nil
+}
+
+func (e *Engine) broadcast() {
+	for stream := range e.streams {
+		select {
+		case stream.signal <- struct{}{}:
+		default:
+			// stream already got earlier signal
+		}
+	}
+}
+
+// Watch will return a stream that is able to consume events from oplog.
+func (e *Engine) Watch(handle Handle, filter bsonkit.List) (*Stream, error) {
+	// acquire mutex
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return nil, ErrEngineClosed
+	}
+
+	// TODO: Either resume stream or start from last oplog entry.
+
+	// create stream
+	stream := &Stream{
+		handle: handle,
+		filter: filter,
+		signal: make(chan struct{}, 1),
+	}
+
+	// set oplog method
+	stream.oplog = func() *bsonkit.Set {
+		e.mutex.Lock()
+		defer e.mutex.Unlock()
+		return e.dataset.Namespaces[LocalOplog].Documents
+	}
+
+	// set cancel method
+	stream.cancel = func() {
+		e.mutex.Lock()
+		defer e.mutex.Unlock()
+		delete(e.streams, stream)
+	}
+
+	// register stream
+	e.streams[stream] = struct{}{}
+
+	return stream, nil
 }
 
 // Close will close the engine.

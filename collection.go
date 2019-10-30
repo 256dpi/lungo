@@ -979,5 +979,27 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 
 // Watch implements the ICollection.Watch method.
 func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
-	panic("lungo: not implemented")
+	// merge options
+	opt := options.MergeChangeStreamOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"BatchSize":    ignored,
+		"FullDocument": ignored,
+		"MaxAwaitTime": ignored,
+	})
+
+	// transform pipeline
+	filter, err := bsonkit.TransformList(pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	// open stream
+	stream, err := c.engine.Watch(c.handle, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }

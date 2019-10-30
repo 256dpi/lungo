@@ -143,6 +143,28 @@ func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions,
 }
 
 // Watch implements the IClient.Watch method.
-func (c *Client) Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error) {
-	panic("lungo: not implemented")
+func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+	// merge options
+	opt := options.MergeChangeStreamOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"BatchSize":    ignored,
+		"FullDocument": ignored,
+		"MaxAwaitTime": ignored,
+	})
+
+	// transform pipeline
+	filter, err := bsonkit.TransformList(pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	// open stream
+	stream, err := c.engine.Watch(Handle{}, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
