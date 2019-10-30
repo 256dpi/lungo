@@ -1213,7 +1213,7 @@ func (e *Engine) broadcast() {
 }
 
 // Watch will return a stream that is able to consume events from oplog.
-func (e *Engine) Watch(handle Handle, filter bsonkit.List) (*Stream, error) {
+func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAfter interface{}, startAt *primitive.Timestamp) (*Stream, error) {
 	// acquire mutex
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -1224,14 +1224,66 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List) (*Stream, error) {
 	}
 
 	// get oplog
-	oplog := e.dataset.Namespaces[LocalOplog].Documents
+	oplog := e.dataset.Namespaces[LocalOplog].Documents.List
 
-	// TODO: Resume change streams.
+	// get index
+	index := len(oplog) - 1
+
+	// resume after
+	if resumeAfter != nil {
+		resumed := false
+		for i, event := range oplog {
+			res := bsonkit.Compare(resumeAfter, bsonkit.Get(event, "_id"))
+			if res == 0 {
+				index = i
+				resumed = true
+				break
+			}
+		}
+
+		if !resumed {
+			return nil, fmt.Errorf("unable to resume change stream")
+		}
+	}
+
+	// start after
+	if startAfter != nil {
+		resumed := false
+		for i, event := range oplog {
+			res := bsonkit.Compare(startAfter, bsonkit.Get(event, "_id"))
+			if res == 0 {
+				index = i
+				resumed = true
+				break
+			}
+		}
+
+		if !resumed {
+			return nil, fmt.Errorf("unable to resume change stream")
+		}
+	}
+
+	// start at
+	if startAt != nil {
+		resumed := false
+		for i, event := range oplog {
+			res := bsonkit.Compare(*startAt, bsonkit.Get(event, "clusterTime"))
+			if res == 0 {
+				index = i
+				resumed = true
+				break
+			}
+		}
+
+		if !resumed {
+			return nil, fmt.Errorf("unable to resume change stream")
+		}
+	}
 
 	// create stream
 	stream := &Stream{
 		handle: handle,
-		index:  len(oplog.List) - 1,
+		index:  index,
 		filter: filter,
 		signal: make(chan struct{}, 1),
 	}

@@ -149,9 +149,12 @@ func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSize":    ignored,
-		"FullDocument": ignored,
-		"MaxAwaitTime": ignored,
+		"BatchSize":            ignored,
+		"FullDocument":         ignored,
+		"MaxAwaitTime":         ignored,
+		"ResumeAfter":          supported,
+		"StartAtOperationTime": supported,
+		"StartAfter":           supported,
 	})
 
 	// transform pipeline
@@ -161,7 +164,7 @@ func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options
 	}
 
 	// open stream
-	stream, err := c.engine.Watch(Handle{}, filter)
+	stream, err := c.engine.Watch(Handle{}, filter, opt.ResumeAfter, opt.StartAfter, opt.StartAtOperationTime)
 	if err != nil {
 		return nil, err
 	}

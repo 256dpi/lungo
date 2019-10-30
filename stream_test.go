@@ -9,6 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 func TestStream(t *testing.T) {
@@ -177,3 +179,78 @@ func TestStream(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestStreamResumption(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		/* invalid token and time */
+
+		// invalid resume token (resume after)
+		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetResumeAfter(bson.M{}))
+		assert.Error(t, err)
+		assert.Nil(t, stream)
+
+		// invalid resume token (start after)
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAfter(bson.M{}))
+		assert.Error(t, err)
+		assert.Nil(t, stream)
+
+		// invalid operation time
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&primitive.Timestamp{}))
+		assert.Error(t, err)
+		assert.Nil(t, stream)
+
+		/* prepare */
+
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		_, err = c.InsertOne(nil, bson.M{"foo": "bar"})
+		assert.NoError(t, err)
+
+		_, err = c.InsertOne(nil, bson.M{"foo": "bar"})
+		assert.NoError(t, err)
+
+		ret := stream.Next(nil)
+		assert.True(t, ret)
+
+		var event bson.D
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+
+		token := bsonkit.Get(&event, "_id")
+		timestamp := bsonkit.Get(&event, "clusterTime").(primitive.Timestamp)
+		assert.NotEmpty(t, token)
+		assert.NotEmpty(t, timestamp)
+
+		/* resume */
+
+		// invalid resume token (resume after)
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetResumeAfter(token))
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		// invalid resume token (start after)
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAfter(token))
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		// invalid operation time
+		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&timestamp))
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		// TODO: Check returned first event.
+	})
+}
+
+// TODO: Test stream invalidation and resumption capabilities.
