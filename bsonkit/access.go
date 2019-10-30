@@ -278,9 +278,10 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 }
 
 // Increment will add the increment to the value at the location in the document
-// specified by path. If the value is missing, the increment is added to the
-// document. The type of the field may be changed as part of the operation.
-func Increment(doc Doc, path string, increment interface{}) error {
+// specified by path and return the new value. If the value is missing, the
+// increment is added to the document. The type of the field may be changed as
+// part of the operation.
+func Increment(doc Doc, path string, increment interface{}) (interface{}, error) {
 	// get field
 	field := Get(doc, path)
 
@@ -295,7 +296,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 		case float64:
 			field = float64(num) + inc
 		default:
-			return fmt.Errorf("increment is not a number")
+			return nil, fmt.Errorf("increment is not a number")
 		}
 	case int64:
 		switch inc := increment.(type) {
@@ -306,7 +307,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 		case float64:
 			field = float64(num) + inc
 		default:
-			return fmt.Errorf("increment is not a number")
+			return nil, fmt.Errorf("increment is not a number")
 		}
 	case float64:
 		switch inc := increment.(type) {
@@ -317,32 +318,33 @@ func Increment(doc Doc, path string, increment interface{}) error {
 		case float64:
 			field = num + inc
 		default:
-			return fmt.Errorf("increment is not a number")
+			return nil, fmt.Errorf("increment is not a number")
 		}
 	case MissingType:
 		switch inc := increment.(type) {
 		case int32, int64, float64:
 			field = inc
 		default:
-			return fmt.Errorf("increment is not a number")
+			return nil, fmt.Errorf("increment is not a number")
 		}
 	default:
-		return fmt.Errorf("incrementee %q is not a number", path)
+		return nil, fmt.Errorf("incrementee %q is not a number", path)
 	}
 
 	// update field
 	_, err := Put(doc, path, field, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return field, nil
 }
 
 // Multiply will multiply the multiplier with the value at the location in the
-// document specified by path. If the value is missing, a zero is added to the
-// document. The type of the field may be changed as part of the operation.
-func Multiply(doc Doc, path string, multiplier interface{}) error {
+// document specified by path and return the new value. If the value is missing,
+// a zero is added to the document. The type of the field may be changed as part
+// of the operation.
+func Multiply(doc Doc, path string, multiplier interface{}) (interface{}, error) {
 	// get field
 	field := Get(doc, path)
 
@@ -357,7 +359,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case float64:
 			field = float64(num) * mul
 		default:
-			return fmt.Errorf("multiplier is not a number")
+			return nil, fmt.Errorf("multiplier is not a number")
 		}
 	case int64:
 		switch mul := multiplier.(type) {
@@ -368,7 +370,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case float64:
 			field = float64(num) * mul
 		default:
-			return fmt.Errorf("multiplier is not a number")
+			return nil, fmt.Errorf("multiplier is not a number")
 		}
 	case float64:
 		switch mul := multiplier.(type) {
@@ -379,7 +381,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case float64:
 			field = num * mul
 		default:
-			return fmt.Errorf("multiplier is not a number")
+			return nil, fmt.Errorf("multiplier is not a number")
 		}
 	case MissingType:
 		switch multiplier.(type) {
@@ -390,17 +392,17 @@ func Multiply(doc Doc, path string, multiplier interface{}) error {
 		case float64:
 			field = float64(0)
 		default:
-			return fmt.Errorf("multiplier is not a number")
+			return nil, fmt.Errorf("multiplier is not a number")
 		}
 	default:
-		return fmt.Errorf("multiplicand %q is not a number", path)
+		return nil, fmt.Errorf("multiplicand %q is not a number", path)
 	}
 
 	// update field
 	_, err := Put(doc, path, field, false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return field, nil
 }

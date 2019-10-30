@@ -503,26 +503,30 @@ func TestIncrement(t *testing.T) {
 	})
 
 	// invalid field
-	err := Increment(doc, "bar", int64(2))
+	res, err := Increment(doc, "bar", int64(2))
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, `incrementee "bar" is not a number`, err.Error())
 
 	// invalid increment
-	err = Increment(doc, "foo", "2")
+	res, err = Increment(doc, "foo", "2")
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, "increment is not a number", err.Error())
 
 	// increment existing field
-	err = Increment(doc, "foo", int64(2))
+	res, err = Increment(doc, "foo", int64(2))
 	assert.NoError(t, err)
+	assert.Equal(t, int64(44), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": int64(44),
 		"bar": "42",
 	}), doc)
 
 	// increment missing field
-	err = Increment(doc, "quz", int64(2))
+	res, err = Increment(doc, "quz", int64(2))
 	assert.NoError(t, err)
+	assert.Equal(t, int64(2), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": int64(44),
 		"bar": "42",
@@ -537,26 +541,30 @@ func TestMultiply(t *testing.T) {
 	})
 
 	// invalid field
-	err := Multiply(doc, "bar", int64(2))
+	res, err := Multiply(doc, "bar", int64(2))
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, `multiplicand "bar" is not a number`, err.Error())
 
 	// invalid multiplicand
-	err = Multiply(doc, "foo", 2)
+	res, err = Multiply(doc, "foo", 2)
 	assert.Error(t, err)
+	assert.Equal(t, nil, res)
 	assert.Equal(t, "multiplier is not a number", err.Error())
 
 	// multiply existing field
-	err = Multiply(doc, "foo", int64(2))
+	res, err = Multiply(doc, "foo", int64(2))
 	assert.NoError(t, err)
+	assert.Equal(t, int64(84), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": int64(84),
 		"bar": "42",
 	}), doc)
 
 	// multiply missing field
-	err = Multiply(doc, "quz", int64(2))
+	res, err = Multiply(doc, "quz", int64(2))
 	assert.NoError(t, err)
+	assert.Equal(t, int64(0), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": int64(84),
 		"bar": "42",

@@ -108,11 +108,23 @@ func applyRename(_ Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func applyInc(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	return bsonkit.Increment(doc, path, v)
+	// increment value
+	_, err := bsonkit.Increment(doc, path, v)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func applyMul(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-	return bsonkit.Multiply(doc, path, v)
+	// multiply value
+	_, err := bsonkit.Multiply(doc, path, v)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func applyMax(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
