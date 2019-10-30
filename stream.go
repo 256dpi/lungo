@@ -13,6 +13,7 @@ import (
 // Stream provides a mongo compatible way to read oplog events.
 type Stream struct {
 	handle Handle
+	index  int
 	filter bsonkit.List
 	signal chan struct{}
 	oplog  func() *bsonkit.Set
@@ -91,19 +92,13 @@ func (s *Stream) Next(ctx context.Context) bool {
 	}
 
 	for {
-		// get current oplog set
+		// get oplog
 		oplog := s.oplog()
 
-		// get next index
-		var index int
-		if s.event != nil {
-			index = oplog.Index[s.event] + 1
-		}
-
 		// get next event
-		if len(oplog.List) > index {
+		if len(oplog.List) > s.index+1 {
 			// get event and token
-			event := oplog.List[index]
+			event := oplog.List[s.index+1]
 			token := bsonkit.Get(event, "_id")
 
 			// TODO: Match handle.
@@ -111,6 +106,7 @@ func (s *Stream) Next(ctx context.Context) bool {
 			// TODO: Generate invalidate after drop and close.
 
 			// set event and token
+			s.index++
 			s.event = event
 			s.token = token
 

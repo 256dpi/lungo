@@ -1223,11 +1223,15 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List) (*Stream, error) {
 		return nil, ErrEngineClosed
 	}
 
-	// TODO: Either resume stream or start from last oplog entry.
+	// get oplog
+	oplog := e.dataset.Namespaces[LocalOplog].Documents
+
+	// TODO: Resume change streams.
 
 	// create stream
 	stream := &Stream{
 		handle: handle,
+		index:  len(oplog.List) - 1,
 		filter: filter,
 		signal: make(chan struct{}, 1),
 	}

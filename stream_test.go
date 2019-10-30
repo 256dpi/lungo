@@ -13,6 +13,9 @@ import (
 
 func TestStream(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
 		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
