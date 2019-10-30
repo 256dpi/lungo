@@ -34,4 +34,10 @@ func TestConvert(t *testing.T) {
 		}},
 		bson.E{Key: "foo", Value: "bar"},
 	}, res)
+
+	assert.Panics(t, func() {
+		Convert(bson.M{
+			"foo": uint(1),
+		})
+	})
 }

@@ -40,7 +40,7 @@ func TestGet(t *testing.T) {
 
 	// final nested field
 	res = Get(doc, "foo.bar.baz")
-	assert.Equal(t, 42, res)
+	assert.Equal(t, int64(42), res)
 
 	// empty path
 	res = Get(doc, "")
@@ -81,7 +81,7 @@ func TestGetArray(t *testing.T) {
 
 	// nested field
 	res = Get(doc, "foo.1.baz")
-	assert.Equal(t, 42, res)
+	assert.Equal(t, int64(42), res)
 }
 
 func TestAll(t *testing.T) {
@@ -132,22 +132,22 @@ func TestAll(t *testing.T) {
 	// nested field
 	res, multi = All(doc, "foo.baz", false, false)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{Missing, 7, 42}, res)
+	assert.Equal(t, bson.A{Missing, int64(7), int64(42)}, res)
 
 	// nested field (compact)
 	res, multi = All(doc, "foo.baz", true, false)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{7, 42}, res)
+	assert.Equal(t, bson.A{int64(7), int64(42)}, res)
 
 	// multi level
 	res, multi = All(doc, "foo.quz.qux", false, false)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{Missing, bson.A{Missing, 13}, bson.A{13, 26}}, res)
+	assert.Equal(t, bson.A{Missing, bson.A{Missing, int64(13)}, bson.A{int64(13), int64(26)}}, res)
 
 	// multi level (compact)
 	res, multi = All(doc, "foo.quz.qux", true, false)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{13, 13, 26}, res)
+	assert.Equal(t, bson.A{int64(13), int64(13), int64(26)}, res)
 }
 
 func TestAllMerge(t *testing.T) {
@@ -178,12 +178,12 @@ func TestAllMerge(t *testing.T) {
 	// array field
 	res, multi := All(doc, "bar", true, true)
 	assert.False(t, multi)
-	assert.Equal(t, bson.A{bson.A{1, 2}, bson.A{3, 4}, 5}, res)
+	assert.Equal(t, bson.A{bson.A{int64(1), int64(2)}, bson.A{int64(3), int64(4)}, int64(5)}, res)
 
 	// nested array field
 	res, multi = All(doc, "foo.quz", true, true)
 	assert.True(t, multi)
-	assert.Equal(t, bson.A{3, 4, bson.A{1, 2}, 5}, res)
+	assert.Equal(t, bson.A{int64(3), int64(4), bson.A{int64(1), int64(2)}, int64(5)}, res)
 }
 
 func TestPut(t *testing.T) {
@@ -227,9 +227,9 @@ func TestPut(t *testing.T) {
 	})
 
 	// replace nested final value
-	res, err = Put(doc, "foo.bar.baz", 7, false)
+	res, err = Put(doc, "foo.bar.baz", int64(7), false)
 	assert.NoError(t, err)
-	assert.Equal(t, 42, res)
+	assert.Equal(t, int64(42), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -239,7 +239,7 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// append nested field
-	res, err = Put(doc, "foo.bar.quz", 42, false)
+	res, err = Put(doc, "foo.bar.quz", int64(42), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
@@ -252,7 +252,7 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// prepend nested field
-	res, err = Put(doc, "foo.bar.qux", 42, true)
+	res, err = Put(doc, "foo.bar.qux", int64(42), true)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
@@ -266,12 +266,12 @@ func TestPut(t *testing.T) {
 	}), doc)
 
 	// replace tree
-	res, err = Put(doc, "foo.bar", 42, false)
+	res, err = Put(doc, "foo.bar", int64(42), false)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
-		bson.E{Key: "qux", Value: 42},
-		bson.E{Key: "baz", Value: 7},
-		bson.E{Key: "quz", Value: 42},
+		bson.E{Key: "qux", Value: int64(42)},
+		bson.E{Key: "baz", Value: int64(7)},
+		bson.E{Key: "quz", Value: int64(42)},
 	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
@@ -292,7 +292,7 @@ func TestPut(t *testing.T) {
 
 	// intermediary document creation
 	doc = &bson.D{}
-	res, err = Put(doc, "baz.bar.foo", 42, false)
+	res, err = Put(doc, "baz.bar.foo", int64(42), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
@@ -329,7 +329,7 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// first element
-	res, err = Put(doc, "foo.0", 7, false)
+	res, err = Put(doc, "foo.0", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", res)
 	assert.Equal(t, Convert(bson.M{
@@ -347,7 +347,7 @@ func TestPutArray(t *testing.T) {
 	}), false)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
-		bson.E{Key: "baz", Value: 42},
+		bson.E{Key: "baz", Value: int64(42)},
 	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
@@ -359,7 +359,7 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// missing index
-	res, err = Put(doc, "foo.5", 7, false)
+	res, err = Put(doc, "foo.5", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
@@ -376,9 +376,9 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// nested field
-	res, err = Put(doc, "foo.1.baz", 7, false)
+	res, err = Put(doc, "foo.1.baz", int64(7), false)
 	assert.NoError(t, err)
-	assert.Equal(t, 42, res)
+	assert.Equal(t, int64(42), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			7,
@@ -415,7 +415,7 @@ func TestUnset(t *testing.T) {
 
 	// leaf field
 	res = Unset(doc, "foo.bar.baz")
-	assert.Equal(t, 42, res)
+	assert.Equal(t, int64(42), res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
@@ -476,7 +476,7 @@ func TestUnsetArray(t *testing.T) {
 	// second element
 	res = Unset(doc, "foo.1")
 	assert.Equal(t, bson.D{
-		bson.E{Key: "baz", Value: 42},
+		bson.E{Key: "baz", Value: int64(42)},
 	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
