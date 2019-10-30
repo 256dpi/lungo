@@ -1,8 +1,10 @@
 package lungo
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -88,4 +90,13 @@ func dumpCollection(c ICollection, clean bool) []bson.M {
 	}
 
 	return out
+}
+
+func timeout(ms time.Duration) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(ms * time.Millisecond)
+		cancel()
+	}()
+	return ctx
 }

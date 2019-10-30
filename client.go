@@ -163,8 +163,26 @@ func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options
 		return nil, err
 	}
 
+	// get resume after
+	var resumeAfter bsonkit.Doc
+	if opt.ResumeAfter != nil {
+		resumeAfter, err = bsonkit.Transform(opt.ResumeAfter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// get start after
+	var startAfter bsonkit.Doc
+	if opt.StartAfter != nil {
+		startAfter, err = bsonkit.Transform(opt.StartAfter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// open stream
-	stream, err := c.engine.Watch(Handle{}, filter, opt.ResumeAfter, opt.StartAfter, opt.StartAtOperationTime)
+	stream, err := c.engine.Watch(Handle{}, filter, resumeAfter, startAfter, opt.StartAtOperationTime)
 	if err != nil {
 		return nil, err
 	}

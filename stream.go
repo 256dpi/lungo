@@ -12,16 +12,17 @@ import (
 
 // Stream provides a mongo compatible way to read oplog events.
 type Stream struct {
-	handle Handle
-	index  int
-	filter bsonkit.List
-	signal chan struct{}
-	oplog  func() *bsonkit.Set
-	cancel func()
-	event  bsonkit.Doc
-	token  interface{}
-	closed bool
-	mutex  sync.Mutex
+	handle  Handle
+	index   int
+	filter  bsonkit.List
+	signal  chan struct{}
+	oplog   func() *bsonkit.Set
+	cancel  func()
+	event   bsonkit.Doc
+	token   interface{}
+	dropped bool
+	closed  bool
+	mutex   sync.Mutex
 }
 
 // Close implements the IChangeStream.Close method.
@@ -86,6 +87,19 @@ func (s *Stream) Next(ctx context.Context) bool {
 		return false
 	}
 
+	// check if dropped
+	if s.dropped {
+		s.event = bsonkit.Convert(bson.M{
+			"_id":           bson.M{"ts": "drop"},
+			"operationType": "invalidate",
+			"clusterTime":   bsonkit.Now(),
+		})
+		s.token = bsonkit.Get(s.event, "_id")
+		s.cancel()
+		s.closed = true
+		return true
+	}
+
 	// ensure context
 	if ctx == nil {
 		ctx = context.Background()
@@ -97,11 +111,29 @@ func (s *Stream) Next(ctx context.Context) bool {
 
 		// get next event
 		if len(oplog.List) > s.index+1 {
-			// get event and token
+			// get event
 			event := oplog.List[s.index+1]
-			token := bsonkit.Get(event, "_id")
 
-			// TODO: Match handle.
+			// get details
+			token := bsonkit.Get(event, "_id")
+			nsDB := bsonkit.Get(event, "ns.db")
+			nsColl := bsonkit.Get(event, "ns.coll")
+			opType := bsonkit.Get(event, "operationType")
+
+			// match database and collection
+			if s.handle[0] != "" && s.handle[0] != nsDB {
+				continue
+			} else if s.handle[1] != "" && s.handle[1] != nsColl {
+				continue
+			}
+
+			// check drop and drop database
+			if s.handle[0] != "" && s.handle[1] != "" && opType == "drop" {
+				s.dropped = true
+			} else if s.handle[0] != "" && opType == "dropDatabase" {
+				s.dropped = true
+			}
+
 			// TODO: Match with filter.
 			// TODO: Generate invalidate after drop and close.
 
