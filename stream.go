@@ -135,7 +135,6 @@ func (s *Stream) Next(ctx context.Context) bool {
 			}
 
 			// TODO: Match with filter.
-			// TODO: Generate invalidate after drop and close.
 
 			// set event and token
 			s.index++
