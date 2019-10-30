@@ -9,7 +9,8 @@ import (
 // Transform will transform an arbitrary value into a document composed of known
 // primitives.
 func Transform(v interface{}) (Doc, error) {
-	// TODO: This approach is slow, we should do it directly in memory if possible.
+	// the following approach is not very fast, but it ensures compatibility
+	// with custom types that implement the bson.Marshaller interface
 
 	// marshal to bytes
 	bytes, err := bson.Marshal(v)

@@ -10,7 +10,8 @@ import (
 // Decode will decode the specified document to an arbitrary value which may be
 // a struct with bson tags in most cases.
 func Decode(doc Doc, out interface{}) error {
-	// TODO: This approach is slow, we should do it directly in memory if possible.
+	// the following approach is not very fast, but it ensures compatibility
+	// with custom types that implement the bson.Unmarshaller interface
 
 	// marshal document
 	bytes, err := bson.Marshal(doc)
