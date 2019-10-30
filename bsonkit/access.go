@@ -279,7 +279,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 // Increment will add the increment to the value at the location in the document
 // specified by path. If the value is missing, the increment is added to the
-// document. The type of the field may be lifted as part of the operation.
+// document. The type of the field may be changed as part of the operation.
 func Increment(doc Doc, path string, increment interface{}) error {
 	// get field
 	field := Get(doc, path)
@@ -341,7 +341,7 @@ func Increment(doc Doc, path string, increment interface{}) error {
 
 // Multiply will multiply the multiplier with the value at the location in the
 // document specified by path. If the value is missing, a zero is added to the
-// document. The type of the field may be lifted as part of the operation.
+// document. The type of the field may be changed as part of the operation.
 func Multiply(doc Doc, path string, multiplier interface{}) error {
 	// get field
 	field := Get(doc, path)
