@@ -131,12 +131,12 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 	return Missing, false
 }
 
-// Put will store the value in the document at the location specified by path.
-// It will automatically create document fields, array elements and embedded
-// documents to fulfill the request. If prepends is set to true, new values are
-// inserted at the beginning of the array or document. If the path contains
-// a number e.g. "foo.1.bar" and no array exists at that levels, a document with
-// the key "1" is created.
+// Put will store the value in the document at the location specified by path
+// and return the previously stored value. It will automatically create document
+// fields, array elements and embedded documents to fulfill the request. If
+// prepends is set to true, new values are inserted at the beginning of the array
+// or document. If the path contains a number e.g. "foo.1.bar" and no array
+// exists at that levels, a document with the key "1" is created.
 func Put(doc Doc, path string, value interface{}, prepend bool) (interface{}, error) {
 	res, ok := put(*doc, path, value, prepend, func(v interface{}) {
 		*doc = v.(bson.D)
@@ -148,14 +148,16 @@ func Put(doc Doc, path string, value interface{}, prepend bool) (interface{}, er
 	return res, nil
 }
 
-// Unset will remove the value at the location in the document specified by path.
-// If the path specifies an array element e.g. "foo.2" the element is nilled,
-// but not removed from the array. This prevents unintentional effects through
-// position shifts in the array.
-func Unset(doc Doc, path string) {
-	_, _ = put(*doc, path, unsetValue, false, func(v interface{}) {
+// Unset will remove the value at the location in the document specified by path
+// and return the previously stored value. If the path specifies an array element
+// e.g. "foo.2" the element is nilled, but not removed from the array. This
+// prevents unintentional effects through position shifts in the array.
+func Unset(doc Doc, path string) interface{} {
+	res, _ := put(*doc, path, unsetValue, false, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
+
+	return res
 }
 
 func put(v interface{}, path string, value interface{}, prepend bool, set func(interface{})) (interface{}, bool) {

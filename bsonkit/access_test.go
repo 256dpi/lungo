@@ -402,8 +402,9 @@ func TestUnset(t *testing.T) {
 		},
 	})
 
-	// leaf field
-	Unset(doc, "foo.bar.baz.quz")
+	// missing field
+	res := Unset(doc, "foo.bar.baz.quz")
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -413,7 +414,8 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// leaf field
-	Unset(doc, "foo.bar.baz")
+	res = Unset(doc, "foo.bar.baz")
+	assert.Equal(t, 42, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
@@ -421,7 +423,8 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// missing field
-	Unset(doc, "foo.bar.baz")
+	res = Unset(doc, "foo.bar.baz")
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
@@ -429,7 +432,10 @@ func TestUnset(t *testing.T) {
 	}), doc)
 
 	// top level field
-	Unset(doc, "foo")
+	res = Unset(doc, "foo")
+	assert.Equal(t, bson.D{
+		bson.E{Key: "bar", Value: bson.D{}},
+	}, res)
 	assert.Equal(t, Convert(bson.M{}), doc)
 }
 
@@ -444,7 +450,8 @@ func TestUnsetArray(t *testing.T) {
 	})
 
 	// negative index
-	Unset(doc, "foo.-1")
+	res := Unset(doc, "foo.-1")
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			"bar",
@@ -455,7 +462,8 @@ func TestUnsetArray(t *testing.T) {
 	}), doc)
 
 	// first element
-	Unset(doc, "foo.0")
+	res = Unset(doc, "foo.0")
+	assert.Equal(t, "bar", res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			nil,
@@ -466,7 +474,10 @@ func TestUnsetArray(t *testing.T) {
 	}), doc)
 
 	// second element
-	Unset(doc, "foo.1")
+	res = Unset(doc, "foo.1")
+	assert.Equal(t, bson.D{
+		bson.E{Key: "baz", Value: 42},
+	}, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			nil,
@@ -475,7 +486,8 @@ func TestUnsetArray(t *testing.T) {
 	}), doc)
 
 	// missing index
-	Unset(doc, "foo.5")
+	res = Unset(doc, "foo.5")
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, Convert(bson.M{
 		"foo": bson.A{
 			nil,
