@@ -1,8 +1,6 @@
 package bsonkit
 
 import (
-	"sync"
-
 	"github.com/256dpi/btree"
 )
 
@@ -37,7 +35,6 @@ type Index struct {
 	columns  []Column
 	btree    *btree.BTree
 	sentinel *entry
-	mutex    sync.Mutex
 }
 
 // NewIndex creates and returns a new index.
@@ -71,10 +68,6 @@ func (i *Index) Build(list List) bool {
 // Add will add the document to index. May return false if the document has
 // already been added to the index.
 func (i *Index) Add(doc Doc) bool {
-	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
-
 	// prepare sentinel
 	i.sentinel.doc = doc
 
@@ -92,10 +85,6 @@ func (i *Index) Add(doc Doc) bool {
 
 // Has returns whether the specified document has been added to the index.
 func (i *Index) Has(doc Doc) bool {
-	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
-
 	// prepare sentinel
 	i.sentinel.doc = doc
 
@@ -111,10 +100,6 @@ func (i *Index) Has(doc Doc) bool {
 // Remove will remove a document from the index. May return false if the document
 // has not yet been added to the index.
 func (i *Index) Remove(doc Doc) bool {
-	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
-
 	// prepare sentinel
 	i.sentinel.doc = doc
 
@@ -130,10 +115,6 @@ func (i *Index) Remove(doc Doc) bool {
 // Clone will clone the index. Mutating the new index will not mutate the original
 // index.
 func (i *Index) Clone() *Index {
-	// acquire mutex
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
-
 	// create clone
 	clone := &Index{
 		unique:   i.unique,
