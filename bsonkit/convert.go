@@ -14,6 +14,14 @@ func Convert(m bson.M) Doc {
 	return &d
 }
 
+func ConvertList(a []bson.M) List {
+	list := make(List, 0, len(a))
+	for _, value := range a {
+		list = append(list, Convert(value))
+	}
+	return list
+}
+
 func convertMap(m bson.M) bson.D {
 	// prepare m
 	d := make(bson.D, 0, len(m))
