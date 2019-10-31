@@ -80,21 +80,21 @@ type Operation struct {
 
 // Options is used to configure an engine.
 type Options struct {
-	// The store used by the engine to load and store the dataset.
+	// The store used by the engine to load and store the catalog.
 	Store Store
 }
 
-// Engine manages the dataset loaded from a store and provides the various
+// Engine manages the catalog loaded from a store and provides the various
 // MongoDB style CRUD operations.
 type Engine struct {
 	store   Store
-	dataset *Dataset
+	catalog *Catalog
 	streams map[*Stream]struct{}
 	closed  bool
 	mutex   sync.RWMutex
 }
 
-// CreateEngine will create and return an engine with a loaded dataset from the
+// CreateEngine will create and return an engine with a loaded catalog from the
 // store.
 func CreateEngine(opts Options) (*Engine, error) {
 	// create engine
@@ -103,14 +103,14 @@ func CreateEngine(opts Options) (*Engine, error) {
 		streams: map[*Stream]struct{}{},
 	}
 
-	// load dataset
+	// load catalog
 	data, err := e.store.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	// set dataset
-	e.dataset = data
+	// set catalog
+	e.catalog = data
 
 	return e, nil
 }
@@ -134,12 +134,12 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil {
+	if e.catalog.Namespaces[handle] == nil {
 		return &Result{}, nil
 	}
 
 	// find documents
-	res, err := e.dataset.Namespaces[handle].Find(query, sort, skip, limit)
+	res, err := e.catalog.Namespaces[handle].Find(query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		return nil, ErrInvalidHandle
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// create or clone namespace
 	var namespace *mongokit.Collection
@@ -236,14 +236,14 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 
 	// check if changed
 	if changes > 0 {
-		// write dataset
+		// write catalog
 		err := e.store.Store(clone)
 		if err != nil {
 			return nil, err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -275,8 +275,8 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	// clone list
 	list = bsonkit.CloneList(list)
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// create or clone namespace
 	var namespace *mongokit.Collection
@@ -317,14 +317,14 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 
 	// check if documents have been inserted
 	if len(result.Modified) > 0 {
-		// write dataset
+		// write catalog
 		err := e.store.Store(clone)
 		if err != nil {
 			return nil, err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -368,15 +368,15 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil && !upsert {
+	if e.catalog.Namespaces[handle] == nil && !upsert {
 		return &Result{}, nil
 	}
 
 	// clone replacement
 	repl = bsonkit.Clone(repl)
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// create or clone namespace
 	var namespace *mongokit.Collection
@@ -400,14 +400,14 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 
 	// check if modified
 	if len(res.Modified) > 0 || res.Upserted != nil {
-		// write dataset
+		// write catalog
 		err = e.store.Store(clone)
 		if err != nil {
 			return nil, err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -470,12 +470,12 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil && !upsert {
+	if e.catalog.Namespaces[handle] == nil && !upsert {
 		return &Result{}, nil
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// create or clone namespace
 	var namespace *mongokit.Collection
@@ -499,14 +499,14 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 
 	// check if modified
 	if len(res.Modified) > 0 || res.Upserted != nil {
-		// write dataset
+		// write catalog
 		err = e.store.Store(clone)
 		if err != nil {
 			return nil, err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -567,12 +567,12 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil {
+	if e.catalog.Namespaces[handle] == nil {
 		return &Result{}, nil
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// clone namespace
 	namespace := clone.Namespaces[handle].Clone()
@@ -590,14 +590,14 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 
 	// check if matched
 	if len(res.Matched) > 0 {
-		// write dataset
+		// write catalog
 		err = e.store.Store(clone)
 		if err != nil {
 			return nil, err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -623,7 +623,7 @@ func (e *Engine) delete(handle Handle, oplog, namespace *mongokit.Collection, qu
 	}, nil
 }
 
-// Drop will return the namespace with the specified handle from the dataset.
+// Drop will return the namespace with the specified handle from the catalog.
 // If the second part of the handle is empty, it will drop all namespaces
 // matching the first part.
 func (e *Engine) Drop(handle Handle) error {
@@ -641,8 +641,8 @@ func (e *Engine) Drop(handle Handle) error {
 		return ErrInvalidHandle
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// clone oplog
 	oplog := clone.Namespaces[Oplog].Clone()
@@ -670,14 +670,14 @@ func (e *Engine) Drop(handle Handle) error {
 
 	// check if dropped
 	if dropped > 0 {
-		// write dataset
+		// write catalog
 		err := e.store.Store(clone)
 		if err != nil {
 			return err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 
 		// broadcast change
 		e.broadcast()
@@ -743,7 +743,7 @@ func (e *Engine) append(oplog *mongokit.Collection, handle Handle, op string, do
 	}
 }
 
-// ListDatabases will return a list of all databases in the dataset.
+// ListDatabases will return a list of all databases in the catalog.
 func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire read lock
 	e.mutex.RLock()
@@ -756,7 +756,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 
 	// sort namespaces
 	sort := map[string][]*mongokit.Collection{}
-	for ns, namespace := range e.dataset.Namespaces {
+	for ns, namespace := range e.catalog.Namespaces {
 		sort[ns[0]] = append(sort[ns[0]], namespace)
 	}
 
@@ -800,10 +800,10 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 	}
 
 	// prepare list
-	list := make(bsonkit.List, 0, len(e.dataset.Namespaces))
+	list := make(bsonkit.List, 0, len(e.catalog.Namespaces))
 
 	// add documents
-	for ns := range e.dataset.Namespaces {
+	for ns := range e.catalog.Namespaces {
 		if ns[0] == db {
 			list = append(list, &bson.D{
 				bson.E{Key: "name", Value: ns[1]},
@@ -851,7 +851,7 @@ func (e *Engine) NumDocuments(handle Handle) (int, error) {
 	}
 
 	// check namespace
-	namespace, ok := e.dataset.Namespaces[handle]
+	namespace, ok := e.catalog.Namespaces[handle]
 	if !ok {
 		return 0, nil
 	}
@@ -876,12 +876,12 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil {
+	if e.catalog.Namespaces[handle] == nil {
 		return nil, fmt.Errorf("missing namespace %q", handle.String())
 	}
 
 	// get namespace
-	namespace := e.dataset.Namespaces[handle]
+	namespace := e.catalog.Namespaces[handle]
 
 	// prepare list
 	var list bsonkit.List
@@ -935,8 +935,8 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 		return "", ErrInvalidHandle
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// create or clone namespace
 	var namespace *mongokit.Collection
@@ -958,14 +958,14 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 		return "", err
 	}
 
-	// write dataset
+	// write catalog
 	err = e.store.Store(clone)
 	if err != nil {
 		return "", err
 	}
 
-	// set new dataset
-	e.dataset = clone
+	// set new catalog
+	e.catalog = clone
 
 	return name, nil
 }
@@ -987,12 +987,12 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	}
 
 	// check namespace
-	if e.dataset.Namespaces[handle] == nil {
+	if e.catalog.Namespaces[handle] == nil {
 		return fmt.Errorf("missing namespace %q", handle.String())
 	}
 
-	// clone dataset
-	clone := e.dataset.Clone()
+	// clone catalog
+	clone := e.catalog.Clone()
 
 	// clone namespace
 	namespace := clone.Namespaces[handle].Clone()
@@ -1006,14 +1006,14 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 
 	// check if dropped
 	if len(dropped) > 0 {
-		// write dataset
+		// write catalog
 		err := e.store.Store(clone)
 		if err != nil {
 			return err
 		}
 
-		// set new dataset
-		e.dataset = clone
+		// set new catalog
+		e.catalog = clone
 	}
 
 	return nil
@@ -1041,7 +1041,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	}
 
 	// get oplog
-	oplog := e.dataset.Namespaces[Oplog].Documents.List
+	oplog := e.catalog.Namespaces[Oplog].Documents.List
 
 	// get index
 	index := len(oplog) - 1
@@ -1106,7 +1106,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	stream.oplog = func() *bsonkit.Set {
 		e.mutex.Lock()
 		defer e.mutex.Unlock()
-		return e.dataset.Namespaces[Oplog].Documents
+		return e.catalog.Namespaces[Oplog].Documents
 	}
 
 	// set cancel method

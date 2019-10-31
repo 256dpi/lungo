@@ -18,24 +18,24 @@ func (h Handle) String() string {
 // Oplog is the handle for the local oplog namespace.
 var Oplog = Handle{"local", "oplog"}
 
-// Dataset is the top level object per database that contains all data.
-type Dataset struct {
+// Catalog is the top level object per database that contains all data.
+type Catalog struct {
 	Namespaces map[Handle]*mongokit.Collection
 }
 
-// NewDataset creates and returns a new dataset.
-func NewDataset() *Dataset {
-	return &Dataset{
+// NewCatalog creates and returns a new catalog.
+func NewCatalog() *Catalog {
+	return &Catalog{
 		Namespaces: map[Handle]*mongokit.Collection{
 			Oplog: mongokit.NewCollection(false),
 		},
 	}
 }
 
-// Clone will clone the dataset. Namespaces need to be cloned separately.
-func (d *Dataset) Clone() *Dataset {
+// Clone will clone the catalog. Namespaces need to be cloned separately.
+func (d *Catalog) Clone() *Catalog {
 	// create clone
-	clone := &Dataset{
+	clone := &Catalog{
 		Namespaces: make(map[Handle]*mongokit.Collection, len(d.Namespaces)),
 	}
 

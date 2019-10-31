@@ -16,30 +16,30 @@ import (
 
 // Store is the interface that describes storage adapters.
 type Store interface {
-	Load() (*Dataset, error)
-	Store(*Dataset) error
+	Load() (*Catalog, error)
+	Store(*Catalog) error
 }
 
-// MemoryStore holds the dataset in memory.
+// MemoryStore holds the catalog in memory.
 type MemoryStore struct {
-	dataset *Dataset
+	catalog *Catalog
 }
 
 // NewMemoryStore creates and returns a new memory store.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		dataset: NewDataset(),
+		catalog: NewCatalog(),
 	}
 }
 
-// Load will return the dataset.
-func (m MemoryStore) Load() (*Dataset, error) {
-	return m.dataset, nil
+// Load will return the catalog.
+func (m MemoryStore) Load() (*Catalog, error) {
+	return m.catalog, nil
 }
 
-// Store will store the dataset.
-func (m MemoryStore) Store(data *Dataset) error {
-	m.dataset = data
+// Store will store the catalog.
+func (m MemoryStore) Store(data *Catalog) error {
+	m.catalog = data
 	return nil
 }
 
@@ -61,7 +61,7 @@ type FileIndex struct {
 	Partial bsonkit.Doc `bson:"partial"`
 }
 
-// FileStore writes the dataset to a single file on disk.
+// FileStore writes the catalog to a single file on disk.
 type FileStore struct {
 	path string
 	mode os.FileMode
@@ -75,12 +75,12 @@ func NewFileStore(path string, mode os.FileMode) *FileStore {
 	}
 }
 
-// Load will read the dataset from disk and return it.
-func (s *FileStore) Load() (*Dataset, error) {
+// Load will read the catalog from disk and return it.
+func (s *FileStore) Load() (*Catalog, error) {
 	// load file
 	buf, err := ioutil.ReadFile(s.path)
 	if os.IsNotExist(err) {
-		return NewDataset(), nil
+		return NewCatalog(), nil
 	} else if err != nil {
 		return nil, err
 	}
@@ -92,8 +92,8 @@ func (s *FileStore) Load() (*Dataset, error) {
 		return nil, err
 	}
 
-	// create dataset
-	dataset := NewDataset()
+	// create catalog
+	catalog := NewCatalog()
 
 	// process namespaces
 	for name, ns := range file.Namespaces {
@@ -132,14 +132,14 @@ func (s *FileStore) Load() (*Dataset, error) {
 		}
 
 		// add namespace
-		dataset.Namespaces[handle] = namespace
+		catalog.Namespaces[handle] = namespace
 	}
 
-	return dataset, nil
+	return catalog, nil
 }
 
-// Store will atomically write the dataset to disk.
-func (s *FileStore) Store(data *Dataset) error {
+// Store will atomically write the catalog to disk.
+func (s *FileStore) Store(data *Catalog) error {
 	// create file
 	file := File{
 		Namespaces: map[string]FileNamespace{},
