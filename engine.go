@@ -5,78 +5,13 @@ import (
 	"fmt"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
 )
-
-// ErrInvalidHandle is returned if a specified handle is invalid.
-var ErrInvalidHandle = errors.New("invalid handle")
 
 // ErrEngineClosed is returned if the engine has been closed.
 var ErrEngineClosed = errors.New("engine closed")
-
-// Result is returned by some engine operations.
-type Result struct {
-	// The list of matched documents.
-	Matched bsonkit.List
-
-	// The list of inserted, replace or updated documents.
-	Modified bsonkit.List
-
-	// The upserted document.
-	Upserted bsonkit.Doc
-
-	// The error that occurred during the operation.
-	Error error
-}
-
-// Opcode defines the type of an operation.
-type Opcode int
-
-// The available opcodes.
-const (
-	Insert Opcode = iota
-	Replace
-	Update
-	Delete
-)
-
-// Strings returns the opcode name.
-func (c Opcode) String() string {
-	switch c {
-	case Insert:
-		return "insert"
-	case Replace:
-		return "replace"
-	case Update:
-		return "update"
-	case Delete:
-		return "delete"
-	default:
-		return ""
-	}
-}
-
-// Operation defines a single operation.
-type Operation struct {
-	// The opcode.
-	Opcode Opcode
-
-	// The filter document (replace, update, delete).
-	Filter bsonkit.Doc
-
-	// The insert, update or replacement document.
-	Document bsonkit.Doc
-
-	// Whether an upsert should be performed (replace, update).
-	Upsert bool
-
-	// The limit (one, many).
-	Limit int
-}
 
 // Options is used to configure an engine.
 type Options struct {
@@ -128,25 +63,16 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
-	}
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil {
-		return &Result{}, nil
-	}
-
-	// find documents
-	res, err := e.catalog.Namespaces[handle].Find(query, sort, skip, limit)
+	// perform find
+	res, err := txn.Find(handle, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Result{
-		Matched: res.Matched,
-	}, nil
+	return res, nil
 }
 
 // Bulk performs the specified operations in one go. If ordered is true the
@@ -161,95 +87,31 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
+
+	// perform bulk
+	res, err := txn.Bulk(handle, ops, ordered)
+	if err != nil {
+		return nil, err
 	}
 
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// create or clone namespace
-	var namespace *mongokit.Collection
-	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
-
-	// collect changes
-	changes := 0
-
-	// prepare results
-	results := make([]Result, 0, len(ops))
-
-	// process models
-	for _, op := range ops {
-		// prepare variables
-		var res *Result
-		var err error
-
-		// run operation
-		switch op.Opcode {
-		case Insert:
-			res, err = e.insert(handle, oplog, namespace, op.Document)
-		case Replace:
-			res, err = e.replace(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert)
-		case Update:
-			res, err = e.update(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
-		case Delete:
-			res, err = e.delete(handle, oplog, namespace, op.Filter, nil, op.Limit)
-		default:
-			return nil, fmt.Errorf("unsupported bulk opcode %q", op.Opcode.String())
-		}
-
-		// check error
-		if err != nil {
-			// append error
-			results = append(results, Result{
-				Error: err,
-			})
-
-			// stop if ordered
-			if ordered {
-				break
-			}
-		} else {
-			// append result
-			results = append(results, *res)
-
-			// update changes
-			changes += len(res.Modified)
-			if res.Upserted != nil {
-				changes++
-			} else if op.Opcode == Delete {
-				changes += len(res.Matched)
-			}
-		}
-	}
-
-	// check if changed
-	if changes > 0 {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err := e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return nil, err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
-	return results, nil
+	return res, nil
 }
 
 // Insert will insert the specified documents into the namespace. The engine
@@ -267,85 +129,31 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
+
+	// perform insert
+	res, err := txn.Insert(handle, list, ordered)
+	if err != nil {
+		return nil, err
 	}
 
-	// clone list
-	list = bsonkit.CloneList(list)
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// create or clone namespace
-	var namespace *mongokit.Collection
-	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
-
-	// prepare result
-	result := &Result{}
-
-	// insert documents
-	for _, doc := range list {
-		// perform insert
-		res, err := e.insert(handle, oplog, namespace, doc)
-		if err != nil {
-			// set error
-			if result.Error == nil {
-				result.Error = err
-			}
-
-			// stop if ordered
-			if ordered {
-				break
-			}
-		} else {
-			// merge result
-			result.Modified = append(result.Modified, res.Modified...)
-		}
-	}
-
-	// check if documents have been inserted
-	if len(result.Modified) > 0 {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err := e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return nil, err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
-	return result, nil
-}
-
-func (e *Engine) insert(handle Handle, oplog, namespace *mongokit.Collection, doc bsonkit.Doc) (*Result, error) {
-	// insert document
-	res, err := namespace.Insert(doc)
-	if err != nil {
-		return nil, err
-	}
-
-	// append oplog
-	e.append(oplog, handle, "insert", doc, nil)
-
-	return &Result{
-		Modified: res.Modified,
-	}, nil
+	return res, nil
 }
 
 // Replace will replace the first matching document with the specified
@@ -362,91 +170,31 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
-	}
-
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil && !upsert {
-		return &Result{}, nil
-	}
-
-	// clone replacement
-	repl = bsonkit.Clone(repl)
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// create or clone namespace
-	var namespace *mongokit.Collection
-	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
 	// perform replace
-	res, err := e.replace(handle, oplog, namespace, query, repl, sort, upsert)
+	res, err := txn.Replace(handle, query, sort, repl, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	// check if modified
-	if len(res.Modified) > 0 || res.Upserted != nil {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err = e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return nil, err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
 	return res, nil
-}
-
-func (e *Engine) replace(handle Handle, oplog, namespace *mongokit.Collection, query, repl, sort bsonkit.Doc, upsert bool) (*Result, error) {
-	// replace document
-	res, err := namespace.Replace(query, repl, sort)
-	if err != nil {
-		return nil, err
-	}
-
-	// perform upsert
-	if len(res.Modified) == 0 && upsert {
-		res, err = namespace.Upsert(query, repl, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		// append oplog
-		e.append(oplog, handle, "insert", res.Upserted, nil)
-
-		return &Result{
-			Upserted: res.Upserted,
-		}, nil
-	}
-
-	// append oplog
-	if len(res.Modified) > 0 {
-		e.append(oplog, handle, "replace", res.Modified[0], nil)
-	}
-
-	return &Result{
-		Matched:  res.Matched,
-		Modified: res.Modified,
-	}, nil
 }
 
 // Update will apply the update to all matching document. Sort, skip and limit
@@ -464,88 +212,31 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
-	}
-
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil && !upsert {
-		return &Result{}, nil
-	}
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// create or clone namespace
-	var namespace *mongokit.Collection
-	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
 	// perform update
-	res, err := e.update(handle, oplog, namespace, query, update, sort, upsert, limit)
+	res, err := txn.Update(handle, query, sort, update, limit, upsert)
 	if err != nil {
 		return nil, err
 	}
 
-	// check if modified
-	if len(res.Modified) > 0 || res.Upserted != nil {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err = e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return nil, err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
 	return res, nil
-}
-
-func (e *Engine) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
-	// perform update
-	res, err := namespace.Update(query, update, sort, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	// perform upsert
-	if len(res.Modified) == 0 && upsert {
-		res, err = namespace.Upsert(query, nil, update)
-		if err != nil {
-			return nil, err
-		}
-
-		// append oplog
-		e.append(oplog, handle, "insert", res.Upserted, nil)
-
-		return &Result{
-			Upserted: res.Upserted,
-		}, nil
-	}
-
-	// append oplog
-	for i, doc := range res.Modified {
-		e.append(oplog, handle, "update", doc, res.Changes[i])
-	}
-
-	return &Result{
-		Matched:  res.Matched,
-		Modified: res.Modified,
-	}, nil
 }
 
 // Delete will remove all matching documents from the namespace. Sort, skip and
@@ -561,66 +252,31 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
-	}
-
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil {
-		return &Result{}, nil
-	}
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// clone namespace
-	namespace := clone.Namespaces[handle].Clone()
-	clone.Namespaces[handle] = namespace
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
 	// perform delete
-	res, err := e.delete(handle, oplog, namespace, query, sort, limit)
+	res, err := txn.Delete(handle, query, sort, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// check if matched
-	if len(res.Matched) > 0 {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err = e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return nil, err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
 	return res, nil
-}
-
-func (e *Engine) delete(handle Handle, oplog, namespace *mongokit.Collection, query, sort bsonkit.Doc, limit int) (*Result, error) {
-	// perform delete
-	res, err := namespace.Delete(query, sort, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	// append oplog
-	for _, doc := range res.Matched {
-		e.append(oplog, handle, "delete", doc, nil)
-	}
-
-	return &Result{
-		Matched: res.Matched,
-	}, nil
 }
 
 // Drop will return the namespace with the specified handle from the catalog.
@@ -636,111 +292,31 @@ func (e *Engine) Drop(handle Handle) error {
 		return ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" {
-		return ErrInvalidHandle
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
+
+	// perform drop
+	err := txn.Drop(handle)
+	if err != nil {
+		return err
 	}
 
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
-
-	// collect dropped
-	dropped := 0
-
-	// drop all matching namespaces
-	for ns := range clone.Namespaces {
-		if ns == handle || handle[1] == "" && ns[0] == handle[0] {
-			// delete namespace
-			delete(clone.Namespaces, ns)
-			dropped++
-
-			// append oplog
-			e.append(oplog, ns, "drop", nil, nil)
-		}
-	}
-
-	// append oplog if database has been dropped
-	if handle[1] == "" && dropped > 0 {
-		e.append(oplog, handle, "dropDatabase", nil, nil)
-	}
-
-	// check if dropped
-	if dropped > 0 {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err := e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 
 		// broadcast change
 		e.broadcast()
 	}
 
 	return nil
-}
-
-func (e *Engine) append(oplog *mongokit.Collection, handle Handle, op string, doc bsonkit.Doc, changes *mongokit.Changes) {
-	// get time
-	now := bsonkit.Now()
-
-	// prepare ns
-	ns := bson.M{"db": handle[0]}
-	if handle[1] != "" {
-		ns["coll"] = handle[1]
-	}
-
-	// prepare event
-	event := bson.M{
-		"ns": ns,
-		"_id": bson.M{
-			"ts": now,
-		},
-		"clusterTime":   now,
-		"operationType": op,
-	}
-
-	// add document info
-	if doc != nil {
-		// add document key
-		event["documentKey"] = bson.M{
-			"_id": bsonkit.Get(doc, "_id"),
-		}
-
-		// add full document
-		if op == "insert" || op == "replace" || op == "update" {
-			event["fullDocument"] = *doc
-		}
-	}
-
-	// add changes
-	if changes != nil {
-		// collect remove fields
-		removed := make([]string, 0, len(changes.Removed))
-		for field := range changes.Removed {
-			removed = append(removed, field)
-		}
-
-		// add update description
-		event["updateDescription"] = bson.M{
-			"updatedFields": changes.Updated,
-			"removedFields": removed,
-		}
-	}
-
-	// add event
-	oplog.Documents.Add(bsonkit.Convert(event))
-
-	// resize oplog
-	for len(oplog.Documents.List) > 1000 {
-		oplog.Documents.Remove(oplog.Documents.List[0])
-	}
 }
 
 // ListDatabases will return a list of all databases in the catalog.
@@ -754,38 +330,16 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 		return nil, ErrEngineClosed
 	}
 
-	// sort namespaces
-	sort := map[string][]*mongokit.Collection{}
-	for ns, namespace := range e.catalog.Namespaces {
-		sort[ns[0]] = append(sort[ns[0]], namespace)
-	}
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
-	// prepare list
-	var list bsonkit.List
-	for name, nss := range sort {
-		// check emptiness
-		empty := true
-		for _, ns := range nss {
-			if len(ns.Documents.List) > 0 {
-				empty = false
-			}
-		}
-
-		// add specification
-		list = append(list, &bson.D{
-			bson.E{Key: "name", Value: name},
-			bson.E{Key: "sizeOnDisk", Value: 0},
-			bson.E{Key: "empty", Value: empty},
-		})
-	}
-
-	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	// list databases
+	res, err := txn.ListDatabases(query)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	return res, nil
 }
 
 // ListCollections will return a list of all collections in the specified db.
@@ -799,39 +353,16 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 		return nil, ErrEngineClosed
 	}
 
-	// prepare list
-	list := make(bsonkit.List, 0, len(e.catalog.Namespaces))
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
-	// add documents
-	for ns := range e.catalog.Namespaces {
-		if ns[0] == db {
-			list = append(list, &bson.D{
-				bson.E{Key: "name", Value: ns[1]},
-				bson.E{Key: "type", Value: "collection"},
-				bson.E{Key: "options", Value: bson.D{}},
-				bson.E{Key: "info", Value: bson.D{
-					bson.E{Key: "uuid", Value: ns.String()},
-					bson.E{Key: "readOnly", Value: false},
-				}},
-				bson.E{Key: "idIndex", Value: bson.D{
-					bson.E{Key: "v", Value: 2},
-					bson.E{Key: "key", Value: bson.D{
-						bson.E{Key: "_id", Value: 1},
-					}},
-					bson.E{Key: "name", Value: "_id_"},
-					bson.E{Key: "namespace", Value: ns.String()},
-				}},
-			})
-		}
-	}
-
-	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	// list collections
+	res, err := txn.ListCollections(db, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	return res, nil
 }
 
 // NumDocuments will return the number of documents in the specified namespace.
@@ -845,18 +376,16 @@ func (e *Engine) NumDocuments(handle Handle) (int, error) {
 		return 0, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return 0, ErrInvalidHandle
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
+
+	// num documents
+	res, err := txn.NumDocuments(handle)
+	if err != nil {
+		return 0, err
 	}
 
-	// check namespace
-	namespace, ok := e.catalog.Namespaces[handle]
-	if !ok {
-		return 0, nil
-	}
-
-	return len(namespace.Documents.List), nil
+	return res, nil
 }
 
 // ListIndexes will return a list of indexes in the specified namespace.
@@ -870,53 +399,16 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 		return nil, ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
+
+	// list indexes
+	res, err := txn.ListIndexes(handle)
+	if err != nil {
+		return nil, err
 	}
 
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil {
-		return nil, fmt.Errorf("missing namespace %q", handle.String())
-	}
-
-	// get namespace
-	namespace := e.catalog.Namespaces[handle]
-
-	// prepare list
-	var list bsonkit.List
-	for name, index := range namespace.Indexes {
-		// get config
-		config := index.Config()
-
-		// create spec
-		spec := bson.D{
-			bson.E{Key: "v", Value: 2},
-			bson.E{Key: "key", Value: *config.Key},
-			bson.E{Key: "name", Value: name},
-			bson.E{Key: "ns", Value: handle.String()},
-		}
-
-		// add unique
-		if config.Unique && name != "_id_" {
-			spec = append(spec, bson.E{Key: "unique", Value: true})
-		}
-
-		// add partial
-		if config.Partial != nil {
-			spec = append(spec, bson.E{Key: "partialFilterExpression", Value: *config.Partial})
-		}
-
-		// add specification
-		list = append(list, &spec)
-	}
-
-	// sort list
-	bsonkit.Sort(list, []bsonkit.Column{
-		{Path: "name"},
-	})
-
-	return list, nil
+	return res, nil
 }
 
 // CreateIndex will create the specified index in the specified namespace.
@@ -930,44 +422,28 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 		return "", ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return "", ErrInvalidHandle
-	}
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// create or clone namespace
-	var namespace *mongokit.Collection
-	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
-	}
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
 	// create index
-	name, err := namespace.CreateIndex(name, mongokit.IndexConfig{
-		Key:     key,
-		Unique:  unique,
-		Partial: partial,
-	})
+	res, err := txn.CreateIndex(handle, key, name, unique, partial)
 	if err != nil {
 		return "", err
 	}
 
-	// write catalog
-	err = e.store.Store(clone)
-	if err != nil {
-		return "", err
+	// check if dirty
+	if txn.Dirty() {
+		// write catalog
+		err = e.store.Store(txn.Catalog())
+		if err != nil {
+			return "", err
+		}
+
+		// set new catalog
+		e.catalog = txn.Catalog()
 	}
 
-	// set new catalog
-	e.catalog = clone
-
-	return name, nil
+	return res, nil
 }
 
 // DropIndex will drop the specified index in the specified namespace.
@@ -981,39 +457,25 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 		return ErrEngineClosed
 	}
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return ErrInvalidHandle
-	}
-
-	// check namespace
-	if e.catalog.Namespaces[handle] == nil {
-		return fmt.Errorf("missing namespace %q", handle.String())
-	}
-
-	// clone catalog
-	clone := e.catalog.Clone()
-
-	// clone namespace
-	namespace := clone.Namespaces[handle].Clone()
-	clone.Namespaces[handle] = namespace
+	// prepare transaction
+	txn := NewTransaction(e.catalog)
 
 	// drop index
-	dropped, err := namespace.DropIndex(name)
+	err := txn.DropIndex(handle, name)
 	if err != nil {
 		return err
 	}
 
-	// check if dropped
-	if len(dropped) > 0 {
+	// check if dirty
+	if txn.Dirty() {
 		// write catalog
-		err := e.store.Store(clone)
+		err = e.store.Store(txn.Catalog())
 		if err != nil {
 			return err
 		}
 
 		// set new catalog
-		e.catalog = clone
+		e.catalog = txn.Catalog()
 	}
 
 	return nil
