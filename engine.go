@@ -200,6 +200,9 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 	oplog := clone.Namespaces[Oplog].Clone()
 	clone.Namespaces[Oplog] = oplog
 
+	// collect changes
+	changes := 0
+
 	// prepare results
 	results := make([]Result, 0, len(ops))
 
@@ -237,20 +240,31 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 		} else {
 			// append result
 			results = append(results, *res)
+
+			// update changes
+			changes += len(res.Modified)
+			if res.Upserted != nil {
+				changes++
+			} else if op.Opcode == Delete {
+				changes += len(res.Matched)
+			}
 		}
 	}
 
-	// write dataset
-	err := e.store.Store(clone)
-	if err != nil {
-		return nil, err
+	// check if changed
+	if changes > 0 {
+		// write dataset
+		err := e.store.Store(clone)
+		if err != nil {
+			return nil, err
+		}
+
+		// set new dataset
+		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
-
-	// set new dataset
-	e.dataset = clone
-
-	// broadcast change
-	e.broadcast()
 
 	return results, nil
 }
@@ -858,11 +872,15 @@ func (e *Engine) Drop(handle Handle) error {
 	oplog := clone.Namespaces[Oplog].Clone()
 	clone.Namespaces[Oplog] = oplog
 
+	// collect dropped
+	dropped := 0
+
 	// drop all matching namespaces
 	for ns := range clone.Namespaces {
 		if ns == handle || handle[1] == "" && ns[0] == handle[0] {
 			// delete namespace
 			delete(clone.Namespaces, ns)
+			dropped++
 
 			// append oplog
 			e.append(oplog, ns, "drop", nil, nil)
@@ -870,21 +888,24 @@ func (e *Engine) Drop(handle Handle) error {
 	}
 
 	// append oplog if database has been dropped
-	if handle[1] == "" {
+	if handle[1] == "" && dropped > 0 {
 		e.append(oplog, handle, "dropDatabase", nil, nil)
 	}
 
-	// write dataset
-	err := e.store.Store(clone)
-	if err != nil {
-		return err
+	// check if dropped
+	if dropped > 0 {
+		// write dataset
+		err := e.store.Store(clone)
+		if err != nil {
+			return err
+		}
+
+		// set new dataset
+		e.dataset = clone
+
+		// broadcast change
+		e.broadcast()
 	}
-
-	// set new dataset
-	e.dataset = clone
-
-	// broadcast change
-	e.broadcast()
 
 	return nil
 }
@@ -1226,34 +1247,42 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	namespace := clone.Namespaces[handle].Clone()
 	clone.Namespaces[handle] = namespace
 
-	// delete single index
-	if name != "*" {
+	// collect dropped
+	dropped := 0
+
+	// drop single index
+	if name != "" {
 		// check existence
 		if _, ok := namespace.Indexes[name]; !ok {
-			return fmt.Errorf("missing index %q", handle.String())
+			return fmt.Errorf("missing index %q", name)
 		}
 
 		// drop index
 		delete(namespace.Indexes, name)
+		dropped++
 	}
 
-	// delete all indexes
-	if name == "*" {
+	// drop all indexes
+	if name == "" {
 		for name := range namespace.Indexes {
 			if name != "_id_" {
 				delete(namespace.Indexes, name)
+				dropped++
 			}
 		}
 	}
 
-	// write dataset
-	err := e.store.Store(clone)
-	if err != nil {
-		return err
-	}
+	// check if dropped
+	if dropped > 0 {
+		// write dataset
+		err := e.store.Store(clone)
+		if err != nil {
+			return err
+		}
 
-	// set new dataset
-	e.dataset = clone
+		// set new dataset
+		e.dataset = clone
+	}
 
 	return nil
 }

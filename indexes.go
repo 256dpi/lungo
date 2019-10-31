@@ -119,7 +119,7 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 	})
 
 	// drop all indexes
-	err := v.engine.DropIndex(v.handle, "*")
+	err := v.engine.DropIndex(v.handle, "")
 	if err != nil {
 		return nil, err
 	}
