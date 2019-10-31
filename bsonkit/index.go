@@ -29,7 +29,8 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	return false
 }
 
-// Index is a basic btree based index for documents.
+// Index is a basic btree based index for documents. The index is not safe from
+// concurrent access.
 type Index struct {
 	unique   bool
 	columns  []Column
@@ -53,7 +54,8 @@ func NewIndex(unique bool, columns []Column) *Index {
 }
 
 // Build will build the index from the specified list. It may return false if
-// there was an unique constraint error when building the index.
+// there was an unique constraint error when building the index. If an error
+// is returned the index only has some of the provided documents added.
 func (i *Index) Build(list List) bool {
 	// add documents
 	for _, doc := range list {

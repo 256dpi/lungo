@@ -24,8 +24,10 @@ type Result struct {
 	Changes []*Changes
 }
 
-// Collection combines and set and multiple indexes to form a basic MongoDB like
-// collection that offers basic CRUD capabilities.
+// Collection combines a set and multiple indexes to form a basic MongoDB like
+// collection that offers basic CRUD capabilities. The collection is not safe
+// from concurrent access and does not rollback changes on errors. Therefore,
+// the recommended approach is to clone the collection before making changes.
 type Collection struct {
 	Documents *bsonkit.Set
 	Indexes   map[string]*Index

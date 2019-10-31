@@ -1,6 +1,6 @@
 package bsonkit
 
-// Set is set of unique documents.
+// Set is set of unique documents. The set is not safe from concurrent access.
 type Set struct {
 	List  List
 	Index map[Doc]int

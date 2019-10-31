@@ -21,7 +21,9 @@ type IndexConfig struct {
 	Partial bsonkit.Doc
 }
 
-// Index is an index for documents that supports MongoDB features.
+// Index is an index for documents that supports MongoDB features. The index is
+// not safe from concurrent access and does not rollback changes on errors.
+// Therefore, the recommended approach is to clone the index before making changes.
 type Index struct {
 	config  IndexConfig
 	columns []bsonkit.Column
