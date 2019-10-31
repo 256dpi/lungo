@@ -91,7 +91,7 @@ type Engine struct {
 	dataset *Dataset
 	streams map[*Stream]struct{}
 	closed  bool
-	mutex   sync.Mutex
+	mutex   sync.RWMutex
 }
 
 // CreateEngine will create and return an engine with a loaded dataset from the
@@ -119,9 +119,9 @@ func CreateEngine(opts Options) (*Engine, error) {
 // supplied to modify the result. The returned results will contain the matched
 // list of documents.
 func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	// acquire read lock
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
 
 	// check if closed
 	if e.closed {
@@ -169,7 +169,7 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 // Bulk performs the specified operations in one go. If ordered is true the
 // process is aborted on the first error.
 func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -275,7 +275,7 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 // result returned. Otherwise, the engine will try to insert all documents. The
 // returned results will contain the inserted documents and potential errors.
 func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -390,7 +390,7 @@ func (e *Engine) insert(oplog, namespace *Namespace, doc bsonkit.Doc) (*Result, 
 // document if it is missing. The returned result will contain the matched
 // and modified or upserted document.
 func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -528,7 +528,7 @@ func (e *Engine) replace(oplog, namespace *Namespace, query, repl, sort bsonkit.
 // it is missing. The returned result will contain the matched and modified or
 // upserted document.
 func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -749,7 +749,7 @@ func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit
 // limit may be supplied to modify the result. The returned result will contain
 // the matched documents.
 func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Result, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -851,7 +851,7 @@ func (e *Engine) delete(oplog, namespace *Namespace, query, sort bsonkit.Doc, li
 // If the second part of the handle is empty, it will drop all namespaces
 // matching the first part.
 func (e *Engine) Drop(handle Handle) error {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -969,9 +969,9 @@ func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.
 
 // ListDatabases will return a list of all databases in the dataset.
 func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	// acquire read lock
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
 
 	// check if closed
 	if e.closed {
@@ -1014,9 +1014,9 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 
 // ListCollections will return a list of all collections in the specified db.
 func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	// acquire read lock
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
 
 	// check if closed
 	if e.closed {
@@ -1060,9 +1060,9 @@ func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, er
 
 // NumDocuments will return the number of documents in the specified namespace.
 func (e *Engine) NumDocuments(handle Handle) (int, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	// acquire read lock
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
 
 	// check if closed
 	if e.closed {
@@ -1085,9 +1085,9 @@ func (e *Engine) NumDocuments(handle Handle) (int, error) {
 
 // ListIndexes will return a list of indexes in the specified namespace.
 func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
-	// acquire mutex
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	// acquire read lock
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
 
 	// check if closed
 	if e.closed {
@@ -1145,7 +1145,7 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 
 // CreateIndex will create the specified index in the specified namespace.
 func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc) (string, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -1221,7 +1221,7 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 
 // DropIndex will drop the specified index in the specified namespace.
 func (e *Engine) DropIndex(handle Handle, name string) error {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -1299,7 +1299,7 @@ func (e *Engine) broadcast() {
 
 // Watch will return a stream that is able to consume events from the oplog.
 func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *primitive.Timestamp) (*Stream, error) {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -1392,7 +1392,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 
 // Close will close the engine.
 func (e *Engine) Close() {
-	// acquire mutex
+	// acquire write lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
