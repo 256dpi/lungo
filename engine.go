@@ -1041,18 +1041,21 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	}
 
 	// get oplog
-	oplog := e.catalog.Namespaces[Oplog].Documents.List
+	oplog := e.catalog.Namespaces[Oplog].Documents
 
-	// get index
-	index := len(oplog) - 1
+	// get last event
+	var last bsonkit.Doc
+	if len(oplog.List) > 0 {
+		last = oplog.List[len(oplog.List)-1]
+	}
 
 	// resume after
 	if resumeAfter != nil {
 		resumed := false
-		for i, event := range oplog {
+		for _, event := range oplog.List {
 			res := bsonkit.Compare(*resumeAfter, bsonkit.Get(event, "_id"))
 			if res == 0 {
-				index = i
+				last = event
 				resumed = true
 				break
 			}
@@ -1065,10 +1068,10 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	// start after
 	if startAfter != nil {
 		resumed := false
-		for i, event := range oplog {
+		for _, event := range oplog.List {
 			res := bsonkit.Compare(*startAfter, bsonkit.Get(event, "_id"))
 			if res == 0 {
-				index = i
+				last = event
 				resumed = true
 				break
 			}
@@ -1081,11 +1084,13 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	// start at
 	if startAt != nil {
 		resumed := false
-		for i, event := range oplog {
+		for i, event := range oplog.List {
 			res := bsonkit.Compare(*startAt, bsonkit.Get(event, "clusterTime"))
 			if res == 0 {
-				index = i - 1
-				resumed = true
+				if i > 0 {
+					last = oplog.List[i-1]
+					resumed = true
+				}
 				break
 			}
 		}
@@ -1097,7 +1102,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	// create stream
 	stream := &Stream{
 		handle: handle,
-		index:  index,
+		last:   last,
 		filter: filter,
 		signal: make(chan struct{}, 1),
 	}
