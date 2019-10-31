@@ -29,6 +29,34 @@ func (c *MongoClient) Database(name string, opts ...*options.DatabaseOptions) ID
 	return &MongoDatabase{Database: c.Client.Database(name, opts...), client: c}
 }
 
+// StartSession implements the IClient.StartSession method.
+func (c *MongoClient) StartSession(opts ...*options.SessionOptions) (ISession, error) {
+	session, err := c.Client.StartSession(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MongoSession{Session: session, client: c}, nil
+}
+
+// UseSession implements the IClient.UseSession method.
+func (c *MongoClient) UseSession(ctx context.Context, fn func(ISessionContext) error) error {
+	return c.UseSessionWithOptions(ctx, options.Session(), fn)
+}
+
+// UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
+func (c *MongoClient) UseSessionWithOptions(ctx context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
+	return c.Client.UseSessionWithOptions(ctx, opt, func(sc mongo.SessionContext) error {
+		return fn(&MongoSessionContext{
+			Context: sc,
+			MongoSession: &MongoSession{
+				Session: sc,
+				client:  c,
+			},
+		})
+	})
+}
+
 // Watch implements the IClient.Watch method.
 func (c *MongoClient) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	return c.Client.Watch(ctx, pipeline, opts...)
@@ -155,4 +183,29 @@ type MongoIndexView struct {
 // List implements the IIndexView.List method.
 func (m *MongoIndexView) List(ctx context.Context, opts ...*options.ListIndexesOptions) (ICursor, error) {
 	return m.IndexView.List(ctx, opts...)
+}
+
+// MongoSession wraps a mongo.Session to be lungo compatible.
+type MongoSession struct {
+	mongo.Session
+
+	client *MongoClient
+}
+
+// Client implements the ISession.Client method.
+func (s *MongoSession) Client() IClient {
+	return s.client
+}
+
+// WithTransaction implements the ISession.WithTransaction method.
+func (s *MongoSession) WithTransaction(ctx context.Context, fn func(ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error) {
+	return s.WithTransaction(ctx, func(sc ISessionContext) (interface{}, error) {
+		return fn(sc)
+	}, opts...)
+}
+
+// MongoSessionContext wraps a mongo.SessionContext to be lungo compatible.
+type MongoSessionContext struct {
+	context.Context
+	*MongoSession
 }

@@ -128,17 +128,38 @@ func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 }
 
 // StartSession implements the IClient.StartSession method.
-func (c *Client) StartSession(...*options.SessionOptions) (mongo.Session, error) {
+func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error) {
+	// merge options
+	opt := options.MergeSessionOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"CausalConsistency":     ignored,
+		"DefaultReadConcern":    ignored,
+		"DefaultReadPreference": ignored,
+		"DefaultWriteConcern":   ignored,
+		"DefaultMaxCommitTime":  ignored,
+	})
+
 	panic("lungo: not implemented")
 }
 
 // UseSession implements the IClient.UseSession method.
-func (c *Client) UseSession(context.Context, func(mongo.SessionContext) error) error {
-	panic("lungo: not implemented")
+func (c *Client) UseSession(ctx context.Context, fn func(ISessionContext) error) error {
+	return c.UseSessionWithOptions(ctx, options.Session(), fn)
 }
 
 // UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
-func (c *Client) UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error {
+func (c *Client) UseSessionWithOptions(_ context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"CausalConsistency":     ignored,
+		"DefaultReadConcern":    ignored,
+		"DefaultReadPreference": ignored,
+		"DefaultWriteConcern":   ignored,
+		"DefaultMaxCommitTime":  ignored,
+	})
+
 	panic("lungo: not implemented")
 }
 

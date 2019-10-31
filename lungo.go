@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -19,9 +20,9 @@ type IClient interface {
 	ListDatabaseNames(context.Context, interface{}, ...*options.ListDatabasesOptions) ([]string, error)
 	ListDatabases(context.Context, interface{}, ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error)
 	Ping(context.Context, *readpref.ReadPref) error
-	StartSession(...*options.SessionOptions) (mongo.Session, error)
-	UseSession(context.Context, func(mongo.SessionContext) error) error
-	UseSessionWithOptions(context.Context, *options.SessionOptions, func(mongo.SessionContext) error) error
+	StartSession(...*options.SessionOptions) (ISession, error)
+	UseSession(context.Context, func(ISessionContext) error) error
+	UseSessionWithOptions(context.Context, *options.SessionOptions, func(ISessionContext) error) error
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
 }
 
@@ -103,4 +104,24 @@ type IChangeStream interface {
 	ID() int64
 	Next(context.Context) bool
 	ResumeToken() bson.Raw
+}
+
+// ISession defines a generic session.
+type ISession interface {
+	AbortTransaction(context.Context) error
+	AdvanceClusterTime(bson.Raw) error
+	AdvanceOperationTime(*primitive.Timestamp) error
+	Client() IClient
+	ClusterTime() bson.Raw
+	CommitTransaction(context.Context) error
+	EndSession(context.Context)
+	OperationTime() *primitive.Timestamp
+	StartTransaction(...*options.TransactionOptions) error
+	WithTransaction(ctx context.Context, fn func(sessCtx ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error)
+}
+
+// ISessionContext defines a generic session context.
+type ISessionContext interface {
+	context.Context
+	ISession
 }
