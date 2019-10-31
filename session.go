@@ -6,8 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/256dpi/lungo/bsonkit"
 )
 
 // Session provides a mongo compatible way to handle transactions.
@@ -17,8 +15,6 @@ type Session struct {
 
 // AbortTransaction implements the ISession.AbortTransaction method.
 func (s *Session) AbortTransaction(context.Context) error {
-	// TODO: Release exclusive lock.
-
 	panic("lungo: not implemented")
 }
 
@@ -39,8 +35,7 @@ func (s *Session) Client() IClient {
 
 // ClusterTime implements the ISession.ClusterTime method.
 func (s *Session) ClusterTime() bson.Raw {
-	now, _ := bson.Marshal(bsonkit.Now())
-	return now
+	panic("lungo: not implemented")
 }
 
 // CommitTransaction implements the ISession.CommitTransaction method.
@@ -55,12 +50,22 @@ func (s *Session) EndSession(context.Context) {
 
 // OperationTime implements the ISession.OperationTime method.
 func (s *Session) OperationTime() *primitive.Timestamp {
-	now := bsonkit.Now()
-	return &now
+	panic("lungo: not implemented")
 }
 
 // StartTransaction implements the ISession.StartTransaction method.
-func (s *Session) StartTransaction(...*options.TransactionOptions) error {
+func (s *Session) StartTransaction(opts ...*options.TransactionOptions) error {
+	// merge options
+	opt := options.MergeTransactionOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{
+		"ReadConcern":    ignored,
+		"ReadPreference": ignored,
+		"WriteConcern":   ignored,
+		"MaxCommitTime":  ignored,
+	})
+
 	panic("lungo: not implemented")
 }
 
