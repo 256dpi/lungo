@@ -1314,6 +1314,11 @@ func (e *Engine) Close() {
 		return
 	}
 
+	// close streams
+	for stream := range e.streams {
+		close(stream.signal)
+	}
+
 	// set flag
 	e.closed = true
 }
