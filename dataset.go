@@ -18,8 +18,8 @@ func (h Handle) String() string {
 	return strings.Join(h[:], ".")
 }
 
-// LocalOplog is the handle for the local oplog namespace.
-var LocalOplog = Handle{"local", "oplog"}
+// Oplog is the handle for the local oplog namespace.
+var Oplog = Handle{"local", "oplog"}
 
 // Dataset is the top level object per database that contains all data.
 type Dataset struct {
@@ -30,7 +30,7 @@ type Dataset struct {
 func NewDataset() *Dataset {
 	return &Dataset{
 		Namespaces: map[Handle]*Namespace{
-			LocalOplog: NewNamespace(LocalOplog, false),
+			Oplog: NewNamespace(Oplog, false),
 		},
 	}
 }

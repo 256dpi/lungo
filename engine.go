@@ -184,8 +184,8 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 	}
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// prepare results
 	results := make([]Result, 0, len(ops))
@@ -274,8 +274,8 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	}
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// prepare result
 	result := &Result{}
@@ -389,8 +389,8 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	}
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// perform replace
 	res, err := e.replace(oplog, namespace, query, repl, sort, upsert)
@@ -519,8 +519,8 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	}
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// perform update
 	res, err := e.update(oplog, namespace, query, update, sort, upsert, limit)
@@ -729,8 +729,8 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 	clone.Namespaces[handle] = namespace
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// perform delete
 	res, err := e.delete(oplog, namespace, query, sort, limit)
@@ -817,8 +817,8 @@ func (e *Engine) Drop(handle Handle) error {
 	clone := e.dataset.Clone()
 
 	// clone oplog
-	oplog := clone.Namespaces[LocalOplog].Clone()
-	clone.Namespaces[LocalOplog] = oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// drop all matching namespaces
 	for ns := range clone.Namespaces {
@@ -1210,7 +1210,7 @@ func (e *Engine) broadcast() {
 	}
 }
 
-// Watch will return a stream that is able to consume events from oplog.
+// Watch will return a stream that is able to consume events from the oplog.
 func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *primitive.Timestamp) (*Stream, error) {
 	// acquire mutex
 	e.mutex.Lock()
@@ -1222,7 +1222,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	}
 
 	// get oplog
-	oplog := e.dataset.Namespaces[LocalOplog].Documents.List
+	oplog := e.dataset.Namespaces[Oplog].Documents.List
 
 	// get index
 	index := len(oplog) - 1
@@ -1287,7 +1287,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	stream.oplog = func() *bsonkit.Set {
 		e.mutex.Lock()
 		defer e.mutex.Unlock()
-		return e.dataset.Namespaces[LocalOplog].Documents
+		return e.dataset.Namespaces[Oplog].Documents
 	}
 
 	// set cancel method
