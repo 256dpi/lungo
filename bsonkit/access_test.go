@@ -498,7 +498,7 @@ func TestUnsetArray(t *testing.T) {
 
 func TestIncrement(t *testing.T) {
 	doc := Convert(bson.M{
-		"foo": int64(42),
+		"foo": 42,
 		"bar": "42",
 	})
 
@@ -519,7 +519,7 @@ func TestIncrement(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(44), res)
 	assert.Equal(t, Convert(bson.M{
-		"foo": int64(44),
+		"foo": 44,
 		"bar": "42",
 	}), doc)
 
@@ -528,15 +528,15 @@ func TestIncrement(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), res)
 	assert.Equal(t, Convert(bson.M{
-		"foo": int64(44),
+		"foo": 44,
 		"bar": "42",
-		"quz": int64(2),
+		"quz": 2,
 	}), doc)
 }
 
 func TestMultiply(t *testing.T) {
 	doc := Convert(bson.M{
-		"foo": int64(42),
+		"foo": 42,
 		"bar": "42",
 	})
 
@@ -557,7 +557,7 @@ func TestMultiply(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(84), res)
 	assert.Equal(t, Convert(bson.M{
-		"foo": int64(84),
+		"foo": 84,
 		"bar": "42",
 	}), doc)
 
@@ -566,8 +566,8 @@ func TestMultiply(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), res)
 	assert.Equal(t, Convert(bson.M{
-		"foo": int64(84),
+		"foo": 84,
 		"bar": "42",
-		"quz": int64(0),
+		"quz": 0,
 	}), doc)
 }

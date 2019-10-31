@@ -343,7 +343,7 @@ func TestApplyInc(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(44),
+				"bar": 44,
 			},
 		}))
 
@@ -374,11 +374,11 @@ func TestApplyInc(t *testing.T) {
 	// changes
 	changes, err := Apply(bsonkit.Convert(bson.M{
 		"foo": bson.M{
-			"bar": int32(42),
+			"bar": 42,
 		},
 	}), bsonkit.Convert(bson.M{
 		"$inc": bson.M{
-			"foo.bar": int64(2),
+			"foo.bar": 2,
 		},
 	}), false)
 	assert.NoError(t, err)
@@ -403,7 +403,7 @@ func TestApplyMul(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(84),
+				"bar": 84,
 			},
 		}))
 
@@ -438,7 +438,7 @@ func TestApplyMul(t *testing.T) {
 		},
 	}), bsonkit.Convert(bson.M{
 		"$mul": bson.M{
-			"foo.bar": int64(2),
+			"foo.bar": 2,
 		},
 	}), false)
 	assert.NoError(t, err)
@@ -463,7 +463,7 @@ func TestApplyMax(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": 42,
 			},
 		}))
 
@@ -485,7 +485,7 @@ func TestApplyMax(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": 42,
 				"baz": int32(2),
 			},
 		}))
@@ -523,7 +523,7 @@ func TestApplyMin(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": 42,
 			},
 		}))
 
@@ -545,7 +545,7 @@ func TestApplyMin(t *testing.T) {
 			},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.M{
-				"bar": int64(42),
+				"bar": 42,
 				"baz": int32(2),
 			},
 		}))
