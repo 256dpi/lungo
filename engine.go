@@ -138,32 +138,15 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 		return &Result{}, nil
 	}
 
-	// get documents
-	list := e.dataset.Namespaces[handle].Documents.List
-
-	// sort documents
-	var err error
-	if sort != nil && len(*sort) > 0 {
-		list, err = mongokit.Sort(list, sort)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// apply skip
-	if skip > len(list) {
-		list = nil
-	} else {
-		list = list[skip:]
-	}
-
-	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
+	// find documents
+	res, err := e.dataset.Namespaces[handle].Collection.Find(query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Result{Matched: list}, nil
+	return &Result{
+		Matched: res.Matched,
+	}, nil
 }
 
 // Bulk performs the specified operations in one go. If ordered is true the
@@ -351,37 +334,17 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 }
 
 func (e *Engine) insert(oplog, namespace *Namespace, doc bsonkit.Doc) (*Result, error) {
-	// ensure object id
-	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
-		if err != nil {
-			return nil, err
-		}
+	// insert document
+	res, err := namespace.Collection.Insert(doc)
+	if err != nil {
+		return nil, err
 	}
-
-	// list uniqueness pre-check
-	if _, ok := namespace.Documents.Index[doc]; ok {
-		return nil, fmt.Errorf("duplicate document in namespace")
-	}
-
-	// add document to all indexes
-	for name, index := range namespace.Indexes {
-		ok, err := index.Add(doc)
-		if err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, fmt.Errorf("duplicate document for index %q", name)
-		}
-	}
-
-	// add document
-	namespace.Documents.Add(doc)
 
 	// append oplog
 	e.append(oplog, namespace.Handle, "insert", doc, nil)
 
 	return &Result{
-		Modified: bsonkit.List{doc},
+		Modified: res.Modified,
 	}, nil
 }
 
@@ -454,71 +417,35 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 }
 
 func (e *Engine) replace(oplog, namespace *Namespace, query, repl, sort bsonkit.Doc, upsert bool) (*Result, error) {
-	// get documents
-	list := namespace.Documents.List
-
-	// sort documents
-	var err error
-	if sort != nil && len(*sort) > 0 {
-		list, err = mongokit.Sort(list, sort)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// filter documents
-	list, err = mongokit.Filter(list, query, 1)
+	// replace document
+	res, err := namespace.Collection.Replace(query, repl, sort)
 	if err != nil {
 		return nil, err
 	}
 
-	// check list
-	if len(list) == 0 {
-		// handle upsert
-		if upsert {
-			return e.upsert(oplog, namespace, query, repl, nil)
-		}
-
-		return &Result{}, nil
-	}
-
-	// set missing id or check existing id
-	replID := bsonkit.Get(repl, "_id")
-	if replID == bsonkit.Missing {
-		_, err = bsonkit.Put(repl, "_id", bsonkit.Get(list[0], "_id"), true)
-		if err != nil {
-			return nil, err
-		}
-	} else if replID != bsonkit.Get(list[0], "_id") {
-		return nil, fmt.Errorf("document _id is immutable")
-	}
-
-	// update indexes
-	for name, index := range namespace.Indexes {
-		// remove old document
-		_, err := index.Remove(list[0])
+	// perform upsert
+	if len(res.Modified) == 0 && upsert {
+		res, err = namespace.Collection.Upsert(query, repl, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		// add replacement
-		ok, err := index.Add(repl)
-		if err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, fmt.Errorf("duplicate document for index %q", name)
-		}
-	}
+		// append oplog
+		e.append(oplog, namespace.Handle, "insert", res.Upserted, nil)
 
-	// replace document
-	namespace.Documents.Replace(list[0], repl)
+		return &Result{
+			Upserted: res.Upserted,
+		}, nil
+	}
 
 	// append oplog
-	e.append(oplog, namespace.Handle, "replace", repl, nil)
+	if len(res.Modified) > 0 {
+		e.append(oplog, namespace.Handle, "replace", res.Modified[0], nil)
+	}
 
 	return &Result{
-		Matched:  list,
-		Modified: bsonkit.List{repl},
+		Matched:  res.Matched,
+		Modified: res.Modified,
 	}, nil
 }
 
@@ -589,159 +516,35 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 }
 
 func (e *Engine) update(oplog, namespace *Namespace, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
-	// get documents
-	list := namespace.Documents.List
+	// perform update
+	res, err := namespace.Collection.Update(query, update, sort, limit)
+	if err != nil {
+		return nil, err
+	}
 
-	// sort documents
-	var err error
-	if sort != nil && len(*sort) > 0 {
-		list, err = mongokit.Sort(list, sort)
+	// perform upsert
+	if len(res.Modified) == 0 && upsert {
+		res, err = namespace.Collection.Upsert(query, nil, update)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
-	if err != nil {
-		return nil, err
-	}
+		// append oplog
+		e.append(oplog, namespace.Handle, "insert", res.Upserted, nil)
 
-	// check list
-	if len(list) == 0 {
-		// handle upsert
-		if upsert {
-			return e.upsert(oplog, namespace, query, nil, update)
-		}
-
-		return &Result{}, nil
-	}
-
-	// clone documents
-	newList := bsonkit.CloneList(list)
-
-	// update documents
-	changes, err := mongokit.Update(newList, update, false)
-	if err != nil {
-		return nil, err
-	}
-
-	// check ids
-	for i, doc := range newList {
-		if bsonkit.Get(doc, "_id") != bsonkit.Get(list[i], "_id") {
-			return nil, fmt.Errorf("document _id is immutable")
-		}
-	}
-
-	// remove old docs from indexes
-	for _, doc := range list {
-		for _, index := range namespace.Indexes {
-			_, err := index.Remove(doc)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// add new docs to indexes
-	for _, doc := range newList {
-		for name, index := range namespace.Indexes {
-			ok, err := index.Add(doc)
-			if err != nil {
-				return nil, err
-			} else if !ok {
-				return nil, fmt.Errorf("duplicate document for index %q", name)
-			}
-		}
-	}
-
-	// replace documents
-	for i, doc := range newList {
-		namespace.Documents.Replace(list[i], doc)
+		return &Result{
+			Upserted: res.Upserted,
+		}, nil
 	}
 
 	// append oplog
-	for i, doc := range newList {
-		e.append(oplog, namespace.Handle, "update", doc, changes[i])
+	for i, doc := range res.Modified {
+		e.append(oplog, namespace.Handle, "update", doc, res.Changes[i])
 	}
 
 	return &Result{
-		Matched:  list,
-		Modified: newList,
-	}, nil
-}
-
-func (e *Engine) upsert(oplog, namespace *Namespace, query, repl, update bsonkit.Doc) (*Result, error) {
-	// extract query
-	doc, err := mongokit.Extract(query)
-	if err != nil {
-		return nil, err
-	}
-
-	// set replacement if present
-	if repl != nil {
-		// get ids
-		queryID := bsonkit.Get(doc, "_id")
-		replID := bsonkit.Get(repl, "_id")
-
-		// check ids
-		if queryID != bsonkit.Missing && replID != bsonkit.Missing {
-			if bsonkit.Compare(replID, queryID) != 0 {
-				return nil, fmt.Errorf("query _id and replacement _id must match")
-			}
-		}
-
-		// clone replacement
-		doc = bsonkit.Clone(repl)
-
-		// add repl or query id if present
-		if replID != bsonkit.Missing {
-			_, err = bsonkit.Put(doc, "_id", replID, true)
-			if err != nil {
-				return nil, err
-			}
-		} else if queryID != bsonkit.Missing {
-			_, err = bsonkit.Put(doc, "_id", queryID, true)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// apply update if present
-	if update != nil {
-		_, err = mongokit.Apply(doc, update, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// generate object id if missing
-	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// add document to indexes
-	for name, index := range namespace.Indexes {
-		ok, err := index.Add(doc)
-		if err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, fmt.Errorf("duplicate document for index %q", name)
-		}
-	}
-
-	// add document
-	namespace.Documents.Add(doc)
-
-	// append oplog
-	e.append(oplog, namespace.Handle, "insert", doc, nil)
-
-	return &Result{
-		Upserted: doc,
+		Matched:  res.Matched,
+		Modified: res.Modified,
 	}, nil
 }
 
@@ -804,46 +607,19 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 }
 
 func (e *Engine) delete(oplog, namespace *Namespace, query, sort bsonkit.Doc, limit int) (*Result, error) {
-	// get documents
-	list := namespace.Documents.List
-
-	// sort documents
-	var err error
-	if sort != nil && len(*sort) > 0 {
-		list, err = mongokit.Sort(list, sort)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// filter documents
-	list, err = mongokit.Filter(list, query, limit)
+	// perform delete
+	res, err := namespace.Collection.Delete(query, sort, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// remove documents
-	for _, doc := range list {
-		namespace.Documents.Remove(doc)
-	}
-
-	// update indexes
-	for _, doc := range list {
-		for _, index := range namespace.Indexes {
-			_, err := index.Remove(doc)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// append oplog
-	for _, doc := range list {
+	for _, doc := range res.Matched {
 		e.append(oplog, namespace.Handle, "delete", doc, nil)
 	}
 
 	return &Result{
-		Matched: list,
+		Matched: res.Matched,
 	}, nil
 }
 
@@ -959,11 +735,11 @@ func (e *Engine) append(oplog *Namespace, handle Handle, op string, doc bsonkit.
 	}
 
 	// add event
-	oplog.Documents.Add(bsonkit.Convert(event))
+	oplog.Collection.Documents.Add(bsonkit.Convert(event))
 
 	// resize oplog
-	for len(oplog.Documents.List) > 1000 {
-		oplog.Documents.Remove(oplog.Documents.List[0])
+	for len(oplog.Collection.Documents.List) > 1000 {
+		oplog.Collection.Documents.Remove(oplog.Collection.Documents.List[0])
 	}
 }
 
@@ -990,7 +766,7 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 		// check emptiness
 		empty := true
 		for _, ns := range nss {
-			if len(ns.Documents.List) > 0 {
+			if len(ns.Collection.Documents.List) > 0 {
 				empty = false
 			}
 		}
@@ -1080,7 +856,7 @@ func (e *Engine) NumDocuments(handle Handle) (int, error) {
 		return 0, nil
 	}
 
-	return len(namespace.Documents.List), nil
+	return len(namespace.Collection.Documents.List), nil
 }
 
 // ListIndexes will return a list of indexes in the specified namespace.
@@ -1109,7 +885,7 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 
 	// prepare list
 	var list bsonkit.List
-	for name, index := range namespace.Indexes {
+	for name, index := range namespace.Collection.Indexes {
 		// get config
 		config := index.Config()
 
@@ -1162,8 +938,6 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 	// clone dataset
 	clone := e.dataset.Clone()
 
-	// TODO: Prevent other indexes from being cloned?
-
 	// create or clone namespace
 	var namespace *Namespace
 	if clone.Namespaces[handle] == nil {
@@ -1174,37 +948,14 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 		clone.Namespaces[handle] = namespace
 	}
 
-	// check duplicate
-	for name, index := range namespace.Indexes {
-		if bsonkit.Compare(*key, *index.Config().Key) == 0 {
-			return "", fmt.Errorf("existing index %q has same key", name)
-		}
-	}
-
 	// create index
-	index, err := mongokit.CreateIndex(mongokit.IndexConfig{
+	name, err := namespace.Collection.CreateIndex(name, mongokit.IndexConfig{
 		Key:     key,
 		Unique:  unique,
 		Partial: partial,
 	})
 	if err != nil {
 		return "", err
-	}
-
-	// use generated name if missing
-	if name == "" {
-		name = index.Name()
-	}
-
-	// add index
-	namespace.Indexes[name] = index
-
-	// build index
-	ok, err := index.Build(namespace.Documents.List)
-	if err != nil {
-		return "", err
-	} else if !ok {
-		return "", fmt.Errorf("duplicate document for index %q", name)
 	}
 
 	// write dataset
@@ -1247,33 +998,14 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	namespace := clone.Namespaces[handle].Clone()
 	clone.Namespaces[handle] = namespace
 
-	// collect dropped
-	dropped := 0
-
-	// drop single index
-	if name != "" {
-		// check existence
-		if _, ok := namespace.Indexes[name]; !ok {
-			return fmt.Errorf("missing index %q", name)
-		}
-
-		// drop index
-		delete(namespace.Indexes, name)
-		dropped++
-	}
-
-	// drop all indexes
-	if name == "" {
-		for name := range namespace.Indexes {
-			if name != "_id_" {
-				delete(namespace.Indexes, name)
-				dropped++
-			}
-		}
+	// drop index
+	dropped, err := namespace.Collection.DropIndex(name)
+	if err != nil {
+		return err
 	}
 
 	// check if dropped
-	if dropped > 0 {
+	if len(dropped) > 0 {
 		// write dataset
 		err := e.store.Store(clone)
 		if err != nil {
@@ -1309,7 +1041,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	}
 
 	// get oplog
-	oplog := e.dataset.Namespaces[Oplog].Documents.List
+	oplog := e.dataset.Namespaces[Oplog].Collection.Documents.List
 
 	// get index
 	index := len(oplog) - 1
@@ -1374,7 +1106,7 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 	stream.oplog = func() *bsonkit.Set {
 		e.mutex.Lock()
 		defer e.mutex.Unlock()
-		return e.dataset.Namespaces[Oplog].Documents
+		return e.dataset.Namespaces[Oplog].Collection.Documents
 	}
 
 	// set cancel method

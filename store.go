@@ -105,7 +105,7 @@ func (s *FileStore) Load() (*Dataset, error) {
 		namespace := NewNamespace(handle, false)
 
 		// add documents
-		namespace.Documents = bsonkit.NewSet(ns.Documents)
+		namespace.Collection.Documents = bsonkit.NewSet(ns.Documents)
 
 		// add indexes
 		for name, idx := range ns.Indexes {
@@ -128,7 +128,7 @@ func (s *FileStore) Load() (*Dataset, error) {
 			}
 
 			// add index
-			namespace.Indexes[name] = index
+			namespace.Collection.Indexes[name] = index
 		}
 
 		// add namespace
@@ -149,7 +149,7 @@ func (s *FileStore) Store(data *Dataset) error {
 	for handle, namespace := range data.Namespaces {
 		// collect indexes
 		indexes := map[string]FileIndex{}
-		for name, index := range namespace.Indexes {
+		for name, index := range namespace.Collection.Indexes {
 			// get config
 			config := index.Config()
 
@@ -163,7 +163,7 @@ func (s *FileStore) Store(data *Dataset) error {
 
 		// add namespace
 		file.Namespaces[handle.String()] = FileNamespace{
-			Documents: namespace.Documents.List,
+			Documents: namespace.Collection.Documents.List,
 			Indexes:   indexes,
 		}
 	}

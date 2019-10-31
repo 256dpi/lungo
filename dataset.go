@@ -3,9 +3,6 @@ package lungo
 import (
 	"strings"
 
-	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
 )
 
@@ -52,46 +49,22 @@ func (d *Dataset) Clone() *Dataset {
 
 // Namespace holds documents and indexes.
 type Namespace struct {
-	Handle    Handle
-	Documents *bsonkit.Set
-	Indexes   map[string]*mongokit.Index
+	Handle     Handle
+	Collection *mongokit.Collection
 }
 
 // NewNamespace creates and returns a new namespace.
 func NewNamespace(handle Handle, idIndex bool) *Namespace {
-	// create namespace
-	ns := &Namespace{
-		Handle:    handle,
-		Documents: bsonkit.NewSet(nil),
-		Indexes:   map[string]*mongokit.Index{},
+	return &Namespace{
+		Handle:     handle,
+		Collection: mongokit.NewCollection(idIndex),
 	}
-
-	// add default index if requested
-	if idIndex {
-		ns.Indexes["_id_"], _ = mongokit.CreateIndex(mongokit.IndexConfig{
-			Key: bsonkit.Convert(bson.M{
-				"_id": int32(1),
-			}),
-			Unique: true,
-		})
-	}
-
-	return ns
 }
 
 // Clone will clone the namespace.
 func (n *Namespace) Clone() *Namespace {
-	// create new namespace
-	clone := &Namespace{
-		Handle:    n.Handle,
-		Documents: n.Documents.Clone(),
-		Indexes:   map[string]*mongokit.Index{},
+	return &Namespace{
+		Handle:     n.Handle,
+		Collection: n.Collection.Clone(),
 	}
-
-	// clone indexes
-	for name, index := range n.Indexes {
-		clone.Indexes[name] = index.Clone()
-	}
-
-	return clone
 }
