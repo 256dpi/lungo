@@ -122,8 +122,10 @@ func (s *Stream) Next(ctx context.Context) bool {
 
 			// match database and collection
 			if s.handle[0] != "" && s.handle[0] != nsDB {
+				s.index++
 				continue
 			} else if s.handle[1] != "" && s.handle[1] != nsColl {
+				s.index++
 				continue
 			}
 

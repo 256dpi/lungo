@@ -559,3 +559,107 @@ func TestStreamInvalidationClient(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestStreamIsolationCollection(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		stream, err := c.Watch(nil, bson.A{})
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		_, err = c.Database().Collection("foo").InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		id1 := primitive.NewObjectID()
+		_, err = c.InsertOne(nil, bson.M{
+			"_id": id1,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+
+		ret := stream.Next(nil)
+		assert.True(t, ret)
+
+		var event bson.M
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "insert",
+		}, event)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+	})
+}
+
+func TestStreamIsolationDatabase(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		stream, err := c.Database().Watch(nil, bson.A{})
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		_, err = c.Database().Client().Database("test-lungo-stream").Collection("foo").InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		id1 := primitive.NewObjectID()
+		_, err = c.InsertOne(nil, bson.M{
+			"_id": id1,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+
+		ret := stream.Next(nil)
+		assert.True(t, ret)
+
+		var event bson.M
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "insert",
+		}, event)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+	})
+}
