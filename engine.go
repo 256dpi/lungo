@@ -12,6 +12,9 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
+// ErrInvalidHandle is returned if a specified handle is invalid.
+var ErrInvalidHandle = errors.New("invalid handle")
+
 // ErrEngineClosed is returned if the engine has been closed.
 var ErrEngineClosed = errors.New("engine closed")
 
@@ -125,6 +128,11 @@ func (e *Engine) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (
 		return nil, ErrEngineClosed
 	}
 
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
+	}
+
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
 		return &Result{}, nil
@@ -168,6 +176,11 @@ func (e *Engine) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, e
 	// check if closed
 	if e.closed {
 		return nil, ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
 	}
 
 	// clone dataset
@@ -255,6 +268,11 @@ func (e *Engine) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result
 	// check if closed
 	if e.closed {
 		return nil, ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
 	}
 
 	// clone list
@@ -365,6 +383,11 @@ func (e *Engine) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bo
 	// check if closed
 	if e.closed {
 		return nil, ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
 	}
 
 	// check namespace
@@ -498,6 +521,11 @@ func (e *Engine) Update(handle Handle, query, sort, update bsonkit.Doc, limit in
 	// check if closed
 	if e.closed {
 		return nil, ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
 	}
 
 	// check namespace
@@ -716,6 +744,11 @@ func (e *Engine) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Res
 		return nil, ErrEngineClosed
 	}
 
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
+	}
+
 	// check namespace
 	if e.dataset.Namespaces[handle] == nil {
 		return &Result{}, nil
@@ -811,6 +844,11 @@ func (e *Engine) Drop(handle Handle) error {
 	// check if closed
 	if e.closed {
 		return ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" {
+		return ErrInvalidHandle
 	}
 
 	// clone dataset
@@ -1010,6 +1048,11 @@ func (e *Engine) NumDocuments(handle Handle) (int, error) {
 		return 0, ErrEngineClosed
 	}
 
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return 0, ErrInvalidHandle
+	}
+
 	// check namespace
 	namespace, ok := e.dataset.Namespaces[handle]
 	if !ok {
@@ -1028,6 +1071,11 @@ func (e *Engine) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// check if closed
 	if e.closed {
 		return nil, ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return nil, ErrInvalidHandle
 	}
 
 	// check namespace
@@ -1083,6 +1131,11 @@ func (e *Engine) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique
 	// check if closed
 	if e.closed {
 		return "", ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return "", ErrInvalidHandle
 	}
 
 	// clone dataset
@@ -1154,6 +1207,11 @@ func (e *Engine) DropIndex(handle Handle, name string) error {
 	// check if closed
 	if e.closed {
 		return ErrEngineClosed
+	}
+
+	// check handle
+	if handle[0] == "" || handle[1] == "" {
+		return ErrInvalidHandle
 	}
 
 	// check namespace
