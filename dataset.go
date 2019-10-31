@@ -20,14 +20,14 @@ var Oplog = Handle{"local", "oplog"}
 
 // Dataset is the top level object per database that contains all data.
 type Dataset struct {
-	Namespaces map[Handle]*Namespace
+	Namespaces map[Handle]*mongokit.Collection
 }
 
 // NewDataset creates and returns a new dataset.
 func NewDataset() *Dataset {
 	return &Dataset{
-		Namespaces: map[Handle]*Namespace{
-			Oplog: NewNamespace(Oplog, false),
+		Namespaces: map[Handle]*mongokit.Collection{
+			Oplog: mongokit.NewCollection(false),
 		},
 	}
 }
@@ -36,7 +36,7 @@ func NewDataset() *Dataset {
 func (d *Dataset) Clone() *Dataset {
 	// create clone
 	clone := &Dataset{
-		Namespaces: make(map[Handle]*Namespace, len(d.Namespaces)),
+		Namespaces: make(map[Handle]*mongokit.Collection, len(d.Namespaces)),
 	}
 
 	// copy namespaces
@@ -45,26 +45,4 @@ func (d *Dataset) Clone() *Dataset {
 	}
 
 	return clone
-}
-
-// Namespace holds documents and indexes.
-type Namespace struct {
-	Handle     Handle
-	Collection *mongokit.Collection
-}
-
-// NewNamespace creates and returns a new namespace.
-func NewNamespace(handle Handle, idIndex bool) *Namespace {
-	return &Namespace{
-		Handle:     handle,
-		Collection: mongokit.NewCollection(idIndex),
-	}
-}
-
-// Clone will clone the namespace.
-func (n *Namespace) Clone() *Namespace {
-	return &Namespace{
-		Handle:     n.Handle,
-		Collection: n.Collection.Clone(),
-	}
 }

@@ -102,10 +102,10 @@ func (s *FileStore) Load() (*Dataset, error) {
 		handle := Handle{segments[0], segments[1]}
 
 		// create namespace
-		namespace := NewNamespace(handle, false)
+		namespace := mongokit.NewCollection(false)
 
 		// add documents
-		namespace.Collection.Documents = bsonkit.NewSet(ns.Documents)
+		namespace.Documents = bsonkit.NewSet(ns.Documents)
 
 		// add indexes
 		for name, idx := range ns.Indexes {
@@ -128,7 +128,7 @@ func (s *FileStore) Load() (*Dataset, error) {
 			}
 
 			// add index
-			namespace.Collection.Indexes[name] = index
+			namespace.Indexes[name] = index
 		}
 
 		// add namespace
@@ -149,7 +149,7 @@ func (s *FileStore) Store(data *Dataset) error {
 	for handle, namespace := range data.Namespaces {
 		// collect indexes
 		indexes := map[string]FileIndex{}
-		for name, index := range namespace.Collection.Indexes {
+		for name, index := range namespace.Indexes {
 			// get config
 			config := index.Config()
 
@@ -163,7 +163,7 @@ func (s *FileStore) Store(data *Dataset) error {
 
 		// add namespace
 		file.Namespaces[handle.String()] = FileNamespace{
-			Documents: namespace.Collection.Documents.List,
+			Documents: namespace.Documents.List,
 			Indexes:   indexes,
 		}
 	}
