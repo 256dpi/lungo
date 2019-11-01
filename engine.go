@@ -19,8 +19,9 @@ type Options struct {
 	Store Store
 }
 
-// Engine manages the catalog loaded from a store and provides the various
-// MongoDB style CRUD operations.
+// Engine manages the catalog loaded from a store and provides access to it
+// through transactions. Additionally, it also manages streams that subscribe
+// to changes to the catalog.
 type Engine struct {
 	store   Store
 	catalog *Catalog
