@@ -199,8 +199,14 @@ func (s *MongoSession) Client() IClient {
 
 // WithTransaction implements the ISession.WithTransaction method.
 func (s *MongoSession) WithTransaction(ctx context.Context, fn func(ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error) {
-	return s.WithTransaction(ctx, func(sc ISessionContext) (interface{}, error) {
-		return fn(sc)
+	return s.Session.WithTransaction(ctx, func(sc mongo.SessionContext) (interface{}, error) {
+		return fn(&MongoSessionContext{
+			Context: sc,
+			MongoSession: &MongoSession{
+				Session: sc,
+				client:  s.client,
+			},
+		})
 	}, opts...)
 }
 
