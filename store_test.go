@@ -154,7 +154,7 @@ func TestFileStore(t *testing.T) {
 		"local",
 	}, bsonkit.Pick(databases, "name", false))
 
-	collections, err := engine.ListCollections("foo", bsonkit.Convert(bson.M{}))
+	collections, err := engine.ListCollections(Handle{"foo"}, bsonkit.Convert(bson.M{}))
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{
 		"bar",

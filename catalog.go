@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/256dpi/lungo/mongokit"
@@ -13,6 +14,21 @@ type Handle [2]string
 // String will return the string form of the handle.
 func (h Handle) String() string {
 	return strings.Join(h[:], ".")
+}
+
+// Validate will validate the handle.
+func (h Handle) Validate(needCollection bool) error {
+	// check database
+	if h[0] == "" {
+		return fmt.Errorf("missing database in handle")
+	}
+
+	// check collection
+	if needCollection && h[1] == "" {
+		return fmt.Errorf("missing collection in handle")
+	}
+
+	return nil
 }
 
 // Oplog is the handle for the local oplog namespace.

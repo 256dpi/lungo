@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -10,24 +9,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
 )
-
-// ErrInvalidHandle is returned if a specified handle is invalid.
-var ErrInvalidHandle = errors.New("invalid handle")
-
-// Result describes the outcome of an operation.
-type Result struct {
-	// The list of matched documents.
-	Matched bsonkit.List
-
-	// The list of inserted, replace or updated documents.
-	Modified bsonkit.List
-
-	// The upserted document.
-	Upserted bsonkit.Doc
-
-	// The error that occurred during the operation.
-	Error error
-}
 
 // Opcode defines the type of an operation.
 type Opcode int
@@ -74,6 +55,21 @@ type Operation struct {
 	Limit int
 }
 
+// Result describes the outcome of an operation.
+type Result struct {
+	// The list of matched documents.
+	Matched bsonkit.List
+
+	// The list of inserted, replace or updated documents.
+	Modified bsonkit.List
+
+	// The upserted document.
+	Upserted bsonkit.Doc
+
+	// The error that occurred during the operation.
+	Error error
+}
+
 // Transaction buffers multiple changes to a catalog.
 type Transaction struct {
 	catalog *Catalog
@@ -94,9 +90,10 @@ func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, skip, limit i
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// check namespace
@@ -122,9 +119,10 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// clone catalog
@@ -210,9 +208,10 @@ func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*R
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// clone list
@@ -289,9 +288,10 @@ func (t *Transaction) Replace(handle Handle, query, sort, repl bsonkit.Doc, upse
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// check namespace
@@ -374,9 +374,10 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, lim
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// check namespace
@@ -455,9 +456,10 @@ func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) 
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// check namespace
@@ -514,9 +516,10 @@ func (t *Transaction) Drop(handle Handle) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" {
-		return ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(false)
+	if err != nil {
+		return err
 	}
 
 	// clone catalog
@@ -655,17 +658,23 @@ func (t *Transaction) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 
 // ListCollections will return a list of all collections See Engine.ListCollections
 // for more details..
-func (t *Transaction) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
+func (t *Transaction) ListCollections(handle Handle, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire read lock
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
+
+	// validate handle
+	err := handle.Validate(false)
+	if err != nil {
+		return nil, err
+	}
 
 	// prepare list
 	list := make(bsonkit.List, 0, len(t.catalog.Namespaces))
 
 	// add documents
 	for ns := range t.catalog.Namespaces {
-		if ns[0] == db {
+		if ns[0] == handle[0] {
 			list = append(list, &bson.D{
 				bson.E{Key: "name", Value: ns[1]},
 				bson.E{Key: "type", Value: "collection"},
@@ -687,7 +696,7 @@ func (t *Transaction) ListCollections(db string, query bsonkit.Doc) (bsonkit.Lis
 	}
 
 	// filter list
-	list, err := mongokit.Filter(list, query, 0)
+	list, err = mongokit.Filter(list, query, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -702,9 +711,10 @@ func (t *Transaction) CountDocuments(handle Handle) (int, error) {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return 0, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return 0, err
 	}
 
 	// check namespace
@@ -723,9 +733,10 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return nil, ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return nil, err
 	}
 
 	// check namespace
@@ -779,9 +790,10 @@ func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, u
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return "", ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return "", err
 	}
 
 	// clone catalog
@@ -798,7 +810,7 @@ func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, u
 	}
 
 	// create index
-	name, err := namespace.CreateIndex(name, mongokit.IndexConfig{
+	name, err = namespace.CreateIndex(name, mongokit.IndexConfig{
 		Key:     key,
 		Unique:  unique,
 		Partial: partial,
@@ -820,9 +832,10 @@ func (t *Transaction) DropIndex(handle Handle, name string) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// check handle
-	if handle[0] == "" || handle[1] == "" {
-		return ErrInvalidHandle
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return err
 	}
 
 	// check namespace

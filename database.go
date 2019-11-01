@@ -95,7 +95,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	}
 
 	// list collections
-	list, err := d.engine.ListCollections(d.name, query)
+	list, err := d.engine.ListCollections(Handle{d.name}, query)
 	if err != nil {
 		return nil, err
 	}

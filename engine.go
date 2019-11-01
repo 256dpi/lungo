@@ -173,10 +173,10 @@ func (e *Engine) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 }
 
 // ListCollections will return a list of all collections in the specified db.
-func (e *Engine) ListCollections(db string, query bsonkit.Doc) (bsonkit.List, error) {
+func (e *Engine) ListCollections(handle Handle, query bsonkit.Doc) (bsonkit.List, error) {
 	// list collections find as part of a transaction
 	res, err := e.transact(func(txn *Transaction) (interface{}, error) {
-		return txn.ListCollections(db, query)
+		return txn.ListCollections(handle, query)
 	})
 	if err != nil {
 		return nil, err
