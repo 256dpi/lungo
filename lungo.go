@@ -129,24 +129,24 @@ type ISessionContext interface {
 
 // WithSession will yield a session context to the provided callback that uses
 // the specified session.
-func WithSession(ctx context.Context, sess ISession, fn func(ISessionContext) error) error {
-	switch s := sess.(type) {
+func WithSession(ctx context.Context, session ISession, fn func(ISessionContext) error) error {
+	switch ses := session.(type) {
 	case *MongoSession:
-		return mongo.WithSession(ctx, s.Session, func(sc mongo.SessionContext) error {
+		return mongo.WithSession(ctx, ses.Session, func(sc mongo.SessionContext) error {
 			return fn(&MongoSessionContext{
 				Context: sc,
 				MongoSession: &MongoSession{
 					Session: sc,
-					client:  s.client,
+					client:  ses.client,
 				},
 			})
 		})
 	case *Session:
 		return fn(&SessionContext{
-			Context: context.WithValue(ctx, sessionKey{}, s),
-			Session: s,
+			Context: context.WithValue(ctx, sessionKey{}, ses),
+			Session: ses,
 		})
 	default:
-		return fmt.Errorf("unknown session %T", sess)
+		return fmt.Errorf("unknown session %T", session)
 	}
 }
