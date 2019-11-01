@@ -10,13 +10,16 @@ import (
 func TestSemaphore(t *testing.T) {
 	sem := NewSemaphore(2)
 
-	ok := sem.Acquire(timeout())
+	ok := sem.Acquire(timeout(), 0)
 	assert.True(t, ok)
 
-	ok = sem.Acquire(timeout())
+	ok = sem.Acquire(timeout(), 0)
 	assert.True(t, ok)
 
-	ok = sem.Acquire(timeout())
+	ok = sem.Acquire(timeout(), 0)
+	assert.False(t, ok)
+
+	ok = sem.Acquire(nil, 10*time.Millisecond)
 	assert.False(t, ok)
 
 	sem.Release()

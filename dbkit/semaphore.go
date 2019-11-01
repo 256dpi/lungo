@@ -1,5 +1,7 @@
 package dbkit
 
+import "time"
+
 // Semaphore manages access to a resource using a set of tokens.
 type Semaphore struct {
 	tokens chan struct{}
@@ -20,11 +22,20 @@ func NewSemaphore(capacity int) *Semaphore {
 
 // Acquire will acquire a token from the semaphore. If the function returns
 // true the token must be released back to the semaphore exactly once.
-func (s *Semaphore) Acquire(timeout <-chan struct{}) bool {
+func (s *Semaphore) Acquire(cancel <-chan struct{}, timeout time.Duration) bool {
+	// prepare deadline
+	var deadline <-chan time.Time
+	if timeout > 0 {
+		deadline = time.After(timeout)
+	}
+
+	// await token, cancel or deadline
 	select {
 	case <-s.tokens:
 		return true
-	case <-timeout:
+	case <-cancel:
+		return false
+	case <-deadline:
 		return false
 	}
 }

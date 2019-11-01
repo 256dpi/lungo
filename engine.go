@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -81,7 +82,7 @@ func (e *Engine) Transaction(ctx context.Context, lock bool) *Transaction {
 	}
 
 	// acquire token
-	ok := e.token.Acquire(ctx.Done())
+	ok := e.token.Acquire(ctx.Done(), time.Minute)
 	if !ok {
 		return nil
 	}
