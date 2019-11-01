@@ -118,21 +118,16 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		ops = append(ops, op)
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// run bulk
-	results, err := txn.Bulk(c.handle, ops, ordered)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Bulk(c.handle, ops, ordered)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get results
+	results := res.([]Result)
 
 	// prepare result
 	result := &mongo.BulkWriteResult{
@@ -244,16 +239,18 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		limit = int(*opt.Limit)
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, false)
-
 	// find documents
-	res, err := txn.Find(c.handle, query, nil, skip, limit)
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+		return txn.Find(c.handle, query, nil, skip, limit)
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(len(res.Matched)), nil
+	// get result
+	result := res.(*Result)
+
+	return int64(len(result.Matched)), nil
 }
 
 // Database implements the ICollection.Database method.
@@ -283,24 +280,19 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// delete documents
-	res, err := txn.Delete(c.handle, query, nil, 0)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Delete(c.handle, query, nil, 0)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(res.Matched)),
+		DeletedCount: int64(len(result.Matched)),
 	}, nil
 }
 
@@ -323,24 +315,19 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// delete document
-	res, err := txn.Delete(c.handle, query, nil, 1)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Delete(c.handle, query, nil, 1)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(res.Matched)),
+		DeletedCount: int64(len(result.Matched)),
 	}, nil
 }
 
@@ -370,17 +357,19 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 		return nil, err
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, false)
-
 	// find documents
-	res, err := txn.Find(c.handle, query, nil, 0, 0)
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+		return txn.Find(c.handle, query, nil, 0, 0)
+	})
 	if err != nil {
 		return nil, err
 	}
 
+	// get result
+	result := res.(*Result)
+
 	// collect distinct values
-	values := mongokit.Distinct(res.Matched, field)
+	values := mongokit.Distinct(result.Matched, field)
 
 	return values, nil
 }
@@ -416,16 +405,15 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 		"MaxTime": ignored,
 	})
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, false)
-
 	// count documents
-	num, err := txn.CountDocuments(c.handle)
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+		return txn.CountDocuments(c.handle)
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(num), nil
+	return int64(res.(int)), nil
 }
 
 // Find implements the ICollection.Find method.
@@ -479,16 +467,18 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		limit = int(*opt.Limit)
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, false)
-
 	// find documents
-	res, err := txn.Find(c.handle, query, sort, skip, limit)
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+		return txn.Find(c.handle, query, sort, skip, limit)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &Cursor{list: res.Matched}, nil
+	// get result
+	result := res.(*Result)
+
+	return &Cursor{list: result.Matched}, nil
 }
 
 // FindOne implements the ICollection.FindOne method.
@@ -535,21 +525,23 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		skip = int(*opt.Skip)
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, false)
-
 	// find documents
-	res, err := txn.Find(c.handle, query, sort, skip, 1)
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+		return txn.Find(c.handle, query, sort, skip, 1)
+	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
+	// get result
+	result := res.(*Result)
+
 	// check list
-	if len(res.Matched) == 0 {
+	if len(result.Matched) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.Matched[0]}
+	return &SingleResult{doc: result.Matched[0]}
 }
 
 // FindOneAndDelete implements the ICollection.FindOneAndDelete method.
@@ -583,28 +575,23 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		}
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// delete documents
-	res, err := txn.Delete(c.handle, query, sort, 1)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Delete(c.handle, query, sort, 1)
+	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return &SingleResult{err: err}
-	}
+	// get result
+	result := res.(*Result)
 
 	// check list
-	if len(res.Matched) == 0 {
+	if len(result.Matched) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: res.Matched[0]}
+	return &SingleResult{doc: result.Matched[0]}
 }
 
 // FindOneAndReplace implements the ICollection.FindOneAndReplace method.
@@ -663,38 +650,33 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// insert document
-	res, err := txn.Replace(c.handle, query, sort, doc, upsert)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Replace(c.handle, query, sort, doc, upsert)
+	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return &SingleResult{err: err}
-	}
+	// get result
+	result := res.(*Result)
 
 	// check if upserted
-	if res.Upserted != nil {
+	if result.Upserted != nil {
 		if returnAfter {
-			return &SingleResult{doc: res.Upserted}
+			return &SingleResult{doc: result.Upserted}
 		}
 
 		return &SingleResult{}
 	}
 
 	// check if replaced
-	if len(res.Modified) > 0 {
+	if len(result.Modified) > 0 {
 		if returnAfter {
-			return &SingleResult{doc: res.Modified[0]}
+			return &SingleResult{doc: result.Modified[0]}
 		}
 
-		return &SingleResult{doc: res.Matched[0]}
+		return &SingleResult{doc: result.Matched[0]}
 	}
 
 	return &SingleResult{}
@@ -756,38 +738,33 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// update documents
-	res, err := txn.Update(c.handle, query, sort, doc, 1, upsert)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Update(c.handle, query, sort, doc, 1, upsert)
+	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return &SingleResult{err: err}
-	}
+	// get result
+	result := res.(*Result)
 
 	// check if upserted
-	if res.Upserted != nil {
+	if result.Upserted != nil {
 		if returnAfter {
-			return &SingleResult{doc: res.Upserted}
+			return &SingleResult{doc: result.Upserted}
 		}
 
 		return &SingleResult{}
 	}
 
 	// check list
-	if len(res.Modified) > 0 {
+	if len(result.Modified) > 0 {
 		if returnAfter {
-			return &SingleResult{doc: res.Modified[0]}
+			return &SingleResult{doc: result.Modified[0]}
 		}
 
-		return &SingleResult{doc: res.Matched[0]}
+		return &SingleResult{doc: result.Matched[0]}
 	}
 
 	return &SingleResult{}
@@ -837,25 +814,20 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		ordered = *opt.Ordered
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// insert documents
-	res, err := txn.Insert(c.handle, list, ordered)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Insert(c.handle, list, ordered)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	return &mongo.InsertManyResult{
-		InsertedIDs: bsonkit.Pick(res.Modified, "_id", false),
-	}, res.Error
+		InsertedIDs: bsonkit.Pick(result.Modified, "_id", false),
+	}, result.Error
 }
 
 // InsertOne implements the ICollection.InsertOne method.
@@ -877,29 +849,24 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// insert document
-	res, err := txn.Insert(c.handle, bsonkit.List{doc}, true)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Insert(c.handle, bsonkit.List{doc}, true)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	// check error
-	if res.Error != nil {
-		return nil, res.Error
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return &mongo.InsertOneResult{
-		InsertedID: bsonkit.Get(res.Modified[0], "_id"),
+		InsertedID: bsonkit.Get(result.Modified[0], "_id"),
 	}, nil
 }
 
@@ -946,33 +913,28 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		upsert = *opt.Upsert
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// insert document
-	res, err := txn.Replace(c.handle, query, nil, doc, upsert)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Replace(c.handle, query, nil, doc, upsert)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	// check if upserted
-	if res.Upserted != nil {
+	if result.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(result.Upserted, "_id"),
 		}, nil
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.Matched)),
-		ModifiedCount: int64(len(res.Modified)),
+		MatchedCount:  int64(len(result.Matched)),
+		ModifiedCount: int64(len(result.Modified)),
 	}, nil
 }
 
@@ -1014,33 +976,28 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		upsert = *opt.Upsert
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// update documents
-	res, err := txn.Update(c.handle, query, nil, doc, 0, upsert)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Update(c.handle, query, nil, doc, 0, upsert)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	// check if upserted
-	if res.Upserted != nil {
+	if result.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(result.Upserted, "_id"),
 		}, nil
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.Matched)),
-		ModifiedCount: int64(len(res.Modified)),
+		MatchedCount:  int64(len(result.Matched)),
+		ModifiedCount: int64(len(result.Modified)),
 	}, nil
 }
 
@@ -1082,33 +1039,28 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 		upsert = *opt.Upsert
 	}
 
-	// begin transaction
-	txn := c.engine.Begin(ctx, true)
-	defer c.engine.Abort(txn)
-
 	// update documents
-	res, err := txn.Update(c.handle, query, nil, doc, 1, upsert)
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+		return txn.Update(c.handle, query, nil, doc, 1, upsert)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// commit transaction
-	err = c.engine.Commit(txn)
-	if err != nil {
-		return nil, err
-	}
+	// get result
+	result := res.(*Result)
 
 	// check if upserted
-	if res.Upserted != nil {
+	if result.Upserted != nil {
 		return &mongo.UpdateResult{
 			UpsertedCount: 1,
-			UpsertedID:    bsonkit.Get(res.Upserted, "_id"),
+			UpsertedID:    bsonkit.Get(result.Upserted, "_id"),
 		}, nil
 	}
 
 	return &mongo.UpdateResult{
-		MatchedCount:  int64(len(res.Matched)),
-		ModifiedCount: int64(len(res.Modified)),
+		MatchedCount:  int64(len(result.Matched)),
+		ModifiedCount: int64(len(result.Modified)),
 	}, nil
 }
 

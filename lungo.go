@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -124,4 +125,28 @@ type ISession interface {
 type ISessionContext interface {
 	context.Context
 	ISession
+}
+
+// WithSession will yield a session context to the provided callback that uses
+// the specified session.
+func WithSession(ctx context.Context, sess ISession, fn func(ISessionContext) error) error {
+	switch s := sess.(type) {
+	case *MongoSession:
+		return mongo.WithSession(ctx, s.Session, func(sc mongo.SessionContext) error {
+			return fn(&MongoSessionContext{
+				Context: sc,
+				MongoSession: &MongoSession{
+					Session: sc,
+					client:  s.client,
+				},
+			})
+		})
+	case *Session:
+		return fn(&SessionContext{
+			Context: context.WithValue(ctx, sessionKey{}, s),
+			Session: s,
+		})
+	default:
+		return fmt.Errorf("unknown session %T", sess)
+	}
 }

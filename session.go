@@ -210,3 +210,11 @@ func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) 
 
 	return res, nil
 }
+
+func (s *Session) transaction() *Transaction {
+	// acquire lock
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.txn
+}

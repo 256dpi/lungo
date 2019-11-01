@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 )
@@ -30,4 +31,43 @@ func assertOptions(opts interface{}, fields map[string]string) {
 			panic(fmt.Sprintf("lungo: unsupported option: %s", name))
 		}
 	}
+}
+
+func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Transaction) (interface{}, error)) (interface{}, error) {
+	// ensure context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// use active transaction from session in context
+	sess, ok := ctx.Value(sessionKey{}).(*Session)
+	if ok {
+		txn := sess.transaction()
+		if txn != nil {
+			return fn(txn)
+		}
+	}
+
+	// handle unlocked transactions
+	if !lock {
+		return fn(engine.Begin(ctx, false))
+	}
+
+	// create temporary transaction
+	txn := engine.Begin(ctx, lock)
+	defer engine.Abort(txn)
+
+	// yield callback
+	res, err := fn(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = engine.Commit(txn)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
