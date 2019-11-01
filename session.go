@@ -162,14 +162,7 @@ func (s *Session) StartTransaction(opts ...*options.TransactionOptions) error {
 
 // WithTransaction implements the ISession.WithTransaction method.
 func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error) {
-	// acquire lock
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// check if ended
-	if s.ended {
-		return nil, ErrSessionEnded
-	}
+	// do not take locks as we only use safe functions
 
 	// merge options
 	opt := options.MergeTransactionOptions(opts...)
