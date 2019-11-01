@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/dbkit"
 )
 
 // ErrEngineClosed is returned if the engine has been closed.
@@ -26,6 +27,8 @@ type Engine struct {
 	store   Store
 	catalog *Catalog
 	streams map[*Stream]struct{}
+	token   *dbkit.Semaphore
+	txn     *Transaction
 	closed  bool
 	mutex   sync.Mutex
 }
@@ -37,6 +40,7 @@ func CreateEngine(opts Options) (*Engine, error) {
 	e := &Engine{
 		store:   opts.Store,
 		streams: map[*Stream]struct{}{},
+		token:   dbkit.NewSemaphore(1),
 	}
 
 	// load catalog
@@ -51,17 +55,44 @@ func CreateEngine(opts Options) (*Engine, error) {
 	return e, nil
 }
 
-// Transaction will create a new transaction from the current catalog.
-func (e *Engine) Transaction() *Transaction {
+// Transaction will create a new transaction from the current catalog. The
+// transaction must be committed or aborted before another transaction can be
+// started.
+func (e *Engine) Transaction(write bool) *Transaction {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	return NewTransaction(e.catalog)
+	// check if closed
+	if e.closed {
+		return nil
+	}
+
+	// non write transaction do not need to be managed
+	if !write {
+		return NewTransaction(e.catalog)
+	}
+
+	// acquire token
+	ok := e.token.Acquire(nil)
+	if !ok {
+		return nil
+	}
+
+	// assert transaction
+	if e.txn != nil {
+		panic("existing transaction")
+	}
+
+	// create transaction
+	e.txn = NewTransaction(e.catalog)
+
+	return e.txn
 }
 
 // Commit will attempt to store the modified catalog and on success replace the
-// current catalog.
+// current catalog. If an error is returned the transaction has been aborted
+// and become invalid.
 func (e *Engine) Commit(txn *Transaction) error {
 	// acquire lock
 	e.mutex.Lock()
@@ -71,6 +102,17 @@ func (e *Engine) Commit(txn *Transaction) error {
 	if e.closed {
 		return ErrEngineClosed
 	}
+
+	// check transaction
+	if e.txn != txn {
+		return fmt.Errorf("invalid transaction")
+	}
+
+	// ensure token is released
+	defer e.token.Release()
+
+	// unset transaction
+	e.txn = nil
 
 	// check if dirty
 	if !txn.Dirty() {
@@ -96,6 +138,30 @@ func (e *Engine) Commit(txn *Transaction) error {
 	}
 
 	return nil
+}
+
+// Abort will abort the specified transaction. To ensure a transaction is
+// always released, Abort should be called after finishing any transaction.
+func (e *Engine) Abort(txn *Transaction) {
+	// acquire lock
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	// check if closed
+	if e.closed {
+		return
+	}
+
+	// check transaction
+	if e.txn != txn {
+		return
+	}
+
+	// unset transaction
+	e.txn = nil
+
+	// release token
+	e.token.Release()
 }
 
 // Watch will return a stream that is able to consume events from the oplog.

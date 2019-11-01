@@ -95,7 +95,7 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// get transaction
-	txn := c.engine.Transaction()
+	txn := c.engine.Transaction(false)
 
 	// list collections
 	list, err := txn.ListDatabases(query)

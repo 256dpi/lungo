@@ -52,7 +52,8 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 // Drop implements the IDatabase.Drop method.
 func (d *Database) Drop(context.Context) error {
 	// get transaction
-	txn := d.engine.Transaction()
+	txn := d.engine.Transaction(true)
+	defer d.engine.Abort(txn)
 
 	// drop all namespaces with database prefix
 	err := txn.Drop(Handle{d.name, ""})
@@ -104,7 +105,7 @@ func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts
 	}
 
 	// get transaction
-	txn := d.engine.Transaction()
+	txn := d.engine.Transaction(false)
 
 	// list collections
 	list, err := txn.ListCollections(Handle{d.name}, query)
