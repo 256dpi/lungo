@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -59,7 +60,7 @@ func CreateEngine(opts Options) (*Engine, error) {
 // transaction must be committed or aborted before another transaction can be
 // started. Unlocked transactions serve as a point in time snapshots and can be
 // just be discard when not used further.
-func (e *Engine) Transaction(lock bool) *Transaction {
+func (e *Engine) Transaction(ctx context.Context, lock bool) *Transaction {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -74,8 +75,13 @@ func (e *Engine) Transaction(lock bool) *Transaction {
 		return NewTransaction(e.catalog)
 	}
 
+	// ensure context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	// acquire token
-	ok := e.token.Acquire(nil)
+	ok := e.token.Acquire(ctx.Done())
 	if !ok {
 		return nil
 	}

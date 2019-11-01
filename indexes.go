@@ -100,7 +100,7 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	}
 
 	// get transaction
-	txn := v.engine.Transaction(true)
+	txn := v.engine.Transaction(ctx, true)
 	defer v.engine.Abort(txn)
 
 	// create index
@@ -129,7 +129,7 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 	})
 
 	// get transaction
-	txn := v.engine.Transaction(true)
+	txn := v.engine.Transaction(ctx, true)
 	defer v.engine.Abort(txn)
 
 	// drop all indexes
@@ -163,7 +163,7 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 	}
 
 	// get transaction
-	txn := v.engine.Transaction(true)
+	txn := v.engine.Transaction(ctx, true)
 	defer v.engine.Abort(txn)
 
 	// drop all indexes
@@ -193,7 +193,7 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 	})
 
 	// get transaction
-	txn := v.engine.Transaction(false)
+	txn := v.engine.Transaction(ctx, false)
 
 	// list indexes
 	list, err := txn.ListIndexes(v.handle)
