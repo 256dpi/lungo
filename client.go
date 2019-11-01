@@ -94,8 +94,11 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 		return mongo.ListDatabasesResult{}, err
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// list collections
-	list, err := c.engine.ListDatabases(query)
+	list, err := txn.ListDatabases(query)
 	if err != nil {
 		return mongo.ListDatabasesResult{}, err
 	}

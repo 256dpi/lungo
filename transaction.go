@@ -84,7 +84,9 @@ func NewTransaction(catalog *Catalog) *Transaction {
 	}
 }
 
-// Find will query documents from a namespace. See Engine.Find for more details.
+// Find will query documents from a namespace. Sort, skip and limit may be
+// supplied to modify the result. The returned results will contain the matched
+// list of documents.
 func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire read lock
 	t.mutex.RLock()
@@ -112,8 +114,8 @@ func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, skip, limit i
 	}, nil
 }
 
-// Bulk performs the specified operations in one go. See Engine.Bulk for more
-// details.
+// Bulk performs the specified operations in one go. If ordered is true the
+// process is aborted on the first error.
 func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -202,7 +204,11 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 	return results, nil
 }
 
-// Insert will insert the specified documents. See Engine.Insert for more details.
+// Insert will insert the specified documents into the namespace. The engine
+// will automatically generate an object id per document if it is missing. If
+// ordered ist enabled the operation is aborted on the first error and the
+// result returned. Otherwise, the engine will try to insert all documents. The
+// returned results will contain the inserted documents and potential errors.
 func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -282,7 +288,9 @@ func (t *Transaction) insert(handle Handle, oplog, namespace *mongokit.Collectio
 }
 
 // Replace will replace the first matching document with the specified
-// replacement document. See Engine.Replace for more details.
+// replacement document. If upsert is enabled, it will insert the replacement
+// document if it is missing. The returned result will contain the matched
+// and modified or upserted document.
 func (t *Transaction) Replace(handle Handle, query, sort, repl bsonkit.Doc, upsert bool) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -367,8 +375,11 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 	}, nil
 }
 
-// Update will apply the update to all matching documents. See Engine.Update for
-// more details.
+// Update will apply the update to all matching document. Sort, skip and limit
+// may be supplied to modify the result. If upsert is enabled, it will extract
+// constant parts of the query and apply the update and insert the document if
+// it is missing. The returned result will contain the matched and modified or
+// upserted document.
 func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -450,7 +461,9 @@ func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collectio
 	}, nil
 }
 
-// Delete will remove all matching documents. See Engine.Delete for more details.
+// Delete will remove all matching documents from the namespace. Sort, skip and
+// limit may be supplied to modify the result. The returned result will contain
+// the matched documents.
 func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -510,7 +523,9 @@ func (t *Transaction) delete(handle Handle, oplog, namespace *mongokit.Collectio
 	}, nil
 }
 
-// Drop will drop namespaces. See Engine.Drop for more details.
+// Drop will return the namespace with the specified handle from the catalog.
+// If the second part of the handle is empty, it will drop all namespaces
+// matching the first part.
 func (t *Transaction) Drop(handle Handle) error {
 	// acquire write lock
 	t.mutex.Lock()
@@ -615,8 +630,7 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 	}
 }
 
-// ListDatabases will return a list of all databases. See Engine.ListDatabases
-// for more details.
+// ListDatabases will return a list of all databases in the catalog.
 func (t *Transaction) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire read lock
 	t.mutex.RLock()
@@ -656,8 +670,7 @@ func (t *Transaction) ListDatabases(query bsonkit.Doc) (bsonkit.List, error) {
 	return list, nil
 }
 
-// ListCollections will return a list of all collections See Engine.ListCollections
-// for more details..
+// ListCollections will return a list of all collections in the specified db.
 func (t *Transaction) ListCollections(handle Handle, query bsonkit.Doc) (bsonkit.List, error) {
 	// acquire read lock
 	t.mutex.RLock()
@@ -704,8 +717,7 @@ func (t *Transaction) ListCollections(handle Handle, query bsonkit.Doc) (bsonkit
 	return list, nil
 }
 
-// CountDocuments will return the number of documents. See Engine.CountDocuments
-// for more details.
+// CountDocuments will return the number of documents in the specified namespace.
 func (t *Transaction) CountDocuments(handle Handle) (int, error) {
 	// acquire read lock
 	t.mutex.RLock()
@@ -726,8 +738,7 @@ func (t *Transaction) CountDocuments(handle Handle) (int, error) {
 	return len(namespace.Documents.List), nil
 }
 
-// ListIndexes will return a list of indexes. See Engine.ListIndexes for more
-// details.
+// ListIndexes will return a list of indexes in the specified namespace.
 func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// acquire read lock
 	t.mutex.RLock()
@@ -783,8 +794,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	return list, nil
 }
 
-// CreateIndex will create the specified index. See Engine.CreateIndex for more
-// details.
+// CreateIndex will create the specified index in the specified namespace.
 func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc) (string, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -826,7 +836,7 @@ func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, u
 	return name, nil
 }
 
-// DropIndex will drop the specified index. See Engine.DropIndex for more details.
+// DropIndex will drop the specified index in the specified namespace.
 func (t *Transaction) DropIndex(handle Handle, name string) error {
 	// acquire write lock
 	t.mutex.Lock()

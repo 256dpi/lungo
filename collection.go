@@ -118,8 +118,17 @@ func (c *Collection) BulkWrite(_ context.Context, models []mongo.WriteModel, opt
 		ops = append(ops, op)
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// run bulk
-	results, err := c.engine.Bulk(c.handle, ops, ordered)
+	results, err := txn.Bulk(c.handle, ops, ordered)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -234,8 +243,11 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		limit = int(*opt.Limit)
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// find documents
-	res, err := c.engine.Find(c.handle, query, nil, skip, limit)
+	res, err := txn.Find(c.handle, query, nil, skip, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -270,8 +282,17 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// delete documents
-	res, err := c.engine.Delete(c.handle, query, nil, 0)
+	res, err := txn.Delete(c.handle, query, nil, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -300,8 +321,17 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// delete document
-	res, err := c.engine.Delete(c.handle, query, nil, 1)
+	res, err := txn.Delete(c.handle, query, nil, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -337,8 +367,11 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 		return nil, err
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// find documents
-	res, err := c.engine.Find(c.handle, query, nil, 0, 0)
+	res, err := txn.Find(c.handle, query, nil, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -351,8 +384,17 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 // Drop implements the ICollection.Drop method.
 func (c *Collection) Drop(context.Context) error {
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// drop namespace
-	err := c.engine.Drop(c.handle)
+	err := txn.Drop(c.handle)
+	if err != nil {
+		return err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return err
 	}
@@ -370,8 +412,11 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 		"MaxTime": ignored,
 	})
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// count documents
-	num, err := c.engine.CountDocuments(c.handle)
+	num, err := txn.CountDocuments(c.handle)
 	if err != nil {
 		return 0, err
 	}
@@ -430,8 +475,11 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		limit = int(*opt.Limit)
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// find documents
-	res, err := c.engine.Find(c.handle, query, sort, skip, limit)
+	res, err := txn.Find(c.handle, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -483,8 +531,11 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		skip = int(*opt.Skip)
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// find documents
-	res, err := c.engine.Find(c.handle, query, sort, skip, 1)
+	res, err := txn.Find(c.handle, query, sort, skip, 1)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -528,8 +579,17 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		}
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// delete documents
-	res, err := c.engine.Delete(c.handle, query, sort, 1)
+	res, err := txn.Delete(c.handle, query, sort, 1)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -598,8 +658,17 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// insert document
-	res, err := c.engine.Replace(c.handle, query, sort, doc, upsert)
+	res, err := txn.Replace(c.handle, query, sort, doc, upsert)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -681,8 +750,17 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// update documents
-	res, err := c.engine.Update(c.handle, query, sort, doc, 1, upsert)
+	res, err := txn.Update(c.handle, query, sort, doc, 1, upsert)
+	if err != nil {
+		return &SingleResult{err: err}
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -752,8 +830,17 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		ordered = *opt.Ordered
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// insert documents
-	res, err := c.engine.Insert(c.handle, list, ordered)
+	res, err := txn.Insert(c.handle, list, ordered)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -782,8 +869,17 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// insert document
-	res, err := c.engine.Insert(c.handle, bsonkit.List{doc}, true)
+	res, err := txn.Insert(c.handle, bsonkit.List{doc}, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -841,8 +937,17 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		upsert = *opt.Upsert
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// insert document
-	res, err := c.engine.Replace(c.handle, query, nil, doc, upsert)
+	res, err := txn.Replace(c.handle, query, nil, doc, upsert)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -899,8 +1004,17 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		upsert = *opt.Upsert
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// update documents
-	res, err := c.engine.Update(c.handle, query, nil, doc, 0, upsert)
+	res, err := txn.Update(c.handle, query, nil, doc, 0, upsert)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -957,8 +1071,17 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 		upsert = *opt.Upsert
 	}
 
+	// get transaction
+	txn := c.engine.Transaction()
+
 	// update documents
-	res, err := c.engine.Update(c.handle, query, nil, doc, 1, upsert)
+	res, err := txn.Update(c.handle, query, nil, doc, 1, upsert)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = c.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}

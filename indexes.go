@@ -99,8 +99,17 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 		}
 	}
 
+	// get transaction
+	txn := v.engine.Transaction()
+
 	// create index
-	name, err = v.engine.CreateIndex(v.handle, key, name, unique, partial)
+	name, err = txn.CreateIndex(v.handle, key, name, unique, partial)
+	if err != nil {
+		return "", err
+	}
+
+	// commit transaction
+	err = v.engine.Commit(txn)
 	if err != nil {
 		return "", err
 	}
@@ -118,8 +127,17 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 		"MaxTime": ignored,
 	})
 
+	// get transaction
+	txn := v.engine.Transaction()
+
 	// drop all indexes
-	err := v.engine.DropIndex(v.handle, "")
+	err := txn.DropIndex(v.handle, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = v.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +160,17 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 		panic("lungo: invalid index name")
 	}
 
+	// get transaction
+	txn := v.engine.Transaction()
+
 	// drop all indexes
-	err := v.engine.DropIndex(v.handle, name)
+	err := txn.DropIndex(v.handle, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// commit transaction
+	err = v.engine.Commit(txn)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +189,11 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 		"MaxTime":   ignored,
 	})
 
+	// get transaction
+	txn := v.engine.Transaction()
+
 	// list indexes
-	list, err := v.engine.ListIndexes(v.handle)
+	list, err := txn.ListIndexes(v.handle)
 	if err != nil {
 		return nil, err
 	}
