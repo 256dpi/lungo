@@ -26,7 +26,7 @@ type Engine struct {
 	catalog *Catalog
 	streams map[*Stream]struct{}
 	closed  bool
-	mutex   sync.RWMutex
+	mutex   sync.Mutex
 }
 
 // CreateEngine will create and return an engine with a loaded catalog from the
