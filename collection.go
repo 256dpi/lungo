@@ -370,8 +370,8 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 		"MaxTime": ignored,
 	})
 
-	// get num documents
-	num, err := c.engine.NumDocuments(c.handle)
+	// count documents
+	num, err := c.engine.CountDocuments(c.handle)
 	if err != nil {
 		return 0, err
 	}

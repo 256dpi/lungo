@@ -695,9 +695,9 @@ func (t *Transaction) ListCollections(db string, query bsonkit.Doc) (bsonkit.Lis
 	return list, nil
 }
 
-// NumDocuments will return the number of documents. See Engine.NumDocuments
+// CountDocuments will return the number of documents. See Engine.CountDocuments
 // for more details.
-func (t *Transaction) NumDocuments(handle Handle) (int, error) {
+func (t *Transaction) CountDocuments(handle Handle) (int, error) {
 	// acquire read lock
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
