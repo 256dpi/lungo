@@ -118,8 +118,8 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		ops = append(ops, op)
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// run bulk
@@ -244,8 +244,8 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		limit = int(*opt.Limit)
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, false)
+	// begin transaction
+	txn := c.engine.Begin(ctx, false)
 
 	// find documents
 	res, err := txn.Find(c.handle, query, nil, skip, limit)
@@ -283,8 +283,8 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// delete documents
@@ -323,8 +323,8 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// delete document
@@ -370,8 +370,8 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 		return nil, err
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, false)
+	// begin transaction
+	txn := c.engine.Begin(ctx, false)
 
 	// find documents
 	res, err := txn.Find(c.handle, query, nil, 0, 0)
@@ -387,8 +387,8 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 // Drop implements the ICollection.Drop method.
 func (c *Collection) Drop(ctx context.Context) error {
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// drop namespace
@@ -416,8 +416,8 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 		"MaxTime": ignored,
 	})
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, false)
+	// begin transaction
+	txn := c.engine.Begin(ctx, false)
 
 	// count documents
 	num, err := txn.CountDocuments(c.handle)
@@ -479,8 +479,8 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		limit = int(*opt.Limit)
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, false)
+	// begin transaction
+	txn := c.engine.Begin(ctx, false)
 
 	// find documents
 	res, err := txn.Find(c.handle, query, sort, skip, limit)
@@ -535,8 +535,8 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		skip = int(*opt.Skip)
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, false)
+	// begin transaction
+	txn := c.engine.Begin(ctx, false)
 
 	// find documents
 	res, err := txn.Find(c.handle, query, sort, skip, 1)
@@ -583,8 +583,8 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		}
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// delete documents
@@ -663,8 +663,8 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// insert document
@@ -756,8 +756,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// update documents
@@ -837,8 +837,8 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		ordered = *opt.Ordered
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// insert documents
@@ -877,8 +877,8 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 		return nil, err
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// insert document
@@ -946,8 +946,8 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 		upsert = *opt.Upsert
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// insert document
@@ -1014,8 +1014,8 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		upsert = *opt.Upsert
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// update documents
@@ -1082,8 +1082,8 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 		upsert = *opt.Upsert
 	}
 
-	// get transaction
-	txn := c.engine.Transaction(ctx, true)
+	// begin transaction
+	txn := c.engine.Begin(ctx, true)
 	defer c.engine.Abort(txn)
 
 	// update documents

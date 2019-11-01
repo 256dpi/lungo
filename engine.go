@@ -57,11 +57,11 @@ func CreateEngine(opts Options) (*Engine, error) {
 	return e, nil
 }
 
-// Transaction will create a new transaction from the current catalog. A locked
+// Begin will create a new transaction from the current catalog. A locked
 // transaction must be committed or aborted before another transaction can be
 // started. Unlocked transactions serve as a point in time snapshots and can be
 // just be discard when not used further.
-func (e *Engine) Transaction(ctx context.Context, lock bool) *Transaction {
+func (e *Engine) Begin(ctx context.Context, lock bool) *Transaction {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
