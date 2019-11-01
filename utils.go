@@ -42,7 +42,7 @@ func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Tra
 	// use active transaction from session in context
 	sess, ok := ctx.Value(sessionKey{}).(*Session)
 	if ok {
-		txn := sess.transaction()
+		txn := sess.Transaction()
 		if txn != nil {
 			return fn(txn)
 		}

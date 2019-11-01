@@ -211,7 +211,9 @@ func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) 
 	return res, nil
 }
 
-func (s *Session) transaction() *Transaction {
+// Transaction will return the active transaction or nil if no transaction has
+// been started.
+func (s *Session) Transaction() *Transaction {
 	// acquire lock
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
