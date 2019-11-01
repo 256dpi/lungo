@@ -28,14 +28,28 @@ func TestSessionManual(t *testing.T) {
 		assert.NoError(t, err)
 
 		id2 := primitive.NewObjectID()
-		err = WithSession(ctx, sess, func(sc ISessionContext) error {
+		_ = WithSession(ctx, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
 				"foo": "bar",
 			})
-			return err
+			assert.NoError(t, err)
+
+			csr, err := c.Find(sc, bson.M{})
+			assert.NoError(t, err)
+			assert.Equal(t, []bson.M{
+				{
+					"_id": id1,
+					"foo": "bar",
+				},
+				{
+					"_id": id2,
+					"foo": "bar",
+				},
+			}, readAll(csr))
+
+			return nil
 		})
-		assert.NoError(t, err)
 
 		csr, err := c.Find(ctx, bson.M{})
 		assert.NoError(t, err)
@@ -81,14 +95,28 @@ func TestSessionManual(t *testing.T) {
 		assert.NoError(t, err)
 
 		id2 := primitive.NewObjectID()
-		err = WithSession(ctx, sess, func(sc ISessionContext) error {
+		_ = WithSession(ctx, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
 				"foo": "bar",
 			})
-			return err
+			assert.NoError(t, err)
+
+			csr, err := c.Find(sc, bson.M{})
+			assert.NoError(t, err)
+			assert.Equal(t, []bson.M{
+				{
+					"_id": id1,
+					"foo": "bar",
+				},
+				{
+					"_id": id2,
+					"foo": "bar",
+				},
+			}, readAll(csr))
+
+			return nil
 		})
-		assert.NoError(t, err)
 
 		csr, err := c.Find(ctx, bson.M{})
 		assert.NoError(t, err)
