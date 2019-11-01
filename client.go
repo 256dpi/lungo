@@ -141,7 +141,9 @@ func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error)
 		"DefaultMaxCommitTime":  ignored,
 	})
 
-	panic("lungo: not implemented")
+	return &Session{
+		engine: c.engine,
+	}, nil
 }
 
 // UseSession implements the IClient.UseSession method.
@@ -150,7 +152,7 @@ func (c *Client) UseSession(ctx context.Context, fn func(ISessionContext) error)
 }
 
 // UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
-func (c *Client) UseSessionWithOptions(_ context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
+func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
 	// assert supported options
 	assertOptions(opt, map[string]string{
 		"CausalConsistency":     ignored,
@@ -160,7 +162,27 @@ func (c *Client) UseSessionWithOptions(_ context.Context, opt *options.SessionOp
 		"DefaultMaxCommitTime":  ignored,
 	})
 
-	panic("lungo: not implemented")
+	// create session
+	session := &Session{
+		engine: c.engine,
+	}
+
+	// ensure ending
+	defer session.EndSession(nil)
+
+	// prepare session context
+	sc := SessionContext{
+		Context: context.WithValue(ctx, sessionKey{}, session),
+		Session: session,
+	}
+
+	// yield context
+	err := fn(sc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Watch implements the IClient.Watch method.

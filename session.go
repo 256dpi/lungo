@@ -8,9 +8,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type sessionKey struct{}
+
+// SessionContext provides a mongo compatible session context.
+type SessionContext struct {
+	context.Context
+	*Session
+}
+
 // Session provides a mongo compatible way to handle transactions.
 type Session struct {
-	client *Client
+	engine *Engine
 }
 
 // AbortTransaction implements the ISession.AbortTransaction method.
@@ -30,7 +38,9 @@ func (s *Session) AdvanceOperationTime(*primitive.Timestamp) error {
 
 // Client implements the ISession.Client method.
 func (s *Session) Client() IClient {
-	return s.client
+	return &Client{
+		engine: s.engine,
+	}
 }
 
 // ClusterTime implements the ISession.ClusterTime method.
