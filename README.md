@@ -97,3 +97,45 @@ $ go get -u github.com/256dpi/lungo
 The driver supports all standard CRUD, index management and namespace management
 methods that are also exposed by the official driver. However, to this date the
 driver does not yet support any of the MongoDB commands that can be issued using
+the `Database.RunCommand` method. Most unexported commands are related to query
+planning, replication, sharding, user & role management features that we do not
+plan to support. But, we eventually will support some of the administrative and
+diagnostics commands e.g. `renameCollection` and `explain`.
+
+Please file an issue if you see the need for the support of some commands.
+
+## Single, Compound and Partial Indexes
+
+The `mongokit.Index` type supports single field and compound indexes that
+optionally enforce uniqueness or index a subset of documents using a partial
+filter expression. Support for TTL indexes will be added shortly.
+
+The more special multikey, geospatial, text and hashed indexes are not yet
+supported and may be added later, while the deprecated sparse indexes will not.
+The recently introduced collation feature as well as wildcard indexes are also
+not yet supported.
+
+## Sessions & Multi-Document Transactions
+
+Lungo supports multi document transactions using a basic copy on write mechanism.
+Every transaction will make a copy of the catalog and clone namespaces before
+applying changes. After the new catalog has been written to disk, the transaction
+is considered successful and the catalog replaced. Read only transactions are
+allowed to run in parallel as they only serve as a snapshots. But write
+transactions are run sequential. We assume write transactions to be fast and
+therefore try to prevent abortions due to conflicts.
+
+This approach is very basic and may change in the future.
+
+## Oplog & Change Streams
+
+Similar to MongoDB, every CRUD change is also logged to the `local.oplog`
+collection in the same format as in MongoDB. This allows client, database and
+collection change streams.
+
+## Memory & Single File Store
+
+The `lungo.Store` interface allows custom adapters that store the catalog to
+various mediums. The builtin `MemoryStore` keeps all data in memory and the
+`FileStore` writes all data atomically to a single BSON file. The interface may
+get more sophisticated in the future to allow more efficient storing methods.
