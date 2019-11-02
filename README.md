@@ -91,3 +91,9 @@ To get started, install the package using the go tool:
 ```bash
 $ go get -u github.com/256dpi/lungo
 ```
+
+## CRUD, Index Management and Namespace Management
+
+The driver supports all standard CRUD, index management and namespace management
+methods that are also exposed by the official driver. However, to this date the
+driver does not yet support any of the MongoDB commands that can be issued using
