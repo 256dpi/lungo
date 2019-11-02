@@ -19,7 +19,7 @@ $ go get -u github.com/256dpi/lungo
 ## Example
 
 The [example](https://github.com/256dpi/lungo/tree/master/example_test.go) test
-show a basic usage of the `mongo` compatible API.
+shows a basic usage of the `mongo` compatible API.
 
 ## Introduction
 
@@ -123,15 +123,14 @@ applying changes. After the new catalog has been written to disk, the transactio
 is considered successful and the catalog replaced. Read only transactions are
 allowed to run in parallel as they only serve as a snapshots. But write
 transactions are run sequential. We assume write transactions to be fast and
-therefore try to prevent abortions due to conflicts.
-
-This approach is very basic and may change in the future.
+therefore try to prevent abortions due to conflicts. This approach is very basic
+and may change in the future.
 
 ### Oplog & Change Streams
 
 Similar to MongoDB, every CRUD change is also logged to the `local.oplog`
-collection in the same format as in MongoDB. This allows client, database and
-collection change streams.
+collection in the same format as consumed in MongoDB. This allows client,
+database and collection change streams.
 
 ### Memory & Single File Store
 
