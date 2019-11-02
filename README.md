@@ -2,6 +2,14 @@
 
 **A MongoDB compatible embedded database and toolkit for Go.**
 
+- [Introduction](#introduction)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Example](#example)
+- [Installation](#installation)
+
+## Introduction
+
 The document oriented database MongoDB has become a widely used data store by
 applications developed using the Go programming language. Both, the deprecated
 `mgo` and the official `mongo` driver offer a sophisticated interface to connect
@@ -51,4 +59,35 @@ standard CRUD interface.
 `mongo` compatible driver. The heavy work is lifted by the engine and transaction
 types which manage access to the basic mongokit collections. While both can be
 used standalone, most users want to use the generic driver interface that can be
-used with really MongoDB deployments and lungo engines.  
+used with MongoDB deployments and lungo engines.
+
+## Features
+
+On high level, lungo provides the following features (unchecked features are
+planned to be implemented):
+
+- [x] CRUD, Index Management and Namespace Management
+- [x] Single, Compound and Partial Indexes
+- [x] Sessions & Multi-Document Transactions
+- [x] Oplog & Change Streams
+- [x] Memory & Single File Store
+- [ ] Projections
+- [ ] Aggregation Pipeline
+
+While the goal is to implement all MongoDB features in a compatible way, the
+architectural difference has implications to some features. Furthermore, the
+goal is to build an open and accessible codebase that favors simplicity. Please
+checkout the sections at the end for details on the implementation.
+
+## Example
+
+The [example](https://github.com/256dpi/lungo/tree/master/example_test.go) test
+show a basic usage of the `mongo` compatible API.
+
+## Installation
+
+To get started, install the package using the go tool:
+
+```bash
+$ go get -u github.com/256dpi/lungo
+```
