@@ -3,29 +3,12 @@ package bsonkit
 import (
 	"fmt"
 	"reflect"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Decode will decode the specified document to an arbitrary value which may be
 // a struct with bson tags in most cases.
 func Decode(doc Doc, out interface{}) error {
-	// the following approach is not very fast, but it ensures compatibility
-	// with custom types that implement the bson.Unmarshaller interface
-
-	// marshal document
-	bytes, err := bson.Marshal(doc)
-	if err != nil {
-		return err
-	}
-
-	// unmarshal bytes
-	err = bson.Unmarshal(bytes, out)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return Transfer(doc, out)
 }
 
 // DecodeList will decode a list of documents to an arbitrary value.

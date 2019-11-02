@@ -9,18 +9,9 @@ import (
 // Transform will transform an arbitrary value into a document composed of known
 // primitives.
 func Transform(v interface{}) (Doc, error) {
-	// the following approach is not very fast, but it ensures compatibility
-	// with custom types that implement the bson.Marshaller interface
-
-	// marshal to bytes
-	bytes, err := bson.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-
-	// unmarshal bytes
+	// transfer
 	var doc bson.D
-	err = bson.Unmarshal(bytes, &doc)
+	err := Transfer(v, &doc)
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +45,23 @@ func TransformList(v interface{}) (List, error) {
 	}
 
 	return list, nil
+}
+
+// Transfer will transfer data from one type to another by marshalling the data
+// and unmarshalling it again. This method is not very fast, but it ensures
+// compatibility with custom types that implement the bson.Marshaller interface.
+func Transfer(in, out interface{}) error {
+	// marshal to bytes
+	bytes, err := bson.Marshal(in)
+	if err != nil {
+		return err
+	}
+
+	// unmarshal bytes
+	err = bson.Unmarshal(bytes, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
