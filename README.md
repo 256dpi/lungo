@@ -2,11 +2,24 @@
 
 **A MongoDB compatible embedded database and toolkit for Go.**
 
+- [Installation](#installation)
+- [Example](#example)
 - [Introduction](#introduction)
 - [Architecture](#architecture)
 - [Features](#features)
-- [Example](#example)
-- [Installation](#installation)
+
+## Installation
+
+To get started, install the package using the go tool:
+
+```bash
+$ go get -u github.com/256dpi/lungo
+```
+
+## Example
+
+The [example](https://github.com/256dpi/lungo/tree/master/example_test.go) test
+show a basic usage of the `mongo` compatible API.
 
 ## Introduction
 
@@ -77,22 +90,9 @@ planned to be implemented):
 While the goal is to implement all MongoDB features in a compatible way, the
 architectural difference has implications to some features. Furthermore, the
 goal is to build an open and accessible codebase that favors simplicity. Please
-checkout the sections at the end for details on the implementation.
+checkout the following sections for details on the implementation.
 
-## Example
-
-The [example](https://github.com/256dpi/lungo/tree/master/example_test.go) test
-show a basic usage of the `mongo` compatible API.
-
-## Installation
-
-To get started, install the package using the go tool:
-
-```bash
-$ go get -u github.com/256dpi/lungo
-```
-
-## CRUD, Index Management and Namespace Management
+### CRUD, Index Management and Namespace Management
 
 The driver supports all standard CRUD, index management and namespace management
 methods that are also exposed by the official driver. However, to this date the
@@ -104,7 +104,7 @@ diagnostics commands e.g. `renameCollection` and `explain`.
 
 Please file an issue if you see the need for the support of some commands.
 
-## Single, Compound and Partial Indexes
+### Single, Compound and Partial Indexes
 
 The `mongokit.Index` type supports single field and compound indexes that
 optionally enforce uniqueness or index a subset of documents using a partial
@@ -115,7 +115,7 @@ supported and may be added later, while the deprecated sparse indexes will not.
 The recently introduced collation feature as well as wildcard indexes are also
 not yet supported.
 
-## Sessions & Multi-Document Transactions
+### Sessions & Multi-Document Transactions
 
 Lungo supports multi document transactions using a basic copy on write mechanism.
 Every transaction will make a copy of the catalog and clone namespaces before
@@ -127,13 +127,13 @@ therefore try to prevent abortions due to conflicts.
 
 This approach is very basic and may change in the future.
 
-## Oplog & Change Streams
+### Oplog & Change Streams
 
 Similar to MongoDB, every CRUD change is also logged to the `local.oplog`
 collection in the same format as in MongoDB. This allows client, database and
 collection change streams.
 
-## Memory & Single File Store
+### Memory & Single File Store
 
 The `lungo.Store` interface allows custom adapters that store the catalog to
 various mediums. The builtin `MemoryStore` keeps all data in memory and the
