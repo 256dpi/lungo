@@ -142,8 +142,8 @@ applying changes. After the new catalog has been written to disk, the transactio
 is considered successful and the catalog replaced. Read only transactions are
 allowed to run in parallel as they only serve as a snapshots. But write
 transactions are run sequential. We assume write transactions to be fast and
-therefore try to prevent abortions due to conflicts. This approach is very basic
-and may change in the future.
+therefore try to prevent abortions due to conflicts (pessimistic concurrency
+control). The chosen approach might be changed in the future.
 
 ### Oplog & Change Streams
 
