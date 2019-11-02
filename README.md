@@ -89,8 +89,8 @@ planned to be implemented):
 
 While the goal is to implement all MongoDB features in a compatible way, the
 architectural difference has implications to some features. Furthermore, the
-goal is to build an open and accessible codebase that favors simplicity. Please
-checkout the following sections for details on the implementation.
+goal is to build an open and accessible codebase that favors simplicity.
+Checkout the following sections for details on the implementation.
 
 ### CRUD, Index Management and Namespace Management
 
@@ -102,7 +102,19 @@ planning, replication, sharding, user & role management features that we do not
 plan to support. But, we eventually will support some of the administrative and
 diagnostics commands e.g. `renameCollection` and `explain`.
 
-Please file an issue if you see the need for the support of some commands.
+The `mongokit.Match` function currently supports the following query operators:
+
+- $and, $or, $nor, $not
+- $eq, $gt, $lt, $gte, $lte, $ne
+- $in, $nin, $exist, $type
+- $all, $size, $elemMatch
+
+And the `mongokit.Apply` function currently supports the following update
+operators:
+
+- $set, $setOnInsert, $unset, $rename
+ - $inc, $mul, $max, $min
+- $currentDate
 
 ### Single, Compound and Partial Indexes
 
