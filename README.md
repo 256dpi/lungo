@@ -1,3 +1,5 @@
+<img src="http://joel-github-static.s3.amazonaws.com/lungo/logo.png" alt="Logo" width="512"/>
+
 # lungo
 
 **A MongoDB compatible embedded database and toolkit for Go.**
