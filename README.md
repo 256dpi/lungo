@@ -1,4 +1,4 @@
-<img src="http://joel-github-static.s3.amazonaws.com/lungo/logo2.png" alt="Logo">
+<img src="http://joel-github-static.s3.amazonaws.com/lungo/logo2.png" alt="Logo" width="512"/>
 
 # lungo
 
