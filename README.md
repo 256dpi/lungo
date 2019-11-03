@@ -81,7 +81,7 @@ planned to be implemented):
 
 - [x] CRUD, Index Management and Namespace Management
 - [x] Single, Compound and Partial Indexes
-- [ ] Index Sorting & Filtering
+- [ ] Index Based Sorting & Filtering
 - [x] Sessions & Multi-Document Transactions
 - [x] Oplog & Change Streams
 - [x] Memory & Single File Store
@@ -128,11 +128,11 @@ supported and may be added later, while the deprecated sparse indexes will not.
 The recently introduced collation feature as well as wildcard indexes are also
 not yet supported.
 
-### Index Sorting & Filtering
+### Index Based Sorting & Filtering
 
 Indexes are currently only used to ensure uniqueness constraints and do not
 support filtering and sorting. This will be added in the future together with
-a proper iterator interface. 
+a proper iterator/cursor interface. 
 
 ### Sessions & Multi-Document Transactions
 
