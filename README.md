@@ -92,9 +92,8 @@ planned to be implemented):
 - [ ] Index Based Sorting & Filtering
 - [x] Sessions & Multi-Document Transactions
 - [x] Oplog & Change Streams
-- [x] Memory & Single File Store
-- [ ] Projections
 - [ ] Aggregation Pipeline
+- [x] Memory & Single File Store
 
 While the goal is to implement all MongoDB features in a compatible way, the
 architectural difference has implications to some features. Furthermore, the
@@ -124,6 +123,11 @@ operators:
 - $set, $setOnInsert, $unset, $rename
  - $inc, $mul, $max, $min
 - $currentDate
+
+Finally, the `mongokit.Project` function currently supports the following
+projection operators:
+
+- $slice
 
 ### Single, Compound and Partial Indexes
 

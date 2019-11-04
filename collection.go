@@ -247,10 +247,10 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 		return 0, err
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
-	return int64(len(result.Matched)), nil
+	return int64(len(list)), nil
 }
 
 // Database implements the ICollection.Database method.
@@ -288,11 +288,11 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 		return nil, err
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(result.Matched)),
+		DeletedCount: int64(len(list)),
 	}, nil
 }
 
@@ -323,11 +323,11 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 		return nil, err
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
 	return &mongo.DeleteResult{
-		DeletedCount: int64(len(result.Matched)),
+		DeletedCount: int64(len(list)),
 	}, nil
 }
 
@@ -365,11 +365,11 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 		return nil, err
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
 	// collect distinct values
-	values := mongokit.Distinct(result.Matched, field)
+	values := mongokit.Distinct(list, field)
 
 	return values, nil
 }
@@ -430,6 +430,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		"MaxAwaitTime":        ignored,
 		"MaxTime":             ignored,
 		"NoCursorTimeout":     ignored,
+		"Projection":          supported,
 		"Skip":                supported,
 		"Snapshot":            ignored,
 		"Sort":                supported,
@@ -455,6 +456,15 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		}
 	}
 
+	// get projection
+	var projection bsonkit.Doc
+	if opt.Projection != nil {
+		projection, err = bsonkit.Transform(opt.Projection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// get skip
 	var skip int
 	if opt.Skip != nil {
@@ -475,10 +485,18 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		return nil, err
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
-	return &Cursor{list: result.Matched}, nil
+	// apply projection
+	if projection != nil {
+		list, err = mongokit.ProjectList(list, projection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Cursor{list: list}, nil
 }
 
 // FindOne implements the ICollection.FindOne method.
@@ -494,6 +512,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		"MaxAwaitTime":        ignored,
 		"MaxTime":             ignored,
 		"NoCursorTimeout":     ignored,
+		"Projection":          supported,
 		"Skip":                supported,
 		"Snapshot":            ignored,
 		"Sort":                supported,
@@ -525,6 +544,15 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		skip = int(*opt.Skip)
 	}
 
+	// get projection
+	var projection bsonkit.Doc
+	if opt.Projection != nil {
+		projection, err = bsonkit.Transform(opt.Projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// find documents
 	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
 		return txn.Find(c.handle, query, sort, skip, 1)
@@ -533,15 +561,23 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		return &SingleResult{err: err}
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
 	// check list
-	if len(result.Matched) == 0 {
+	if len(list) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: result.Matched[0]}
+	// apply projection
+	if projection != nil {
+		list, err = mongokit.ProjectList(list, projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
+	return &SingleResult{doc: list[0]}
 }
 
 // FindOneAndDelete implements the ICollection.FindOneAndDelete method.
@@ -551,8 +587,9 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"MaxTime": ignored,
-		"Sort":    supported,
+		"MaxTime":    ignored,
+		"Projection": supported,
+		"Sort":       supported,
 	})
 
 	// check filer
@@ -564,6 +601,15 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
 		return &SingleResult{err: err}
+	}
+
+	// get projection
+	var projection bsonkit.Doc
+	if opt.Projection != nil {
+		projection, err = bsonkit.Transform(opt.Projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
 	}
 
 	// get sort
@@ -583,15 +629,23 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 		return &SingleResult{err: err}
 	}
 
-	// get result
-	result := res.(*Result)
+	// get list
+	list := res.(*Result).Matched
 
 	// check list
-	if len(result.Matched) == 0 {
+	if len(list) == 0 {
 		return &SingleResult{}
 	}
 
-	return &SingleResult{doc: result.Matched[0]}
+	// apply projection
+	if projection != nil {
+		list, err = mongokit.ProjectList(list, projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
+	return &SingleResult{doc: list[0]}
 }
 
 // FindOneAndReplace implements the ICollection.FindOneAndReplace method.
@@ -602,6 +656,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	// assert supported options
 	assertOptions(opt, map[string]string{
 		"MaxTime":        ignored,
+		"Projection":     supported,
 		"ReturnDocument": supported,
 		"Sort":           supported,
 		"Upsert":         supported,
@@ -623,6 +678,15 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 		return &SingleResult{err: err}
 	}
 
+	// get projection
+	var projection bsonkit.Doc
+	if opt.Projection != nil {
+		projection, err = bsonkit.Transform(opt.Projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// get sort
 	var sort bsonkit.Doc
 	if opt.Sort != nil {
@@ -633,7 +697,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	}
 
 	// transform document
-	doc, err := bsonkit.Transform(replacement)
+	repl, err := bsonkit.Transform(replacement)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -652,7 +716,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// insert document
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Replace(c.handle, query, sort, doc, upsert)
+		return txn.Replace(c.handle, query, sort, repl, upsert)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -661,25 +725,28 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 	// get result
 	result := res.(*Result)
 
-	// check if upserted
+	// get doc
+	var doc bsonkit.Doc
 	if result.Upserted != nil {
 		if returnAfter {
-			return &SingleResult{doc: result.Upserted}
+			doc = result.Upserted
 		}
-
-		return &SingleResult{}
-	}
-
-	// check if replaced
-	if len(result.Modified) > 0 {
+	} else if len(result.Modified) > 0 {
+		doc = result.Matched[0]
 		if returnAfter {
-			return &SingleResult{doc: result.Modified[0]}
+			doc = result.Modified[0]
 		}
-
-		return &SingleResult{doc: result.Matched[0]}
 	}
 
-	return &SingleResult{}
+	// apply projection
+	if doc != nil && projection != nil {
+		doc, err = mongokit.Project(doc, projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
+	return &SingleResult{doc: doc}
 }
 
 // FindOneAndUpdate implements the ICollection.FindOneAndUpdate method.
@@ -690,6 +757,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	// assert supported options
 	assertOptions(opt, map[string]string{
 		"MaxTime":        ignored,
+		"Projection":     supported,
 		"ReturnDocument": supported,
 		"Sort":           supported,
 		"Upsert":         supported,
@@ -711,6 +779,15 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		return &SingleResult{err: err}
 	}
 
+	// get projection
+	var projection bsonkit.Doc
+	if opt.Projection != nil {
+		projection, err = bsonkit.Transform(opt.Projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// get sort
 	var sort bsonkit.Doc
 	if opt.Sort != nil {
@@ -721,7 +798,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	}
 
 	// transform document
-	doc, err := bsonkit.Transform(update)
+	upd, err := bsonkit.Transform(update)
 	if err != nil {
 		return &SingleResult{err: err}
 	}
@@ -740,7 +817,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, sort, doc, 1, upsert)
+		return txn.Update(c.handle, query, sort, upd, 1, upsert)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -749,25 +826,28 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 	// get result
 	result := res.(*Result)
 
-	// check if upserted
+	// get doc
+	var doc bsonkit.Doc
 	if result.Upserted != nil {
 		if returnAfter {
-			return &SingleResult{doc: result.Upserted}
+			doc = result.Upserted
 		}
-
-		return &SingleResult{}
-	}
-
-	// check list
-	if len(result.Modified) > 0 {
+	} else if len(result.Modified) > 0 {
+		doc = result.Matched[0]
 		if returnAfter {
-			return &SingleResult{doc: result.Modified[0]}
+			doc = result.Modified[0]
 		}
-
-		return &SingleResult{doc: result.Matched[0]}
 	}
 
-	return &SingleResult{}
+	// apply projection
+	if doc != nil && projection != nil {
+		doc, err = mongokit.Project(doc, projection)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
+	return &SingleResult{doc: doc}
 }
 
 // Indexes implements the ICollection.Indexes method.

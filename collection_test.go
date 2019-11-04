@@ -503,6 +503,18 @@ func TestCollectionFind(t *testing.T) {
 		err = csr.Decode(&m)
 		assert.NoError(t, err)
 		assert.NotEqual(t, bson.M{}, m)
+
+		// project all
+		csr, err = c.Find(nil, bson.M{}, options.Find().SetProjection(bson.M{"_id": 0}))
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"foo": "bar",
+			},
+			{
+				"foo": "baz",
+			},
+		}, readAll(csr))
 	})
 }
 
@@ -576,6 +588,14 @@ func TestCollectionFindOne(t *testing.T) {
 		assert.Equal(t, bson.M{
 			"_id": id2,
 			"foo": "baz",
+		}, doc)
+
+		// project
+		doc = nil
+		err = c.FindOne(nil, bson.M{}, options.FindOne().SetProjection(bson.M{"_id": 0})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "bar",
 		}, doc)
 	})
 }
@@ -666,6 +686,27 @@ func TestCollectionFindOneAndDelete(t *testing.T) {
 				"foo": "bar",
 			},
 		}, dumpCollection(c, false))
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		_, err := c.InsertOne(nil, bson.M{
+			"_id": id,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+
+		// project
+		var doc bson.M
+		err = c.FindOneAndDelete(nil, bson.M{
+			"_id": id,
+		}, options.FindOneAndDelete().SetProjection(bson.M{"_id": 0})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "bar",
+		}, doc)
+		assert.Equal(t, []bson.M{}, dumpCollection(c, false))
 	})
 }
 
@@ -789,6 +830,42 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 				"foo": "quz",
 			},
 		}, dumpCollection(c, false))
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		_, err := c.InsertOne(nil, bson.M{
+			"_id": id,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+
+		// project before
+		var doc bson.M
+		err = c.FindOneAndReplace(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"_id": id,
+			"foo": "baz",
+		}, options.FindOneAndReplace().SetProjection(bson.M{"_id": 0})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "bar",
+		}, doc)
+
+		// project after
+		doc = nil
+		err = c.FindOneAndReplace(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"_id": id,
+			"foo": "quz",
+		}, options.FindOneAndReplace().SetReturnDocument(options.After).SetProjection(bson.M{"_id": 0})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "quz",
+		}, doc)
 	})
 }
 
@@ -966,6 +1043,50 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			},
 			{
 				"_id": id2,
+				"foo": "quz",
+			},
+		}, dumpCollection(c, false))
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id := primitive.NewObjectID()
+
+		_, err := c.InsertOne(nil, bson.M{
+			"_id": id,
+			"foo": "bar",
+		})
+		assert.NoError(t, err)
+
+		// project before
+		var doc bson.M
+		err = c.FindOneAndUpdate(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "baz",
+			},
+		}, options.FindOneAndUpdate().SetProjection(bson.M{"_id": 0})).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "bar",
+		}, doc)
+
+		// project after
+		doc = nil
+		err = c.FindOneAndUpdate(nil, bson.M{
+			"_id": id,
+		}, bson.M{
+			"$set": bson.M{
+				"foo": "quz",
+			},
+		}, options.FindOneAndUpdate().SetProjection(bson.M{"_id": 0}).SetReturnDocument(options.After)).Decode(&doc)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"foo": "quz",
+		}, doc)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id,
 				"foo": "quz",
 			},
 		}, dumpCollection(c, false))
