@@ -26,27 +26,27 @@ $ go get -u github.com/256dpi/lungo
 
 ## Example
 
-The [example](https://github.com/256dpi/lungo/tree/master/example_test.go) test
+This [example](https://github.com/256dpi/lungo/tree/master/example_test.go)
 shows a basic usage of the `mongo` compatible API.
 
 ## Introduction
 
-The document oriented database MongoDB has become a widely used data store for
+The document-oriented database MongoDB has become a widely used data store for
 applications developed with the Go programming language. Both, the deprecated
 `mgo` and the official `mongo` driver offer a sophisticated interface to connect
 to a deployment and ingest and extract data using various commands. While this
 is enough for most projects, there are situations in which one thinks: "It would
-be really cool if I could just do that in memory without asking the server."
+be cool if I could just do that in memory without asking the server."
 
 Lungo tries to address this need by re-implementing the data handling mechanics
-in Go to be used on the client side. This allows developers to pre- or post- 
-process data in the application relieving the server. Fore example, applications
+in Go to be used on the client-side. This allows developers to pre- or post- 
+process data in the application relieving the server. For example, applications
 may utilize this functionality to cache documents and query them quickly in memory. 
 
 But we do not need to stop there. Many developers coming from the SQL ecosystem
 enjoyed working with SQLite as a simple alternative to other SQL databases. It
-allowed to run tests without setting up a database or even run a small production
-app that wrote its data to a single backed-up file.
+allowed running tests without setting up a database or even small production
+apps that wrote their data to a single backed-up file.
 
 Lungo wants to offer a similar experience by implementing a full MongoDB 
 compatible embeddable database that persists data in a single file. The
@@ -77,7 +77,7 @@ standard CRUD interface.
 
 - Finally, the `lungo` package implements the embeddable database and the
 `mongo` compatible driver. The heavy work is done by the engine and transaction
-types which manage access to the basic mongokit collections. While both can be
+types that manage access to the basic mongokit collections. While both can be
 used standalone, most users want to use the generic driver interface that can be
 used with MongoDB deployments and lungo engines.
 
@@ -97,12 +97,12 @@ planned to be implemented):
 While the goal is to implement all MongoDB features in a compatible way, the
 architectural difference has implications on some of the features. Furthermore,
 the goal is to build an open and accessible codebase that favors simplicity.
-Checkout the following sections for details on the implementation.
+Check out the following sections for details on the implementation.
 
 ### CRUD, Index Management and Namespace Management
 
 The driver supports all standard CRUD, index management and namespace management
-methods that are also exposed by the official driver. However, to this date the
+methods that are also exposed by the official driver. However, to this date, the
 driver does not yet support any of the MongoDB commands that can be issued using
 the `Database.RunCommand` method. Most unexported commands are related to query
 planning, replication, sharding, and user and role management features that we
@@ -137,7 +137,7 @@ filter expression. Support for TTL indexes will be added shortly.
 
 The more advanced multikey, geospatial, text, and hashed indexes are not yet
 supported and may be added later, while the deprecated sparse indexes will not.
-The recently introduced collation feature as well as wildcard indexes are also
+The recently introduced collation feature, as well as wildcard indexes, are also
 subject to future work.
 
 ### Index Supported Sorting & Filtering
@@ -148,11 +148,11 @@ support for the `explain` command to debug the generated query plan.
 
 ### Sessions & Multi-Document Transactions
 
-Lungo supports multi document transactions using a basic copy on write mechanism.
+Lungo supports multi-document transactions using a basic copy on write mechanism.
 Every transaction will make a copy of the catalog and clone namespaces before
 applying changes. After the new catalog has been written to disk, the transaction
 is considered successful and the catalog replaced. Read-only transactions are
-allowed to run in parallel as they only serve as a snapshots. But write
+allowed to run in parallel as they only serve as snapshots. But write
 transactions are run sequential. We assume write transactions to be fast and
 therefore try to prevent abortions due to conflicts (pessimistic concurrency
 control). The chosen approach might be changed in the future.
