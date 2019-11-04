@@ -15,6 +15,7 @@
 - [Motivation](#motivation)
 - [Architecture](#architecture)
 - [Features](#features)
+- [License](#license)
 
 ## Installation
 
@@ -32,7 +33,7 @@ shows a basic usage of the `mongo` compatible API.
 ## Motivation
 
 The document-oriented database MongoDB has become a widely used data store for
-applications developed with the Go programming language. Both, the deprecated
+many applications developed with the Go programming language. Both, the deprecated
 `mgo` and the official `mongo` driver offer a sophisticated interface to connect
 to a deployment and ingest and extract data using various commands. While this
 is enough for most projects, there are situations in which one thinks: "It would
@@ -42,12 +43,12 @@ Lungo tries to address this need by re-implementing the data handling mechanics
 in Go to be used on the client-side. This allows developers to pre- or
 post-process data in the application relieving the server. For example,
 applications may utilize this functionality to cache documents and query them
-quickly in memory. 
+quickly in memory.
 
 But we do not need to stop there. Many developers coming from the SQL ecosystem
-enjoyed working with SQLite as a simple alternative to other SQL databases. It
-allowed running tests without setting up a database or even small production
-apps that wrote their data to a single backed-up file.
+enjoy working with SQLite as a simple alternative to bigger SQL databases. It
+allows running tests without setting up a database or even small production
+apps that write their data to a single backed-up file.
 
 Lungo wants to offer a similar experience by implementing a full MongoDB 
 compatible embeddable database that persists data in a single file. The
@@ -72,15 +73,15 @@ clone, access, and manipulate BSON data directly in memory.
 algorithms and structures. Specifically, it implements the MongoDB querying,
 update, and sort algorithms as well as a btree based index for documents. All of
 that is then bundled as a basic in-memory collection of documents that offers a
-standard CRUD interface.
+familiar CRUD interface.
 
-- The `dbkit` package provides some database-centric utilities.
+- The `dbkit` package provides database-centric utilities e.g. atomic file write.
 
 - Finally, the `lungo` package implements the embeddable database and the
 `mongo` compatible driver. The heavy work is done by the engine and transaction
-types that manage access to the basic mongokit collections. While both can be
-used standalone, most users want to use the generic driver interface that can be
-used with MongoDB deployments and lungo engines.
+types that manage access to the basic `mongokit.Collection` instances. While both
+can be used standalone, most users want to use the generic driver interface that
+can be used with MongoDB deployments and lungo engines.
 
 ## Features
 
@@ -170,3 +171,9 @@ The `lungo.Store` interface enables custom adapters that store the catalog to
 various mediums. The built-in `MemoryStore` keeps all data in memory while the
 `FileStore` writes all data atomically to a single BSON file. The interface may
 get more sophisticated in the future to allow more efficient storing methods.
+
+## License
+
+The MIT License (MIT)
+
+Copyright (c) 2019 Joël Gähwiler
