@@ -20,6 +20,7 @@ func TestSessionManual(t *testing.T) {
 			"_id": id1,
 			"foo": "bar",
 		})
+		assert.NoError(t, err)
 
 		sess, err := c.Database().Client().StartSession()
 		assert.NoError(t, err)
@@ -88,6 +89,7 @@ func TestSessionManual(t *testing.T) {
 			"_id": id1,
 			"foo": "bar",
 		})
+		assert.NoError(t, err)
 
 		sess, err := c.Database().Client().StartSession()
 		assert.NoError(t, err)
