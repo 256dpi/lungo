@@ -7,12 +7,12 @@ env:
     - MONGODB=4.2.1
 install: true
 before_script:
-  - wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-${MONGODB}.tgz -O /tmp/mongodb.tgz
+  - wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1604-${MONGODB}.tgz -O /tmp/mongodb.tgz
   - tar -xvf /tmp/mongodb.tgz
   - mkdir /tmp/data
-  - ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongod --replSet rs0 --dbpath /tmp/data --logpath /tmp/mongodb.log --bind_ip 0.0.0.0 --fork
+  - ${PWD}/mongodb-linux-x86_64-ubuntu1604-${MONGODB}/bin/mongod --replSet rs0 --dbpath /tmp/data --logpath /tmp/mongodb.log --bind_ip 0.0.0.0 --fork
   - sleep 10
-  - ${PWD}/mongodb-linux-x86_64-${MONGODB}/bin/mongo --eval 'rs.initiate()'
+  - ${PWD}/mongodb-linux-x86_64-ubuntu1604-${MONGODB}/bin/mongo --eval 'rs.initiate()'
   - sleep 10
 script:
   - go get github.com/modocache/gover
