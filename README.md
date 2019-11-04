@@ -12,7 +12,7 @@
 
 - [Installation](#installation)
 - [Example](#example)
-- [Introduction](#introduction)
+- [Motivation](#motivation)
 - [Architecture](#architecture)
 - [Features](#features)
 
@@ -29,7 +29,7 @@ $ go get -u github.com/256dpi/lungo
 This [example](https://github.com/256dpi/lungo/tree/master/example_test.go)
 shows a basic usage of the `mongo` compatible API.
 
-## Introduction
+## Motivation
 
 The document-oriented database MongoDB has become a widely used data store for
 applications developed with the Go programming language. Both, the deprecated
