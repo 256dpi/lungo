@@ -67,12 +67,10 @@ func Project(doc, projection bsonkit.Doc) (bsonkit.Doc, error) {
 		// set null document
 		res = &bson.D{}
 
-		// add id if not hidden
-		if !state.hideID {
-			_, err := bsonkit.Put(res, "_id", bsonkit.Get(doc, "_id"), false)
-			if err != nil {
-				return nil, err
-			}
+		// copy id
+		_, err := bsonkit.Put(res, "_id", bsonkit.Get(doc, "_id"), false)
+		if err != nil {
+			return nil, err
 		}
 
 		// copy included fields
@@ -92,11 +90,6 @@ func Project(doc, projection bsonkit.Doc) (bsonkit.Doc, error) {
 		// clone document
 		res = bsonkit.Clone(doc)
 
-		// unset id if not shown
-		if state.hideID {
-			bsonkit.Unset(res, "_id")
-		}
-
 		// unset excluded fields
 		for _, path := range state.exclude {
 			bsonkit.Unset(res, path)
@@ -110,12 +103,10 @@ func Project(doc, projection bsonkit.Doc) (bsonkit.Doc, error) {
 			// set null document
 			res = &bson.D{}
 
-			// set id if not hidden
-			if !state.hideID {
-				_, err := bsonkit.Put(res, "_id", bsonkit.Get(doc, "_id"), false)
-				if err != nil {
-					return nil, err
-				}
+			// copy id
+			_, err := bsonkit.Put(res, "_id", bsonkit.Get(doc, "_id"), false)
+			if err != nil {
+				return nil, err
 			}
 		}
 
@@ -124,6 +115,16 @@ func Project(doc, projection bsonkit.Doc) (bsonkit.Doc, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// ensure doc
+	if res == nil {
+		res = bsonkit.Clone(doc)
+	}
+
+	// hide id
+	if state.hideID {
+		bsonkit.Unset(res, "_id")
 	}
 
 	return res, nil

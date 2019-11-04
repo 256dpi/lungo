@@ -49,6 +49,20 @@ func projectTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))
 func TestProject(t *testing.T) {
 	id := primitive.NewObjectID()
 
+	// hide id
+	projectTest(t, bson.M{
+		"_id": id,
+		"foo": "bar",
+		"bar": "baz",
+	}, func(fn func(bson.M, interface{})) {
+		fn(bson.M{
+			"_id": 0,
+		}, bson.M{
+			"foo": "bar",
+			"bar": "baz",
+		})
+	})
+
 	// include
 	projectTest(t, bson.M{
 		"_id": id,
