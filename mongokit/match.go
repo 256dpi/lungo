@@ -161,7 +161,7 @@ func matchComp(_ Context, doc bsonkit.Doc, op, path string, v interface{}) error
 		case "$ne":
 			ok = res != 0
 		default:
-			return fmt.Errorf("unkown comparison operator %q", op)
+			return fmt.Errorf("unknown comparison operator %q", op)
 		}
 		if !ok {
 			return ErrNotMatched
