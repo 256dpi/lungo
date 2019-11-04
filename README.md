@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/release/256dpi/lungo.svg)](https://github.com/256dpi/lungo/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/lungo)](http://goreportcard.com/report/256dpi/lungo)
 
-**A MongoDB compatible embedded database and toolkit for Go.**
+**A MongoDB compatible embeddable database and toolkit for Go.**
 
 - [Installation](#installation)
 - [Example](#example)
@@ -32,28 +32,28 @@ shows a basic usage of the `mongo` compatible API.
 ## Introduction
 
 The document oriented database MongoDB has become a widely used data store by
-applications developed using the Go programming language. Both, the deprecated
-`mgo` and the official `mongo` driver offer a sophisticated interface to connect
+applications developed with the Go programming language. Both, the deprecated
+`mgo` and the official `mongo` driver, offer a sophisticated interface to connect
 to a deployment, ingest and extract data using the various commands. While this
 is enough for most projects, there are situations in which one thinks: "It would
-be really cool if I could just do that in memory without hitting the server."
+be really cool if I could just do that in memory without asking the server."
 
-Lungo tries to address this need by re-implementing the data handling mechanics,
+Lungo tries to address this need by re-implementing the data handling mechanics
 in Go to be used on the client side. This allows developers to pre or post 
 process data in the application and relieving the server from work. One can think
 of MongoDB query aware caches that are able to filter a subset of data and loading
 more from the server if some documents are missing.
 
-But we do not need to stop there: For example, working with Ruby on Rails in the
+But we do not need to stop there. For example, working with Ruby on Rails in the
 SQL ecosystem was always nice due to the availabilty of SQLite that allowed to
-run tests without setting up a database or even run a small production apps using
+run tests without setting up a database or even run a small production app using
 just a file-backed SQLite database.
 
 Lungo wants to offer a similar experience by implementing a full MongoDB 
 compatible embeddable database that persists data in a single file. Here the
-project aims to provide drop-in compatibility with the official Go driver by
-implementing its full API. This way applications may use lungo for running their
-tests or even low-write production deployments.
+project aims to provide drop-in compatibility with the API exported by the 
+official Go driver. This way applications may use lungo for running their
+tests or even low-write production deployments without big code changes.
 
 However, one thing this project does not try to do is building another
 distributed database. MongoDB itself does a pretty good job at that already.
@@ -66,7 +66,7 @@ the main `lungo` package.
 - The `bsonkit` package provides building blocks that extend the ones found in
 the official `bson` package for handling BSON data. Its functions are mainly
 useful to applications that need to inspect, compare, convert, transform,
-clone, access and manipulate BSON data in memory.
+clone, access and manipulate BSON data directly in memory.
 
 - On top of that, the `mongokit` package provides the MongoDB data handling
 algorithms and structures. Specifically, it implements the MongoDB querying,
@@ -84,12 +84,12 @@ used with MongoDB deployments and lungo engines.
 
 ## Features
 
-On high level, lungo provides the following features (unchecked features are
+On a high level, lungo provides the following features (unchecked features are
 planned to be implemented):
 
 - [x] CRUD, Index Management and Namespace Management
 - [x] Single, Compound and Partial Indexes
-- [ ] Index Based Sorting & Filtering
+- [ ] Index Supported Sorting & Filtering
 - [x] Sessions & Multi-Document Transactions
 - [x] Oplog & Change Streams
 - [ ] Aggregation Pipeline
@@ -110,24 +110,25 @@ planning, replication, sharding, user & role management features that we do not
 plan to support. But, we eventually will support some of the administrative and
 diagnostics commands e.g. `renameCollection` and `explain`.
 
-The `mongokit.Match` function currently supports the following query operators:
+Leveraging the `mongokit.Match` function, lungo supports the following query
+operators:
 
-- $and, $or, $nor, $not
-- $eq, $gt, $lt, $gte, $lte, $ne
-- $in, $nin, $exist, $type
-- $all, $size, $elemMatch
+- `$and`, `$or`, `$nor`, `$not`
+- `$eq`, `$gt`, `$lt`, `$gte`, `$lte`, `$ne`
+- `$in`, `$nin`, `$exist`, `$type`
+- `$all`, `$size`, `$elemMatch`
 
 And the `mongokit.Apply` function currently supports the following update
 operators:
 
-- $set, $setOnInsert, $unset, $rename
- - $inc, $mul, $max, $min
-- $currentDate
+- `$set`, `$setOnInsert`, `$unset`, `$rename`
+- `$inc`, `$mul`, `$max`, `$min`
+- `$currentDate`
 
 Finally, the `mongokit.Project` function currently supports the following
 projection operators:
 
-- $slice
+- `$slice`
 
 ### Single, Compound and Partial Indexes
 
@@ -138,13 +139,13 @@ filter expression. Support for TTL indexes will be added shortly.
 The more special multikey, geospatial, text and hashed indexes are not yet
 supported and may be added later, while the deprecated sparse indexes will not.
 The recently introduced collation feature as well as wildcard indexes are also
-not yet supported.
+subject to future work.
 
-### Index Based Sorting & Filtering
+### Index Supported Sorting & Filtering
 
 Indexes are currently only used to ensure uniqueness constraints and do not
 support filtering and sorting. This will be added in the future together with
-a proper iterator/cursor interface. 
+support for the `explain` command to debug the generated query plan.
 
 ### Sessions & Multi-Document Transactions
 
@@ -160,12 +161,12 @@ control). The chosen approach might be changed in the future.
 ### Oplog & Change Streams
 
 Similar to MongoDB, every CRUD change is also logged to the `local.oplog`
-collection in the same format as consumed in MongoDB. This allows client,
-database and collection change streams.
+collection in the same format as consumed by change streams in MongoDB. Based on
+that, change streams can be used in the same way as with MongoDB replica sets.
 
 ### Memory & Single File Store
 
-The `lungo.Store` interface allows custom adapters that store the catalog to
+The `lungo.Store` interface enables custom adapters that store the catalog to
 various mediums. The builtin `MemoryStore` keeps all data in memory and the
 `FileStore` writes all data atomically to a single BSON file. The interface may
 get more sophisticated in the future to allow more efficient storing methods.
