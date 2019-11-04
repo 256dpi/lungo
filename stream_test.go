@@ -218,11 +218,6 @@ func TestStreamResumption(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, stream)
 
-		// invalid operation time
-		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&primitive.Timestamp{}))
-		assert.Error(t, err)
-		assert.Nil(t, stream)
-
 		/* prepare */
 
 		stream, err = c.Watch(nil, bson.A{})
