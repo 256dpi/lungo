@@ -550,6 +550,7 @@ func TestCollectionFindOne(t *testing.T) {
 		}, doc)
 
 		// find first
+		doc = nil
 		err = c.FindOne(nil, bson.M{}).Decode(&doc)
 		assert.NoError(t, err)
 		assert.Equal(t, bson.M{
@@ -558,6 +559,7 @@ func TestCollectionFindOne(t *testing.T) {
 		}, doc)
 
 		// find first, sorted
+		doc = nil
 		err = c.FindOne(nil, bson.M{}, options.FindOne().SetSort(bson.M{
 			"foo": -1,
 		})).Decode(&doc)
@@ -568,6 +570,7 @@ func TestCollectionFindOne(t *testing.T) {
 		}, doc)
 
 		// skip first
+		doc = nil
 		err = c.FindOne(nil, bson.M{}, options.FindOne().SetSkip(1)).Decode(&doc)
 		assert.NoError(t, err)
 		assert.Equal(t, bson.M{
@@ -717,6 +720,7 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// specific after
+		doc = nil
 		err = c.FindOneAndReplace(nil, bson.M{
 			"_id": id,
 		}, bson.M{
@@ -812,6 +816,7 @@ func TestCollectionFindOneAndReplaceUpsert(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// generated id after
+		out = nil
 		err = c.FindOneAndReplace(nil, bson.M{
 			"_id": id2,
 		}, bson.M{
@@ -892,6 +897,7 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// specific after
+		doc = nil
 		err = c.FindOneAndUpdate(nil, bson.M{
 			"_id": id,
 		}, bson.M{
@@ -995,6 +1001,7 @@ func TestCollectionFindOneAndUpdateUpsert(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// generated id after
+		out = nil
 		err = c.FindOneAndUpdate(nil, bson.M{
 			"_id": id2,
 		}, bson.M{
