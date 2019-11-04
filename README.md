@@ -39,9 +39,10 @@ is enough for most projects, there are situations in which one thinks: "It would
 be cool if I could just do that in memory without asking the server."
 
 Lungo tries to address this need by re-implementing the data handling mechanics
-in Go to be used on the client-side. This allows developers to pre- or post- 
-process data in the application relieving the server. For example, applications
-may utilize this functionality to cache documents and query them quickly in memory. 
+in Go to be used on the client-side. This allows developers to pre- or
+post-process data in the application relieving the server. For example,
+applications may utilize this functionality to cache documents and query them
+quickly in memory. 
 
 But we do not need to stop there. Many developers coming from the SQL ecosystem
 enjoyed working with SQLite as a simple alternative to other SQL databases. It
@@ -51,7 +52,7 @@ apps that wrote their data to a single backed-up file.
 Lungo wants to offer a similar experience by implementing a full MongoDB 
 compatible embeddable database that persists data in a single file. The
 project aims to provide drop-in compatibility with the API exported by the 
-official Go driver. This way applications may use lungo for running their
+official Go driver. This way, applications may use lungo for running their
 tests or even low-write production deployments without big code changes.
 
 However, one thing this project does not try to do is build another
@@ -69,11 +70,11 @@ clone, access, and manipulate BSON data directly in memory.
 
 - On top of that, the `mongokit` package provides the MongoDB data handling
 algorithms and structures. Specifically, it implements the MongoDB querying,
-update and sort algorithms as well as a btree based index for documents. All of
+update, and sort algorithms as well as a btree based index for documents. All of
 that is then bundled as a basic in-memory collection of documents that offers a
 standard CRUD interface.
 
-- The `dbkit` package provides some database centric utilities.
+- The `dbkit` package provides some database-centric utilities.
 
 - Finally, the `lungo` package implements the embeddable database and the
 `mongo` compatible driver. The heavy work is done by the engine and transaction
@@ -153,7 +154,7 @@ Every transaction will make a copy of the catalog and clone namespaces before
 applying changes. After the new catalog has been written to disk, the transaction
 is considered successful and the catalog replaced. Read-only transactions are
 allowed to run in parallel as they only serve as snapshots. But write
-transactions are run sequential. We assume write transactions to be fast and
+transactions are run sequentially. We assume write transactions to be fast and
 therefore try to prevent abortions due to conflicts (pessimistic concurrency
 control). The chosen approach might be changed in the future.
 
@@ -166,6 +167,6 @@ that, change streams can be used in the same way as with MongoDB replica sets.
 ### Memory & Single File Store
 
 The `lungo.Store` interface enables custom adapters that store the catalog to
-various mediums. The built-in `MemoryStore` keeps all data in memory and the
+various mediums. The built-in `MemoryStore` keeps all data in memory while the
 `FileStore` writes all data atomically to a single BSON file. The interface may
 get more sophisticated in the future to allow more efficient storing methods.
