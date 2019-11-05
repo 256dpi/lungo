@@ -312,14 +312,6 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		// await next interval
 		time.Sleep(interval)
 
-		// check closed
-		e.mutex.Lock()
-		closed := e.closed
-		e.mutex.Unlock()
-		if closed {
-			return
-		}
-
 		// get transaction
 		txn, err := e.Begin(nil, true)
 		if err != nil {
@@ -338,7 +330,6 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		// commit transaction
 		err = e.Commit(txn)
 		if err != nil {
-			e.Abort(txn)
 			reporter(err)
 			continue
 		}
