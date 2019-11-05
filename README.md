@@ -141,7 +141,7 @@ documents aka. TTL indexes.
 The more advanced multikey, geospatial, text, and hashed indexes are not yet
 supported and may be added later, while the deprecated sparse indexes will not.
 The recently introduced collation feature, as well as wildcard indexes, are also
-subject to future work.
+subject to future development.
 
 ### Index Supported Sorting & Filtering
 
