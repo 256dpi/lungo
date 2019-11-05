@@ -12,17 +12,17 @@ import (
 
 // Stream provides a mongo compatible way to read oplog events.
 type Stream struct {
-	handle  Handle
-	last    bsonkit.Doc
-	filter  bsonkit.List
-	signal  chan struct{}
-	oplog   func() *bsonkit.Set
-	cancel  func()
-	event   bsonkit.Doc
-	token   interface{}
-	dropped bool
-	closed  bool
-	mutex   sync.Mutex
+	handle   Handle
+	last     bsonkit.Doc
+	pipeline bsonkit.List
+	signal   chan struct{}
+	oplog    func() *bsonkit.Set
+	cancel   func()
+	event    bsonkit.Doc
+	token    interface{}
+	dropped  bool
+	closed   bool
+	mutex    sync.Mutex
 }
 
 // Close implements the IChangeStream.Close method.
@@ -148,7 +148,7 @@ func (s *Stream) Next(ctx context.Context) bool {
 				s.dropped = true
 			}
 
-			// TODO: Match with filter.
+			// TODO: Filer with pipeline.
 
 			// set event and token
 			s.last = event

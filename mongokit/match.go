@@ -21,9 +21,7 @@ var ExpressionQueryOperators = map[string]Operator{}
 var ErrNotMatched = errors.New("not matched")
 
 func init() {
-	// TODO: Add missing operators.
-
-	// register top level query operators matchers
+	// register top level query operators
 	TopLevelQueryOperators["$and"] = matchAnd
 	TopLevelQueryOperators["$or"] = matchOr
 	TopLevelQueryOperators["$nor"] = matchNor
@@ -46,7 +44,7 @@ func init() {
 	ExpressionQueryOperators["$elemMatch"] = matchElem
 }
 
-// Match will test if the supplied MongoDB query document matches the specified
+// Match will test if the specified document matches the supplied MongoDB query
 // document.
 func Match(doc, query bsonkit.Doc) (bool, error) {
 	// match document to query

@@ -9,7 +9,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Whitelist Match operators?
+// TODO: Whitelist supported query operators?
 
 // IndexConfig defines an index configuration.
 type IndexConfig struct {

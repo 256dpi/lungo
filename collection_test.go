@@ -1597,9 +1597,6 @@ func TestCollectionUpdateMany(t *testing.T) {
 			},
 		}, dumpCollection(c, false))
 	})
-
-	// TODO: Test what happens if a document in the middle of the update
-	//  selection fails to an index constraint.
 }
 
 func TestCollectionUpdateManyUpsert(t *testing.T) {

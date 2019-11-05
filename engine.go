@@ -192,7 +192,7 @@ func (e *Engine) Abort(txn *Transaction) {
 }
 
 // Watch will return a stream that is able to consume events from the oplog.
-func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *primitive.Timestamp) (*Stream, error) {
+func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *primitive.Timestamp) (*Stream, error) {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -263,10 +263,10 @@ func (e *Engine) Watch(handle Handle, filter bsonkit.List, resumeAfter, startAft
 
 	// create stream
 	stream := &Stream{
-		handle: handle,
-		last:   last,
-		filter: filter,
-		signal: make(chan struct{}, 1),
+		handle:   handle,
+		last:     last,
+		pipeline: pipeline,
+		signal:   make(chan struct{}, 1),
 	}
 
 	// set oplog method

@@ -10,8 +10,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Support array update operators.
-
 // FieldUpdateOperators defines the field update operators.
 var FieldUpdateOperators = map[string]Operator{}
 

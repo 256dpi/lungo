@@ -34,8 +34,6 @@ func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, 
 		panic("lungo: missing indexes")
 	}
 
-	// TODO: Should this be atomic?
-
 	// created indexes separately
 	var names []string
 	for _, index := range indexes {
@@ -43,7 +41,6 @@ func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, 
 		if err != nil {
 			return names, err
 		}
-
 		names = append(names, name)
 	}
 

@@ -8,8 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TODO: Add support for decimal128 type.
-
 // Class is describes the class of one or more BSON types.
 type Class int
 
