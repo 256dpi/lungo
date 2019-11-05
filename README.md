@@ -135,7 +135,8 @@ projection operators:
 
 The `mongokit.Index` type supports single field and compound indexes that
 optionally enforce uniqueness or index a subset of documents using a partial
-filter expression. Support for TTL indexes will be added shortly.
+filter expression. Single field indexes also support the automated expiry of
+documents aka. TTL indexes.
 
 The more advanced multikey, geospatial, text, and hashed indexes are not yet
 supported and may be added later, while the deprecated sparse indexes will not.
