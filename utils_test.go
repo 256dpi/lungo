@@ -66,6 +66,10 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 }
 
 func readAll(csr ICursor) []bson.M {
+	if csr == nil {
+		return nil
+	}
+
 	out := make([]bson.M, 0)
 	err := csr.All(nil, &out)
 	if err != nil {
