@@ -131,19 +131,10 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 	// clone catalog
 	clone := t.catalog.Clone()
 
-	// create or clone namespace
-	var namespace *mongokit.Collection
+	// ensure namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
+		clone.Namespaces[handle] = mongokit.NewCollection(true)
 	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
 
 	// collect changes
 	changes := 0
@@ -153,6 +144,13 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 
 	// process models
 	for _, op := range ops {
+		// clone namespace and oplog for every operation as the collections may
+		// be left in an undefined state after skipping errors
+
+		// clone namespace and oplog
+		namespace := clone.Namespaces[handle].Clone()
+		oplog := clone.Namespaces[Oplog].Clone()
+
 		// prepare variables
 		var res *Result
 		var err error
@@ -181,18 +179,24 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 			// stop if ordered
 			if ordered {
 				break
+			} else {
+				continue
 			}
-		} else {
-			// append result
-			results = append(results, *res)
+		}
 
-			// update changes
-			changes += len(res.Modified)
-			if res.Upserted != nil {
-				changes++
-			} else if op.Opcode == Delete {
-				changes += len(res.Matched)
-			}
+		// replace namespace and oplog
+		clone.Namespaces[handle] = namespace
+		clone.Namespaces[Oplog] = oplog
+
+		// append result
+		results = append(results, *res)
+
+		// update changes
+		changes += len(res.Modified)
+		if res.Upserted != nil {
+			changes++
+		} else if op.Opcode == Delete {
+			changes += len(res.Matched)
 		}
 	}
 
@@ -207,7 +211,7 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 
 // Insert will insert the specified documents into the namespace. The engine
 // will automatically generate an object id per document if it is missing. If
-// ordered ist enabled the operation is aborted on the first error and the
+// ordered is enabled the operation is aborted on the first error and the
 // result returned. Otherwise, the engine will try to insert all documents. The
 // returned results will contain the inserted documents and potential errors.
 func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*Result, error) {
@@ -227,25 +231,23 @@ func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*R
 	// clone catalog
 	clone := t.catalog.Clone()
 
-	// create or clone namespace
-	var namespace *mongokit.Collection
+	// ensure namespace
 	if clone.Namespaces[handle] == nil {
-		namespace = mongokit.NewCollection(true)
-		clone.Namespaces[handle] = namespace
-	} else {
-		namespace = clone.Namespaces[handle].Clone()
-		clone.Namespaces[handle] = namespace
+		clone.Namespaces[handle] = mongokit.NewCollection(true)
 	}
-
-	// clone oplog
-	oplog := clone.Namespaces[Oplog].Clone()
-	clone.Namespaces[Oplog] = oplog
 
 	// prepare result
 	result := &Result{}
 
 	// insert documents
 	for _, doc := range list {
+		// clone namespace and oplog for every insert as the collections may
+		// be left in an undefined state after skipping errors
+
+		// clone namespace and oplog
+		namespace := clone.Namespaces[handle].Clone()
+		oplog := clone.Namespaces[Oplog].Clone()
+
 		// perform insert
 		res, err := t.insert(handle, oplog, namespace, doc)
 		if err != nil {
@@ -254,14 +256,20 @@ func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*R
 				result.Error = err
 			}
 
-			// stop if ordered
+			// stop if ordered or continue
 			if ordered {
 				break
+			} else {
+				continue
 			}
-		} else {
-			// merge result
-			result.Modified = append(result.Modified, res.Modified...)
 		}
+
+		// replace namespace and oplog
+		clone.Namespaces[handle] = namespace
+		clone.Namespaces[Oplog] = oplog
+
+		// merge result
+		result.Modified = append(result.Modified, res.Modified...)
 	}
 
 	// set catalog and flag
