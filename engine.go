@@ -132,7 +132,7 @@ func (e *Engine) Commit(txn *Transaction) error {
 
 	// check transaction
 	if e.txn != txn {
-		return fmt.Errorf("invalid transaction")
+		return fmt.Errorf("existing transaction")
 	}
 
 	// ensure token is released
