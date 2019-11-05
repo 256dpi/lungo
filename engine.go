@@ -97,8 +97,10 @@ func (e *Engine) Begin(ctx context.Context, lock bool) (*Transaction, error) {
 		ctx = context.Background()
 	}
 
-	// acquire token
+	// acquire token (without lock)
+	e.mutex.Unlock()
 	ok := e.token.Acquire(ctx.Done(), time.Minute)
+	e.mutex.Lock()
 	if !ok {
 		return nil, fmt.Errorf("token acquisition timeout")
 	}
