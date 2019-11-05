@@ -3,6 +3,7 @@ package bsonkit
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -73,6 +74,8 @@ func convertValue(v interface{}) interface{} {
 	case primitive.Null, primitive.ObjectID, primitive.DateTime,
 		primitive.Timestamp, primitive.Regex, primitive.Binary:
 		return value
+	case time.Time:
+		return primitive.NewDateTimeFromTime(value)
 	default:
 		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
 	}
