@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -23,6 +24,11 @@ func (c *Cursor) All(ctx context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	// check if closed
+	if c.closed {
+		return fmt.Errorf("cursor closed")
+	}
 
 	// decode items
 	err := bsonkit.DecodeList(c.list, out)
