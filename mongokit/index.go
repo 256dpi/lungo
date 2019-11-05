@@ -1,8 +1,10 @@
 package mongokit
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -19,6 +21,9 @@ type IndexConfig struct {
 
 	// The partial index filter.
 	Partial bsonkit.Doc
+
+	// The time after documents expire.
+	Expiry time.Duration
 }
 
 // Index is an index for documents that supports MongoDB features. The index is
@@ -40,6 +45,11 @@ func CreateIndex(config IndexConfig) (*Index, error) {
 	columns, err := Columns(config.Key)
 	if err != nil {
 		return nil, err
+	}
+
+	// enforce single field ttl index
+	if config.Expiry > 0 && len(*config.Key) > 1 {
+		return nil, fmt.Errorf("invalid expiring compound index")
 	}
 
 	// create index
@@ -122,6 +132,7 @@ func (i *Index) Config() IndexConfig {
 		Key:     bsonkit.Clone(i.config.Key),
 		Unique:  i.config.Unique,
 		Partial: bsonkit.Clone(i.config.Partial),
+		Expiry:  i.config.Expiry,
 	}
 }
 

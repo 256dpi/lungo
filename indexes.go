@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -63,19 +64,28 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	if index.Options != nil {
 		assertOptions(index.Options, map[string]string{
 			"Background":              ignored,
+			"ExpireAfterSeconds":      supported,
 			"Name":                    supported,
 			"Unique":                  supported,
 			"Version":                 ignored,
 			"PartialFilterExpression": supported,
 		})
-
-		// TODO: Support ExpireAfterSeconds.
 	}
 
 	// transform key
 	key, err := bsonkit.Transform(index.Keys)
 	if err != nil {
 		return "", err
+	}
+
+	// get expiry
+	var expiry time.Duration
+	if index.Options != nil && index.Options.ExpireAfterSeconds != nil {
+		if *index.Options.ExpireAfterSeconds == 0 {
+			expiry = time.Nanosecond
+		} else {
+			expiry = time.Duration(*index.Options.ExpireAfterSeconds) * time.Second
+		}
 	}
 
 	// get name
@@ -104,7 +114,7 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	defer v.engine.Abort(txn)
 
 	// create index
-	name, err = txn.CreateIndex(v.handle, key, name, unique, partial)
+	name, err = txn.CreateIndex(v.handle, key, name, unique, partial, expiry)
 	if err != nil {
 		return "", err
 	}

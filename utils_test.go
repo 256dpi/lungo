@@ -31,7 +31,11 @@ func init() {
 	testMongoClient = mongoClient
 
 	lungoClient, _, err := Open(nil, Options{
-		Store: NewMemoryStore(),
+		Store:          NewMemoryStore(),
+		ExpireInterval: 100 * time.Millisecond,
+		ExpireErrors: func(err error) {
+			panic(err)
+		},
 	})
 	if err != nil {
 		panic(err)

@@ -45,7 +45,7 @@ func TestFileStore(t *testing.T) {
 
 	name, err := txn.CreateIndex(handle, bsonkit.Convert(bson.M{
 		"foo": int32(-1),
-	}), "idx", false, nil)
+	}), "idx", false, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, "idx", name)
 

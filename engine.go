@@ -20,6 +20,14 @@ var ErrEngineClosed = errors.New("engine closed")
 type Options struct {
 	// The store used by the engine to load and store the catalog.
 	Store Store
+
+	// The interval at which expired documents are removed.
+	//
+	// Default: 60s.
+	ExpireInterval time.Duration
+
+	// The function that is called with errors from the expiry goroutine.
+	ExpireErrors func(error)
 }
 
 // Engine manages the catalog loaded from a store and provides access to it
@@ -53,6 +61,14 @@ func CreateEngine(opts Options) (*Engine, error) {
 
 	// set catalog
 	e.catalog = data
+
+	// set default interval
+	if opts.ExpireInterval == 0 {
+		opts.ExpireInterval = 60 * time.Second
+	}
+
+	// run expiry
+	go e.expire(opts.ExpireInterval, opts.ExpireErrors)
 
 	return e, nil
 }
@@ -288,4 +304,41 @@ func (e *Engine) Close() {
 
 	// set flag
 	e.closed = true
+}
+
+func (e *Engine) expire(interval time.Duration, reporter func(error)) {
+	for {
+		// await next interval
+		time.Sleep(interval)
+
+		// check closed
+		e.mutex.Lock()
+		closed := e.closed
+		e.mutex.Unlock()
+		if closed {
+			return
+		}
+
+		// get transaction
+		txn := e.Begin(nil, true)
+		if txn == nil {
+			continue
+		}
+
+		// expire documents
+		err := txn.Expire()
+		if err != nil {
+			e.Abort(txn)
+			reporter(err)
+			return
+		}
+
+		// commit transaction
+		err = e.Commit(txn)
+		if err != nil {
+			e.Abort(txn)
+			reporter(err)
+			return
+		}
+	}
 }

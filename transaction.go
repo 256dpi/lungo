@@ -3,6 +3,7 @@ package lungo
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -782,6 +783,11 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 			spec = append(spec, bson.E{Key: "partialFilterExpression", Value: *config.Partial})
 		}
 
+		// add expiry
+		if config.Expiry > 0 {
+			spec = append(spec, bson.E{Key: "expireAfterSeconds", Value: int32(config.Expiry / time.Second)})
+		}
+
 		// add specification
 		list = append(list, &spec)
 	}
@@ -795,7 +801,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 }
 
 // CreateIndex will create the specified index in the specified namespace.
-func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc) (string, error) {
+func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc, expiry time.Duration) (string, error) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -824,6 +830,7 @@ func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, u
 		Key:     key,
 		Unique:  unique,
 		Partial: partial,
+		Expiry:  expiry,
 	})
 	if err != nil {
 		return "", err
@@ -891,4 +898,73 @@ func (t *Transaction) Catalog() *Catalog {
 	defer t.mutex.RUnlock()
 
 	return t.catalog
+}
+
+// Expire will remove documents that are expired due to a TTL index.
+func (t *Transaction) Expire() error {
+	// acquire write lock
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	// clone catalog
+	clone := t.catalog.Clone()
+
+	// clone oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
+
+	// collect deletions
+	var deletions int
+
+	// go through all namespaces
+	for handle, namespace := range clone.Namespaces {
+		// check indexes
+		var ttlIndexes []*mongokit.Index
+		for _, index := range namespace.Indexes {
+			if index.Config().Expiry > 0 {
+				ttlIndexes = append(ttlIndexes, index)
+			}
+		}
+
+		// check if any
+		if len(ttlIndexes) == 0 {
+			continue
+		}
+
+		// clone namespace
+		namespace := clone.Namespaces[handle].Clone()
+		clone.Namespaces[handle] = namespace
+
+		// collect conditions
+		conditions := make(bson.A, 0, len(ttlIndexes))
+		for _, index := range ttlIndexes {
+			field := (*index.Config().Key)[0].Key
+			expiry := index.Config().Expiry
+			conditions = append(conditions, bson.M{
+				field: bson.M{
+					// due to type bracketing this only matches date time values
+					"$lt": time.Now().Add(-expiry),
+				},
+			})
+		}
+
+		// delete all expired documents
+		res, err := t.delete(handle, oplog, namespace, bsonkit.Convert(bson.M{
+			"$or": conditions,
+		}), nil, 0)
+		if err != nil {
+			return err
+		}
+
+		// increment
+		deletions += len(res.Matched)
+	}
+
+	// set catalog and flag
+	if deletions > 0 {
+		t.catalog = clone
+		t.dirty = true
+	}
+
+	return nil
 }
