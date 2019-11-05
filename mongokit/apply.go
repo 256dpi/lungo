@@ -254,7 +254,7 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 		// set to time if true
 		if value {
 			// get time
-			now := primitive.NewDateTimeFromTime(time.Now())
+			now := primitive.NewDateTimeFromTime(time.Now().UTC())
 
 			// set time
 			_, err := bsonkit.Put(doc, path, now, false)
@@ -284,7 +284,7 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 	var now interface{}
 	switch args[0].Value {
 	case "date":
-		now = primitive.NewDateTimeFromTime(time.Now())
+		now = primitive.NewDateTimeFromTime(time.Now().UTC())
 	case "timestamp":
 		now = bsonkit.Now()
 	default:

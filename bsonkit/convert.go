@@ -75,7 +75,7 @@ func convertValue(v interface{}) interface{} {
 		primitive.Timestamp, primitive.Regex, primitive.Binary:
 		return value
 	case time.Time:
-		return primitive.NewDateTimeFromTime(value)
+		return primitive.NewDateTimeFromTime(value.UTC())
 	default:
 		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
 	}
