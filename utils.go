@@ -50,11 +50,20 @@ func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Tra
 
 	// handle unlocked transactions
 	if !lock {
-		return fn(engine.Begin(ctx, false))
+		txn, err := engine.Begin(ctx, false)
+		if err != nil {
+			return nil, err
+		}
+		return fn(txn)
 	}
 
 	// create temporary transaction
-	txn := engine.Begin(ctx, lock)
+	txn, err := engine.Begin(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// ensure abortion
 	defer engine.Abort(txn)
 
 	// yield callback

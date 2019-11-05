@@ -28,7 +28,8 @@ func TestFileStore(t *testing.T) {
 	id1 := primitive.NewObjectID()
 	id2 := primitive.NewObjectID()
 
-	txn := engine.Begin(nil, true)
+	txn, err := engine.Begin(nil, true)
+	assert.NoError(t, err)
 
 	res, err := txn.Insert(handle, bsonkit.List{
 		bsonkit.Convert(bson.M{
@@ -138,7 +139,8 @@ func TestFileStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, engine)
 
-	txn = engine.Begin(nil, false)
+	txn, err = engine.Begin(nil, false)
+	assert.NoError(t, err)
 
 	res, err = txn.Find(handle, bsonkit.Convert(bson.M{}), nil, 0, 0)
 	assert.NoError(t, err)

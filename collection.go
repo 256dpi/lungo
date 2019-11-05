@@ -377,11 +377,16 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 // Drop implements the ICollection.Drop method.
 func (c *Collection) Drop(ctx context.Context) error {
 	// begin transaction
-	txn := c.engine.Begin(ctx, true)
+	txn, err := c.engine.Begin(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	// ensure abortion
 	defer c.engine.Abort(txn)
 
 	// drop namespace
-	err := txn.Drop(c.handle)
+	err = txn.Drop(c.handle)
 	if err != nil {
 		return err
 	}

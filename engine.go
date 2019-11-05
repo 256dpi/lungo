@@ -76,20 +76,20 @@ func CreateEngine(opts Options) (*Engine, error) {
 // Begin will create a new transaction from the current catalog. A locked
 // transaction must be committed or aborted before another transaction can be
 // started. Unlocked transactions serve as a point in time snapshots and can be
-// just be discard when not used further.
-func (e *Engine) Begin(ctx context.Context, lock bool) *Transaction {
+// just be discarded when not being used further.
+func (e *Engine) Begin(ctx context.Context, lock bool) (*Transaction, error) {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
 	// check if closed
 	if e.closed {
-		return nil
+		return nil, ErrEngineClosed
 	}
 
 	// non lock transactions do not need to be managed
 	if !lock {
-		return NewTransaction(e.catalog)
+		return NewTransaction(e.catalog), nil
 	}
 
 	// ensure context
@@ -100,18 +100,19 @@ func (e *Engine) Begin(ctx context.Context, lock bool) *Transaction {
 	// acquire token
 	ok := e.token.Acquire(ctx.Done(), time.Minute)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("token acquisition timeout")
 	}
 
 	// assert transaction
 	if e.txn != nil {
-		panic("existing transaction")
+		e.token.Release()
+		return nil, fmt.Errorf("existing transaction")
 	}
 
 	// create transaction
 	e.txn = NewTransaction(e.catalog)
 
-	return e.txn
+	return e.txn, nil
 }
 
 // Commit will attempt to store the modified catalog and on success replace the
@@ -320,17 +321,18 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		}
 
 		// get transaction
-		txn := e.Begin(nil, true)
-		if txn == nil {
+		txn, err := e.Begin(nil, true)
+		if err != nil {
+			reporter(err)
 			continue
 		}
 
 		// expire documents
-		err := txn.Expire()
+		err = txn.Expire()
 		if err != nil {
 			e.Abort(txn)
 			reporter(err)
-			return
+			continue
 		}
 
 		// commit transaction
@@ -338,7 +340,7 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		if err != nil {
 			e.Abort(txn)
 			reporter(err)
-			return
+			continue
 		}
 	}
 }

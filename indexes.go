@@ -110,7 +110,12 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	}
 
 	// begin transaction
-	txn := v.engine.Begin(ctx, true)
+	txn, err := v.engine.Begin(ctx, true)
+	if err != nil {
+		return "", err
+	}
+
+	// ensure abortion
 	defer v.engine.Abort(txn)
 
 	// create index
@@ -139,11 +144,16 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 	})
 
 	// begin transaction
-	txn := v.engine.Begin(ctx, true)
+	txn, err := v.engine.Begin(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// ensure abortion
 	defer v.engine.Abort(txn)
 
 	// drop all indexes
-	err := txn.DropIndex(v.handle, "")
+	err = txn.DropIndex(v.handle, "")
 	if err != nil {
 		return nil, err
 	}
@@ -173,11 +183,16 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 	}
 
 	// begin transaction
-	txn := v.engine.Begin(ctx, true)
+	txn, err := v.engine.Begin(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// ensure abortion
 	defer v.engine.Abort(txn)
 
 	// drop all indexes
-	err := txn.DropIndex(v.handle, name)
+	err = txn.DropIndex(v.handle, name)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +218,10 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 	})
 
 	// begin transaction
-	txn := v.engine.Begin(ctx, false)
+	txn, err := v.engine.Begin(ctx, false)
+	if err != nil {
+		return nil, err
+	}
 
 	// list indexes
 	list, err := txn.ListIndexes(v.handle)

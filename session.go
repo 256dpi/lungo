@@ -155,7 +155,13 @@ func (s *Session) StartTransaction(opts ...*options.TransactionOptions) error {
 	}
 
 	// create transaction
-	s.txn = s.engine.Begin(nil, true)
+	txn, err := s.engine.Begin(nil, true)
+	if err != nil {
+		return err
+	}
+
+	// set transaction
+	s.txn = txn
 
 	return nil
 }
