@@ -809,7 +809,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 }
 
 // CreateIndex will create the specified index in the specified namespace.
-func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, unique bool, partial bsonkit.Doc, expiry time.Duration) (string, error) {
+func (t *Transaction) CreateIndex(handle Handle, name string, config mongokit.IndexConfig) (string, error) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -834,12 +834,7 @@ func (t *Transaction) CreateIndex(handle Handle, key bsonkit.Doc, name string, u
 	}
 
 	// create index
-	name, err = namespace.CreateIndex(name, mongokit.IndexConfig{
-		Key:     key,
-		Unique:  unique,
-		Partial: partial,
-		Expiry:  expiry,
-	})
+	name, err = namespace.CreateIndex(name, config)
 	if err != nil {
 		return "", err
 	}

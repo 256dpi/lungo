@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/mongokit"
 )
 
 func TestFileStore(t *testing.T) {
@@ -44,9 +45,11 @@ func TestFileStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(res.Modified))
 
-	name, err := txn.CreateIndex(handle, bsonkit.Convert(bson.M{
-		"foo": int32(-1),
-	}), "idx", false, nil, 0)
+	name, err := txn.CreateIndex(handle, "idx", mongokit.IndexConfig{
+		Key: bsonkit.Convert(bson.M{
+			"foo": int32(-1),
+		}),
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, "idx", name)
 

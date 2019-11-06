@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"github.com/256dpi/lungo/mongokit"
 )
 
 var _ IIndexView = &IndexView{}
@@ -116,7 +117,12 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	defer v.engine.Abort(txn)
 
 	// create index
-	name, err = txn.CreateIndex(v.handle, key, name, unique, partial, expiry)
+	name, err = txn.CreateIndex(v.handle, name, mongokit.IndexConfig{
+		Key:     key,
+		Unique:  unique,
+		Partial: partial,
+		Expiry:  expiry,
+	})
 	if err != nil {
 		return "", err
 	}
