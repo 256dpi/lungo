@@ -118,7 +118,7 @@ type ISession interface {
 	EndSession(context.Context)
 	OperationTime() *primitive.Timestamp
 	StartTransaction(...*options.TransactionOptions) error
-	WithTransaction(ctx context.Context, fn func(sessCtx ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error)
+	WithTransaction(context.Context, func(ISessionContext) (interface{}, error), ...*options.TransactionOptions) (interface{}, error)
 }
 
 // ISessionContext defines a generic session context.

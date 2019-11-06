@@ -20,7 +20,7 @@ type Cursor struct {
 }
 
 // All implements the ICursor.All method.
-func (c *Cursor) All(ctx context.Context, out interface{}) error {
+func (c *Cursor) All(_ context.Context, out interface{}) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -43,7 +43,7 @@ func (c *Cursor) All(ctx context.Context, out interface{}) error {
 }
 
 // Close implements the ICursor.Close method.
-func (c *Cursor) Close(ctx context.Context) error {
+func (c *Cursor) Close(context.Context) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
