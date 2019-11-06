@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/256dpi/lungo/bsonkit"
 )
 
@@ -24,6 +26,40 @@ type IndexConfig struct {
 
 	// The time after documents expire.
 	Expiry time.Duration
+}
+
+// Equal will compare to configurations and return whether they are equal.
+func (c1 IndexConfig) Equal(c2 IndexConfig) bool {
+	// check key
+	if bsonkit.Compare(*c1.Key, *c2.Key) != 0 {
+		return false
+	}
+
+	// check unique
+	if c1.Unique != c2.Unique {
+		return false
+	}
+
+	// get parials
+	var p1, p2 bson.D
+	if c1.Partial != nil {
+		p1 = *c1.Partial
+	}
+	if c2.Partial != nil {
+		p2 = *c2.Partial
+	}
+
+	// check partial
+	if bsonkit.Compare(p1, p2) != 0 {
+		return false
+	}
+
+	// check expiry
+	if c1.Expiry != c2.Expiry {
+		return false
+	}
+
+	return true
 }
 
 // Index is an index for documents that supports MongoDB features. The index is

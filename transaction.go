@@ -808,7 +808,8 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	return list, nil
 }
 
-// CreateIndex will create the specified index in the specified namespace.
+// CreateIndex will create the specified index in the specified namespace. It
+// is a no-op if an index with the same name and configuration already exists.
 func (t *Transaction) CreateIndex(handle Handle, name string, config mongokit.IndexConfig) (string, error) {
 	// acquire write lock
 	t.mutex.Lock()
@@ -831,6 +832,13 @@ func (t *Transaction) CreateIndex(handle Handle, name string, config mongokit.In
 	} else {
 		namespace = clone.Namespaces[handle].Clone()
 		clone.Namespaces[handle] = namespace
+	}
+
+	// check existing index
+	if index, ok := namespace.Indexes[name]; ok {
+		if config.Equal(index.Config()) {
+			return name, nil
+		}
 	}
 
 	// create index

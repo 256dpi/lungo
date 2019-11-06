@@ -137,6 +137,16 @@ func TestIndexViewCreateOne(t *testing.T) {
 			},
 		}, readAll(csr))
 
+		// ensure index
+		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+			Keys: bson.M{
+				"foo": 1,
+			},
+			Options: options.Index().SetName("foo").SetUnique(true),
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "foo", name)
+
 		// duplicate index (same key)
 		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
