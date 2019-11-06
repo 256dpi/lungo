@@ -29,24 +29,24 @@ type IndexConfig struct {
 }
 
 // Equal will compare to configurations and return whether they are equal.
-func (c1 IndexConfig) Equal(c2 IndexConfig) bool {
+func (c IndexConfig) Equal(d IndexConfig) bool {
 	// check key
-	if bsonkit.Compare(*c1.Key, *c2.Key) != 0 {
+	if bsonkit.Compare(*c.Key, *d.Key) != 0 {
 		return false
 	}
 
 	// check unique
-	if c1.Unique != c2.Unique {
+	if c.Unique != d.Unique {
 		return false
 	}
 
 	// get parials
 	var p1, p2 bson.D
-	if c1.Partial != nil {
-		p1 = *c1.Partial
+	if c.Partial != nil {
+		p1 = *c.Partial
 	}
-	if c2.Partial != nil {
-		p2 = *c2.Partial
+	if d.Partial != nil {
+		p2 = *d.Partial
 	}
 
 	// check partial
@@ -55,11 +55,35 @@ func (c1 IndexConfig) Equal(c2 IndexConfig) bool {
 	}
 
 	// check expiry
-	if c1.Expiry != c2.Expiry {
+	if c.Expiry != d.Expiry {
 		return false
 	}
 
 	return true
+}
+
+// Name will return the computed index name.
+func (c IndexConfig) Name() (string, error) {
+	// get columns
+	columns, err := Columns(c.Key)
+	if err != nil {
+		return "", err
+	}
+
+	// generate name
+	segments := make([]string, 0, len(columns)*2)
+	for _, column := range columns {
+		var dir = 1
+		if column.Reverse {
+			dir = -1
+		}
+		segments = append(segments, column.Path, strconv.Itoa(dir))
+	}
+
+	// assemble name
+	name := strings.Join(segments, "_")
+
+	return name, nil
 }
 
 // Index is an index for documents that supports MongoDB features. The index is
@@ -170,24 +194,6 @@ func (i *Index) Config() IndexConfig {
 		Partial: bsonkit.Clone(i.config.Partial),
 		Expiry:  i.config.Expiry,
 	}
-}
-
-// Name will return the computed index name.
-func (i *Index) Name() string {
-	// generate name
-	segments := make([]string, 0, len(i.columns)*2)
-	for _, column := range i.columns {
-		var dir = 1
-		if column.Reverse {
-			dir = -1
-		}
-		segments = append(segments, column.Path, strconv.Itoa(dir))
-	}
-
-	// assemble name
-	name := strings.Join(segments, "_")
-
-	return name
 }
 
 // Clone will clone the index. Mutating the new index will not mutate the

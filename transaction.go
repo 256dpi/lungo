@@ -834,6 +834,14 @@ func (t *Transaction) CreateIndex(handle Handle, name string, config mongokit.In
 		clone.Namespaces[handle] = namespace
 	}
 
+	// compute name if missing
+	if name == "" {
+		name, err = config.Name()
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// check existing index
 	if index, ok := namespace.Indexes[name]; ok {
 		if config.Equal(index.Config()) {

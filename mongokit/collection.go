@@ -389,6 +389,11 @@ func (c *Collection) Delete(query, sort bsonkit.Doc, limit int) (*Result, error)
 
 // CreateIndex will create and build and index based on the specified configuration.
 func (c *Collection) CreateIndex(name string, config IndexConfig) (string, error) {
+	// check name
+	if name == "" {
+		return "", fmt.Errorf("missing index name")
+	}
+
 	// check duplicate
 	for name, index := range c.Indexes {
 		if bsonkit.Compare(*config.Key, *index.Config().Key) == 0 {
@@ -400,11 +405,6 @@ func (c *Collection) CreateIndex(name string, config IndexConfig) (string, error
 	index, err := CreateIndex(config)
 	if err != nil {
 		return "", err
-	}
-
-	// use generated name if missing
-	if name == "" {
-		name = index.Name()
 	}
 
 	// add index

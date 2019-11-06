@@ -86,6 +86,29 @@ func TestIndexViewCreateMany(t *testing.T) {
 				"v": int32(2),
 			},
 		}, readAll(csr))
+
+		// ensure indexes
+		names, err = c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+			{
+				Keys: bson.D{
+					bson.E{Key: "bar", Value: -1},
+					bson.E{Key: "baz", Value: 1},
+				},
+			},
+			{
+				Keys: bson.M{
+					"foo": 1,
+				},
+				Options: options.Index().SetName("foo").SetUnique(true).SetPartialFilterExpression(bson.M{
+					"bar": "baz",
+				}),
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{
+			"bar_-1_baz_1",
+			"foo",
+		}, names)
 	})
 }
 
