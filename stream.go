@@ -148,7 +148,7 @@ func (s *Stream) Next(ctx context.Context) bool {
 				s.dropped = true
 			}
 
-			// TODO: Filer with pipeline.
+			// TODO: Filter with pipeline.
 
 			// set event and token
 			s.last = event
