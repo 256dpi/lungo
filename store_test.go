@@ -84,6 +84,7 @@ func TestFileStore(t *testing.T) {
 						},
 						"unique":  true,
 						"partial": nil,
+						"expiry":  int64(0),
 					},
 					"idx": bson.M{
 						"key": bson.M{
@@ -91,6 +92,7 @@ func TestFileStore(t *testing.T) {
 						},
 						"unique":  false,
 						"partial": nil,
+						"expiry":  int64(0),
 					},
 				},
 			},

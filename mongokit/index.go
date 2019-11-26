@@ -40,7 +40,7 @@ func (c IndexConfig) Equal(d IndexConfig) bool {
 		return false
 	}
 
-	// get parials
+	// get partials
 	var p1, p2 bson.D
 	if c.Partial != nil {
 		p1 = *c.Partial

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -56,9 +57,10 @@ type FileNamespace struct {
 
 // FileIndex is a single index stored in a file by the file store.
 type FileIndex struct {
-	Key     bsonkit.Doc `bson:"key"`
-	Unique  bool        `bson:"unique"`
-	Partial bsonkit.Doc `bson:"partial"`
+	Key     bsonkit.Doc   `bson:"key"`
+	Unique  bool          `bson:"unique"`
+	Partial bsonkit.Doc   `bson:"partial"`
+	Expiry  time.Duration `bson:"expiry"`
 }
 
 // FileStore writes the catalog to a single file on disk.
@@ -114,6 +116,7 @@ func (s *FileStore) Load() (*Catalog, error) {
 				Key:     idx.Key,
 				Unique:  idx.Unique,
 				Partial: idx.Partial,
+				Expiry:  idx.Expiry,
 			})
 			if err != nil {
 				return nil, err
@@ -158,6 +161,7 @@ func (s *FileStore) Store(data *Catalog) error {
 				Key:     config.Key,
 				Unique:  config.Unique,
 				Partial: config.Partial,
+				Expiry:  config.Expiry,
 			}
 		}
 

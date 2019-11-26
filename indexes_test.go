@@ -125,12 +125,19 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.Error(t, err)
 		assert.Empty(t, name)
 
+		// prepare options
+		opts := options.Index().
+			SetName("foo").
+			SetUnique(true).
+			SetPartialFilterExpression(bson.M{"foo": "bar"}).
+			SetExpireAfterSeconds(10)
+
 		// single unique index
 		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
-			Options: options.Index().SetName("foo").SetUnique(true),
+			Options: opts,
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, "foo", name)
@@ -153,6 +160,10 @@ func TestIndexViewCreateOne(t *testing.T) {
 				"key": bson.M{
 					"foo": int32(1),
 				},
+				"expireAfterSeconds": int32(10),
+				"partialFilterExpression": bson.M{
+					"foo": "bar",
+				},
 				"name":   "foo",
 				"ns":     ns,
 				"unique": true,
@@ -160,12 +171,12 @@ func TestIndexViewCreateOne(t *testing.T) {
 			},
 		}, readAll(csr))
 
-		// ensure index
+		// ensure same index again
 		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
-			Options: options.Index().SetName("foo").SetUnique(true),
+			Options: opts,
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, "foo", name)
