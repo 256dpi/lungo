@@ -83,7 +83,7 @@ func TestIndexCompound(t *testing.T) {
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
-	assert.Equal(t, List{d1, d2}, index.List())
+	assert.Equal(t, List{d2, d1}, index.List())
 
 	ok = index.Remove(d1)
 	assert.True(t, ok)
