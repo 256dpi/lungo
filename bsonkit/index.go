@@ -125,9 +125,6 @@ func (i *Index) Clone() *Index {
 		sentinel: &entry{},
 	}
 
-	// clone btree
-	clone.btree = i.btree.Clone()
-
 	// update context
 	clone.btree.SetContext(clone)
 
