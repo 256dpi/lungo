@@ -112,7 +112,7 @@ func (i *Index) Remove(doc Doc) bool {
 // List will return an ascending list of all documents in the index.
 func (i *Index) List() List {
 	// prepare list
-	var list List
+	list := make(List, 0, i.btree.Len())
 
 	// walk index
 	i.btree.Ascend(func(item btree.Item) bool {

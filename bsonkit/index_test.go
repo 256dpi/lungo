@@ -16,36 +16,43 @@ func TestIndex(t *testing.T) {
 	})
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 
 	ok := index.Add(d1)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d1)
 	assert.False(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d2)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
+	assert.Equal(t, List{d1, d2}, index.List())
 
 	ok = index.Remove(d1)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
+	assert.Equal(t, List{d2}, index.List())
 
 	ok = index.Remove(d2)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 
 	ok = index.Remove(d2)
 	assert.False(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 }
 
 func TestIndexCompound(t *testing.T) {
@@ -58,36 +65,43 @@ func TestIndexCompound(t *testing.T) {
 	})
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 
 	ok := index.Add(d1)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d1)
 	assert.False(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d2)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
+	assert.Equal(t, List{d1, d2}, index.List())
 
 	ok = index.Remove(d1)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
+	assert.Equal(t, List{d2}, index.List())
 
 	ok = index.Remove(d2)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 
 	ok = index.Remove(d2)
 	assert.False(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
+	assert.Equal(t, List{}, index.List())
 }
 
 func TestIndexUnique(t *testing.T) {
@@ -101,42 +115,49 @@ func TestIndexUnique(t *testing.T) {
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 
 	ok := index.Add(d1)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d1)
 	assert.False(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d2)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
 	assert.True(t, index.Has(d3))
+	assert.Equal(t, List{d1, d2}, index.List())
 
 	ok = index.Remove(d1)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
 	assert.True(t, index.Has(d3))
+	assert.Equal(t, List{d2}, index.List())
 
 	ok = index.Remove(d2)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 
 	ok = index.Remove(d2)
 	assert.False(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 }
 
 func TestIndexCompoundUnique(t *testing.T) {
@@ -151,42 +172,49 @@ func TestIndexCompoundUnique(t *testing.T) {
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 
 	ok := index.Add(d1)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d1)
 	assert.False(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{d1}, index.List())
 
 	ok = index.Add(d2)
 	assert.True(t, ok)
 	assert.True(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
 	assert.True(t, index.Has(d3))
+	assert.Equal(t, List{d1, d2}, index.List())
 
 	ok = index.Remove(d1)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.True(t, index.Has(d2))
 	assert.True(t, index.Has(d3))
+	assert.Equal(t, List{d2}, index.List())
 
 	ok = index.Remove(d2)
 	assert.True(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 
 	ok = index.Remove(d2)
 	assert.False(t, ok)
 	assert.False(t, index.Has(d1))
 	assert.False(t, index.Has(d2))
 	assert.False(t, index.Has(d3))
+	assert.Equal(t, List{}, index.List())
 }
 
 func TestIndexClone(t *testing.T) {
@@ -215,8 +243,10 @@ func TestIndexClone(t *testing.T) {
 	assert.True(t, index1.Has(d1))
 	assert.True(t, index1.Has(d2))
 	assert.False(t, index1.Has(d3))
+	assert.Equal(t, List{d1, d2}, index1.List())
 
 	assert.False(t, index2.Has(d1))
 	assert.True(t, index2.Has(d2))
 	assert.True(t, index2.Has(d3))
+	assert.Equal(t, List{d2, d3}, index2.List())
 }
