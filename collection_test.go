@@ -1751,3 +1751,5 @@ func TestCollectionUpdateOneUpsert(t *testing.T) {
 		}, dumpCollection(c, false))
 	})
 }
+
+// TODO: Test upsert with zero object id.
