@@ -1,6 +1,9 @@
 package bsonkit
 
-import "sort"
+import (
+	"sort"
+	"unsafe"
+)
 
 // Column defines a column for ordering.
 type Column struct {
@@ -9,15 +12,15 @@ type Column struct {
 }
 
 // Sort will sort the list of documents in-place based on the specified columns.
-func Sort(list List, columns []Column) {
+func Sort(list List, columns []Column, identity bool) {
 	// sort slice by comparing values
 	sort.Slice(list, func(i, j int) bool {
-		return Order(list[i], list[j], columns) < 0
+		return Order(list[i], list[j], columns, identity) < 0
 	})
 }
 
 // Order will return the order of  documents based on the specified columns.
-func Order(l, r Doc, columns []Column) int {
+func Order(l, r Doc, columns []Column, identity bool) int {
 	for _, column := range columns {
 		// get values
 		a := Get(l, column.Path)
@@ -39,5 +42,21 @@ func Order(l, r Doc, columns []Column) int {
 		return res
 	}
 
-	return 0
+	// return if identity should not be checked
+	if !identity {
+		return 0
+	}
+
+	// get addresses
+	al := uintptr(unsafe.Pointer(l))
+	ar := uintptr(unsafe.Pointer(r))
+
+	// compare identity
+	if al == ar {
+		return 0
+	} else if al < ar {
+		return -1
+	} else {
+		return 1
+	}
 }

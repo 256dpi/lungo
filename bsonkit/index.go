@@ -1,8 +1,6 @@
 package bsonkit
 
 import (
-	"unsafe"
-
 	"github.com/256dpi/btree"
 )
 
@@ -18,23 +16,9 @@ func (i *entry) Less(item btree.Item, ctx interface{}) bool {
 	index := ctx.(*Index)
 
 	// get order
-	order := Order(i.doc, j.doc, index.columns)
+	order := Order(i.doc, j.doc, index.columns, !index.unique)
 	if order != 0 {
 		return order < 0
-	}
-
-	// check unique
-	if index.unique {
-		return false
-	}
-
-	// get addresses
-	ai := uintptr(unsafe.Pointer(i.doc))
-	aj := uintptr(unsafe.Pointer(j.doc))
-
-	// check document identity
-	if ai < aj {
-		return true
 	}
 
 	return false

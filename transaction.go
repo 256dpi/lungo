@@ -803,7 +803,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// sort list
 	bsonkit.Sort(list, []bsonkit.Column{
 		{Path: "name"},
-	})
+	}, true)
 
 	return list, nil
 }
