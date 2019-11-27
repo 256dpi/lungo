@@ -184,6 +184,11 @@ func (i *Index) Remove(doc bsonkit.Doc) (bool, error) {
 	return i.base.Remove(doc), nil
 }
 
+// List will return an ascending list of all documents in the index.
+func (i *Index) List() bsonkit.List {
+	return i.base.List()
+}
+
 // Config will return the index configuration.
 func (i *Index) Config() IndexConfig {
 	return IndexConfig{

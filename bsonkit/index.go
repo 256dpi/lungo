@@ -114,6 +114,20 @@ func (i *Index) Remove(doc Doc) bool {
 	return true
 }
 
+// List will return an ascending list of all documents in the index.
+func (i *Index) List() List {
+	// prepare list
+	var list List
+
+	// walk index
+	i.btree.Ascend(func(item btree.Item) bool {
+		list = append(list, item.(*entry).doc)
+		return true
+	})
+
+	return list
+}
+
 // Clone will clone the index. Mutating the new index will not mutate the original
 // index.
 func (i *Index) Clone() *Index {
