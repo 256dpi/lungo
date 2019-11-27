@@ -40,7 +40,7 @@ func (c IndexConfig) Equal(d IndexConfig) bool {
 		return false
 	}
 
-	// get partials
+	// check partials
 	var p1, p2 bson.D
 	if c.Partial != nil {
 		p1 = *c.Partial
@@ -48,8 +48,6 @@ func (c IndexConfig) Equal(d IndexConfig) bool {
 	if d.Partial != nil {
 		p2 = *d.Partial
 	}
-
-	// check partial
 	if bsonkit.Compare(p1, p2) != 0 {
 		return false
 	}
