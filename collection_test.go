@@ -1213,7 +1213,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
-		// assert.Nli(t, res)  // TODO: mongo returns all ids in any case, bug?
+		// assert.Nil(t, res)  // TODO: mongo returns all ids in any case, bug?
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
