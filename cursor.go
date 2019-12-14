@@ -103,3 +103,8 @@ func (c *Cursor) Next(context.Context) bool {
 
 	return false
 }
+
+// TryNext implements the ICursor.TryNext method.
+func (c *Cursor) TryNext(ctx context.Context) bool {
+	return c.Next(ctx)
+}

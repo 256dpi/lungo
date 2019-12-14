@@ -20,6 +20,7 @@ type IClient interface {
 	Disconnect(context.Context) error
 	ListDatabaseNames(context.Context, interface{}, ...*options.ListDatabasesOptions) ([]string, error)
 	ListDatabases(context.Context, interface{}, ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error)
+	NumberSessionsInProgress() int
 	Ping(context.Context, *readpref.ReadPref) error
 	StartSession(...*options.SessionOptions) (ISession, error)
 	UseSession(context.Context, func(ISessionContext) error) error
@@ -79,6 +80,7 @@ type ICursor interface {
 	Err() error
 	ID() int64
 	Next(context.Context) bool
+	TryNext(context.Context) bool
 }
 
 // ISingleResult defines a generic single result
@@ -105,6 +107,7 @@ type IChangeStream interface {
 	ID() int64
 	Next(context.Context) bool
 	ResumeToken() bson.Raw
+	TryNext(context.Context) bool
 }
 
 // ISession defines a generic session.

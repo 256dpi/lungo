@@ -19,7 +19,7 @@ func TestStream(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
-		ret := stream.Next(timeout(50))
+		ret := stream.TryNext(timeout(50))
 		assert.False(t, ret)
 
 		id1 := primitive.NewObjectID()
@@ -57,6 +57,9 @@ func TestStream(t *testing.T) {
 			"operationType": "insert",
 		}, event)
 
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
 		/* replace */
 
 		_, err = c.ReplaceOne(nil, bson.M{
@@ -91,6 +94,9 @@ func TestStream(t *testing.T) {
 			},
 			"operationType": "replace",
 		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
 
 		/* update */
 
@@ -134,6 +140,9 @@ func TestStream(t *testing.T) {
 			},
 		}, event)
 
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
 		/* delete */
 
 		_, err = c.DeleteOne(nil, bson.M{
@@ -161,6 +170,9 @@ func TestStream(t *testing.T) {
 			},
 			"operationType": "delete",
 		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
 
 		/* close */
 

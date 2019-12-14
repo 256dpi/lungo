@@ -128,6 +128,11 @@ func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...
 	return result, nil
 }
 
+// NumberSessionsInProgress implements the IClient.NumberSessionsInProgress method.
+func (c *Client) NumberSessionsInProgress() int {
+	return 0
+}
+
 // Ping implements the IClient.Ping method.
 func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 	return nil

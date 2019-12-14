@@ -192,3 +192,8 @@ func (s *Stream) ResumeToken() bson.Raw {
 
 	return bytes
 }
+
+// TryNext implements the ICursor.TryNext method.
+func (s *Stream) TryNext(ctx context.Context) bool {
+	return s.Next(ctx)
+}
