@@ -1,6 +1,6 @@
 module github.com/256dpi/lungo
 
-go 1.12
+go 1.13
 
 require (
 	github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba
