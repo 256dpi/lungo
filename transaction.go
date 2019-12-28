@@ -49,6 +49,9 @@ type Operation struct {
 	// The insert, update or replacement document.
 	Document bsonkit.Doc
 
+	// The sorting to apply (replace, update, delete).
+	Sort bsonkit.Doc
+
 	// Whether an upsert should be performed (replace, update).
 	Upsert bool
 
@@ -163,11 +166,11 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 		case Insert:
 			res, err = t.insert(handle, oplog, namespace, op.Document)
 		case Replace:
-			res, err = t.replace(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert)
+			res, err = t.replace(handle, oplog, namespace, op.Filter, op.Document, op.Sort, op.Upsert)
 		case Update:
-			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert, op.Skip, op.Limit)
+			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, op.Sort, op.Upsert, op.Skip, op.Limit)
 		case Delete:
-			res, err = t.delete(handle, oplog, namespace, op.Filter, nil, op.Skip, op.Limit)
+			res, err = t.delete(handle, oplog, namespace, op.Filter, op.Sort, op.Skip, op.Limit)
 		default:
 			return nil, fmt.Errorf("unsupported bulk opcode %q", op.Opcode.String())
 		}
