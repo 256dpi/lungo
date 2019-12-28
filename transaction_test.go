@@ -62,7 +62,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 		"$set": bson.M{
 			"foo": "baz",
 		},
-	}), 0, false)
+	}), 0, 0, false)
 	assert.NoError(t, err)
 
 	err = txn.Clean(1, time.Hour)
@@ -153,7 +153,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 		"$set": bson.M{
 			"foo": "baz",
 		},
-	}), 0, false)
+	}), 0, 0, false)
 	assert.NoError(t, err)
 
 	err = txn.Clean(10, time.Second)

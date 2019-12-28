@@ -282,7 +282,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 
 	// delete documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Delete(c.handle, query, nil, 0)
+		return txn.Delete(c.handle, query, nil, 0, 0)
 	})
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 
 	// delete document
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Delete(c.handle, query, nil, 1)
+		return txn.Delete(c.handle, query, nil, 0, 1)
 	})
 	if err != nil {
 		return nil, err
@@ -628,7 +628,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// delete documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Delete(c.handle, query, sort, 1)
+		return txn.Delete(c.handle, query, sort, 0, 1)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -822,7 +822,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, sort, upd, 1, upsert)
+		return txn.Update(c.handle, query, sort, upd, 0, 1, upsert)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -1063,7 +1063,7 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, nil, doc, 0, upsert)
+		return txn.Update(c.handle, query, nil, doc, 0, 0, upsert)
 	})
 	if err != nil {
 		return nil, err
@@ -1126,7 +1126,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, nil, doc, 1, upsert)
+		return txn.Update(c.handle, query, nil, doc, 0, 1, upsert)
 	})
 	if err != nil {
 		return nil, err

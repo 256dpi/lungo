@@ -52,7 +52,10 @@ type Operation struct {
 	// Whether an upsert should be performed (replace, update).
 	Upsert bool
 
-	// The limit (one, many).
+	// The documents to skip (update, delete).
+	Skip int
+
+	// The limit (update, delete).
 	Limit int
 }
 
@@ -162,9 +165,9 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 		case Replace:
 			res, err = t.replace(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert)
 		case Update:
-			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert, op.Limit)
+			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, nil, op.Upsert, op.Skip, op.Limit)
 		case Delete:
-			res, err = t.delete(handle, oplog, namespace, op.Filter, nil, op.Limit)
+			res, err = t.delete(handle, oplog, namespace, op.Filter, nil, op.Skip, op.Limit)
 		default:
 			return nil, fmt.Errorf("unsupported bulk opcode %q", op.Opcode.String())
 		}
@@ -398,7 +401,7 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 // constant parts of the query and apply the update and insert the document if
 // it is missing. The returned result will contain the matched and modified or
 // upserted document.
-func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, limit int, upsert bool) (*Result, error) {
+func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, skip, limit int, upsert bool) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -432,7 +435,7 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, lim
 	clone.Namespaces[Oplog] = oplog
 
 	// perform update
-	res, err := t.update(handle, oplog, namespace, query, update, sort, upsert, limit)
+	res, err := t.update(handle, oplog, namespace, query, update, sort, upsert, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +449,7 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, lim
 	return res, nil
 }
 
-func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
+func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, skip, limit int) (*Result, error) {
 	// perform update
 	res, err := namespace.Update(query, update, sort, 0, limit)
 	if err != nil {
@@ -488,7 +491,7 @@ func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collectio
 // Delete will remove all matching documents from the namespace. Sort, skip and
 // limit may be supplied to modify the result. The returned result will contain
 // the matched documents.
-func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -516,7 +519,7 @@ func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) 
 	clone.Namespaces[Oplog] = oplog
 
 	// perform delete
-	res, err := t.delete(handle, oplog, namespace, query, sort, limit)
+	res, err := t.delete(handle, oplog, namespace, query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -530,9 +533,9 @@ func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) 
 	return res, nil
 }
 
-func (t *Transaction) delete(handle Handle, oplog, namespace *mongokit.Collection, query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (t *Transaction) delete(handle Handle, oplog, namespace *mongokit.Collection, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// perform delete
-	res, err := namespace.Delete(query, sort, 0, limit)
+	res, err := namespace.Delete(query, sort, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -1057,7 +1060,7 @@ func (t *Transaction) Expire() error {
 		// delete all expired documents
 		res, err := t.delete(handle, oplog, namespace, bsonkit.Convert(bson.M{
 			"$or": conditions,
-		}), nil, 0)
+		}), nil, 0, 0)
 		if err != nil {
 			return err
 		}
