@@ -661,8 +661,11 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 	}
 
 	// resize oplog
-	for len(oplog.Documents.List) > 1000 {
-		oplog.Documents.Remove(oplog.Documents.List[0])
+	_, err = oplog.Delete(bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"_id": -1,
+	}), 1000, 0)
+	if err != nil {
+		return err
 	}
 
 	return nil
