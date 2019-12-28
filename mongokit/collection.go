@@ -185,7 +185,7 @@ func (c *Collection) Replace(query, repl, sort bsonkit.Doc) (*Result, error) {
 
 // Update will lookup all documents that match the specified query and update
 // them according to the update document.
-func (c *Collection) Update(query, update, sort bsonkit.Doc, limit int) (*Result, error) {
+func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// get documents
 	list := c.Documents.List
 
@@ -196,6 +196,13 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, limit int) (*Result
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// apply skip
+	if skip > len(list) {
+		list = nil
+	} else {
+		list = list[skip:]
 	}
 
 	// filter documents

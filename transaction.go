@@ -448,7 +448,7 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, lim
 
 func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, limit int) (*Result, error) {
 	// perform update
-	res, err := namespace.Update(query, update, sort, limit)
+	res, err := namespace.Update(query, update, sort, 0, limit)
 	if err != nil {
 		return nil, err
 	}
