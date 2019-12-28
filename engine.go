@@ -85,6 +85,16 @@ func CreateEngine(opts Options) (*Engine, error) {
 	return e, nil
 }
 
+// Catalog will return the currently used catalog. Any modifications to the
+// returned catalog while using the engine results in undefined behaviour.
+func (e *Engine) Catalog() *Catalog {
+	// acquire lock
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	return e.catalog
+}
+
 // Begin will create a new transaction from the current catalog. A locked
 // transaction must be committed or aborted before another transaction can be
 // started. Unlocked transactions serve as a point in time snapshots and can be
