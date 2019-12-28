@@ -28,12 +28,18 @@ type Options struct {
 
 	// The function that is called with errors from the expiry goroutine.
 	ExpireErrors func(error)
+
+	// The maximum size of the oplog.
+	//
+	// Default: 1000.
+	MaxOplogSize int
 }
 
 // Engine manages the catalog loaded from a store and provides access to it
 // through transactions. Additionally, it also manages streams that subscribe
 // to changes to the catalog.
 type Engine struct {
+	opts    Options
 	store   Store
 	catalog *Catalog
 	streams map[*Stream]struct{}
@@ -46,8 +52,19 @@ type Engine struct {
 // CreateEngine will create and return an engine with a loaded catalog from the
 // store.
 func CreateEngine(opts Options) (*Engine, error) {
+	// set default interval
+	if opts.ExpireInterval == 0 {
+		opts.ExpireInterval = 60 * time.Second
+	}
+
+	// set default max oplog size
+	if opts.MaxOplogSize == 0 {
+		opts.MaxOplogSize = 1000
+	}
+
 	// create engine
 	e := &Engine{
+		opts:    opts,
 		store:   opts.Store,
 		streams: map[*Stream]struct{}{},
 		token:   dbkit.NewSemaphore(1),
@@ -61,11 +78,6 @@ func CreateEngine(opts Options) (*Engine, error) {
 
 	// set catalog
 	e.catalog = data
-
-	// set default interval
-	if opts.ExpireInterval == 0 {
-		opts.ExpireInterval = 60 * time.Second
-	}
 
 	// run expiry
 	go e.expire(opts.ExpireInterval, opts.ExpireErrors)
@@ -147,7 +159,7 @@ func (e *Engine) Commit(txn *Transaction) error {
 	}
 
 	// clean oplog
-	err := txn.Clean(1000)
+	err := txn.Clean(e.opts.MaxOplogSize)
 	if err != nil {
 		return err
 	}
