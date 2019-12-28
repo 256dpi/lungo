@@ -134,6 +134,11 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 		return nil, err
 	}
 
+	// check access
+	if handle[0] == Local {
+		return nil, fmt.Errorf("namespace local.* is read only")
+	}
+
 	// clone catalog
 	clone := t.catalog.Clone()
 
@@ -231,6 +236,11 @@ func (t *Transaction) Insert(handle Handle, list bsonkit.List, ordered bool) (*R
 		return nil, err
 	}
 
+	// check access
+	if handle[0] == Local {
+		return nil, fmt.Errorf("namespace local.* is read only")
+	}
+
 	// clone list
 	list = bsonkit.CloneList(list)
 
@@ -318,6 +328,11 @@ func (t *Transaction) Replace(handle Handle, query, sort, repl bsonkit.Doc, upse
 	err := handle.Validate(true)
 	if err != nil {
 		return nil, err
+	}
+
+	// check access
+	if handle[0] == Local {
+		return nil, fmt.Errorf("namespace local.* is read only")
 	}
 
 	// check namespace
@@ -415,6 +430,11 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, ski
 		return nil, err
 	}
 
+	// check access
+	if handle[0] == Local {
+		return nil, fmt.Errorf("namespace local.* is read only")
+	}
+
 	// check namespace
 	if t.catalog.Namespaces[handle] == nil && !upsert {
 		return &Result{}, nil
@@ -505,6 +525,11 @@ func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, skip, limit
 		return nil, err
 	}
 
+	// check access
+	if handle[0] == Local {
+		return nil, fmt.Errorf("namespace local.* is read only")
+	}
+
 	// check namespace
 	if t.catalog.Namespaces[handle] == nil {
 		return &Result{}, nil
@@ -568,6 +593,11 @@ func (t *Transaction) Drop(handle Handle) error {
 	err := handle.Validate(false)
 	if err != nil {
 		return err
+	}
+
+	// check access
+	if handle[0] == Local {
+		return fmt.Errorf("namespace local.* is read only")
 	}
 
 	// clone catalog
@@ -851,6 +881,11 @@ func (t *Transaction) CreateIndex(handle Handle, name string, config mongokit.In
 		return "", err
 	}
 
+	// check access
+	if handle[0] == Local {
+		return "", fmt.Errorf("namespace local.* is read only")
+	}
+
 	// clone catalog
 	clone := t.catalog.Clone()
 
@@ -887,6 +922,11 @@ func (t *Transaction) DropIndex(handle Handle, name string) error {
 	err := handle.Validate(true)
 	if err != nil {
 		return err
+	}
+
+	// check access
+	if handle[0] == Local {
+		return fmt.Errorf("namespace local.* is read only")
 	}
 
 	// check namespace

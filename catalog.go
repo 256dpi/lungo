@@ -31,8 +31,11 @@ func (h Handle) Validate(needCollection bool) error {
 	return nil
 }
 
+// Local is the local database.
+const Local = "local"
+
 // Oplog is the handle for the local oplog namespace.
-var Oplog = Handle{"local", "oplog"}
+var Oplog = Handle{Local, "oplog"}
 
 // Catalog is the top level object per database that contains all data.
 type Catalog struct {
