@@ -179,13 +179,10 @@ func (e *Engine) Commit(txn *Transaction) error {
 	}
 
 	// clean oplog
-	err := txn.Clean(e.opts.MaxOplogSize, e.opts.MaxOplogAge)
-	if err != nil {
-		return err
-	}
+	txn.Clean(e.opts.MaxOplogSize, e.opts.MaxOplogAge)
 
 	// write catalog
-	err = e.store.Store(txn.Catalog())
+	err := e.store.Store(txn.Catalog())
 	if err != nil {
 		return err
 	}

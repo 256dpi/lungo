@@ -29,8 +29,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 	}, true)
 	assert.NoError(t, err)
 
-	err = txn.Clean(1, time.Hour)
-	assert.NoError(t, err)
+	txn.Clean(1, time.Hour)
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
@@ -65,8 +64,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 	}), 0, 0, false)
 	assert.NoError(t, err)
 
-	err = txn.Clean(1, time.Hour)
-	assert.NoError(t, err)
+	txn.Clean(1, time.Hour)
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
@@ -115,8 +113,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 	}, true)
 	assert.NoError(t, err)
 
-	err = txn.Clean(10, time.Second)
-	assert.NoError(t, err)
+	txn.Clean(10, time.Second)
 
 	// wait at least 2s to ensure the clean threshold is always smaller than the
 	// timestamp. if we only wait a second the ordinal number might cause the
@@ -156,8 +153,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 	}), 0, 0, false)
 	assert.NoError(t, err)
 
-	err = txn.Clean(10, time.Second)
-	assert.NoError(t, err)
+	txn.Clean(10, time.Second)
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
