@@ -928,8 +928,9 @@ func (t *Transaction) Catalog() *Catalog {
 	return t.catalog
 }
 
-// Clean will clean the oplog and only keep up to the specified amount of events.
-func (t *Transaction) Clean(maxSize int) error {
+// Clean will clean the oplog and only keep up to the specified amount of events
+// and no events that are older than the specified age.
+func (t *Transaction) Clean(maxSize int, maxAge time.Duration) error {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -941,10 +942,57 @@ func (t *Transaction) Clean(maxSize int) error {
 	oplog := clone.Namespaces[Oplog].Clone()
 	clone.Namespaces[Oplog] = oplog
 
-	// resize oplog
-	res, err := oplog.Delete(bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	// find last event by size
+	bySize, err := oplog.Find(bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"_id": -1,
-	}), maxSize, 0)
+	}), maxSize, 1)
+	if err != nil {
+		return err
+	}
+
+	// get time
+	now := bsonkit.Now()
+	now.T -= uint32(maxAge / time.Second)
+
+	// find last event by time
+	byTime, err := oplog.Find(bsonkit.Convert(bson.M{
+		"_id.ts": bson.M{
+			"$lt": now,
+		},
+	}), bsonkit.Convert(bson.M{
+		"_id": -1,
+	}), 0, 1)
+	if err != nil {
+		return err
+	}
+
+	// use the closest timestamp as the delete threshold
+	var threshold interface{}
+	if len(bySize.Matched) > 0 && len(byTime.Matched) > 0 {
+		id1 := bsonkit.Get(bySize.Matched[0], "_id")
+		id2 := bsonkit.Get(byTime.Matched[0], "_id")
+		if bsonkit.Compare(id1, id2) > 0 {
+			threshold = id1
+		} else {
+			threshold = id2
+		}
+	} else if len(bySize.Matched) > 0 {
+		threshold = bsonkit.Get(bySize.Matched[0], "_id")
+	} else if len(byTime.Matched) > 0 {
+		threshold = bsonkit.Get(byTime.Matched[0], "_id")
+	}
+
+	// return if threshold has not been set
+	if threshold == nil {
+		return nil
+	}
+
+	// resize oplog by size
+	res, err := oplog.Delete(bsonkit.Convert(bson.M{
+		"_id": bson.M{
+			"$lte": threshold,
+		},
+	}), nil, 0, 0)
 	if err != nil {
 		return err
 	}

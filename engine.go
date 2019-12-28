@@ -33,6 +33,11 @@ type Options struct {
 	//
 	// Default: 1000.
 	MaxOplogSize int
+
+	// The maximum age of any oplog entry.
+	//
+	// Default: 1h.
+	MaxOplogAge time.Duration
 }
 
 // Engine manages the catalog loaded from a store and provides access to it
@@ -60,6 +65,11 @@ func CreateEngine(opts Options) (*Engine, error) {
 	// set default max oplog size
 	if opts.MaxOplogSize == 0 {
 		opts.MaxOplogSize = 1000
+	}
+
+	// set default max oplog age
+	if opts.MaxOplogAge == 0 {
+		opts.MaxOplogAge = time.Hour
 	}
 
 	// create engine
@@ -169,7 +179,7 @@ func (e *Engine) Commit(txn *Transaction) error {
 	}
 
 	// clean oplog
-	err := txn.Clean(e.opts.MaxOplogSize)
+	err := txn.Clean(e.opts.MaxOplogSize, e.opts.MaxOplogAge)
 	if err != nil {
 		return err
 	}
