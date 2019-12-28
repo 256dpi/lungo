@@ -289,7 +289,10 @@ func (t *Transaction) insert(handle Handle, oplog, namespace *mongokit.Collectio
 	}
 
 	// append oplog
-	t.append(oplog, handle, "insert", doc, nil)
+	err = t.append(oplog, handle, "insert", doc, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Result{
 		Modified: res.Modified,
@@ -366,7 +369,10 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 		}
 
 		// append oplog
-		t.append(oplog, handle, "insert", res.Upserted, nil)
+		err = t.append(oplog, handle, "insert", res.Upserted, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		return &Result{
 			Upserted: res.Upserted,
@@ -375,7 +381,10 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 
 	// append oplog
 	if len(res.Modified) > 0 {
-		t.append(oplog, handle, "replace", res.Modified[0], nil)
+		err = t.append(oplog, handle, "replace", res.Modified[0], nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Result{
@@ -452,7 +461,10 @@ func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collectio
 		}
 
 		// append oplog
-		t.append(oplog, handle, "insert", res.Upserted, nil)
+		err = t.append(oplog, handle, "insert", res.Upserted, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		return &Result{
 			Upserted: res.Upserted,
@@ -461,7 +473,10 @@ func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collectio
 
 	// append oplog
 	for i, doc := range res.Modified {
-		t.append(oplog, handle, "update", doc, res.Changes[i])
+		err = t.append(oplog, handle, "update", doc, res.Changes[i])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Result{
@@ -524,7 +539,10 @@ func (t *Transaction) delete(handle Handle, oplog, namespace *mongokit.Collectio
 
 	// append oplog
 	for _, doc := range res.Matched {
-		t.append(oplog, handle, "delete", doc, nil)
+		err = t.append(oplog, handle, "delete", doc, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Result{
@@ -564,13 +582,19 @@ func (t *Transaction) Drop(handle Handle) error {
 			dropped++
 
 			// append oplog
-			t.append(oplog, ns, "drop", nil, nil)
+			err = t.append(oplog, ns, "drop", nil, nil)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	// append oplog if database has been dropped
 	if handle[1] == "" && dropped > 0 {
-		t.append(oplog, handle, "dropDatabase", nil, nil)
+		err = t.append(oplog, handle, "dropDatabase", nil, nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	// set catalog and flag
@@ -582,7 +606,7 @@ func (t *Transaction) Drop(handle Handle) error {
 	return nil
 }
 
-func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op string, doc bsonkit.Doc, changes *mongokit.Changes) {
+func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op string, doc bsonkit.Doc, changes *mongokit.Changes) error {
 	// get time
 	now := bsonkit.Now()
 
@@ -630,13 +654,18 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 		}
 	}
 
-	// add event
-	oplog.Documents.Add(bsonkit.Convert(event))
+	// insert event
+	_, err := oplog.Insert(bsonkit.Convert(event))
+	if err != nil {
+		return err
+	}
 
 	// resize oplog
 	for len(oplog.Documents.List) > 1000 {
 		oplog.Documents.Remove(oplog.Documents.List[0])
 	}
+
+	return nil
 }
 
 // ListDatabases will return a list of all databases in the catalog.
