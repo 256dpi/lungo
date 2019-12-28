@@ -387,11 +387,26 @@ func (c *Collection) Delete(query, sort bsonkit.Doc, limit int) (*Result, error)
 	}, nil
 }
 
-// CreateIndex will create and build and index based on the specified configuration.
+// CreateIndex will create and build an index based on the specified
+// configuration. If the index name is missing, it will be generated from the
+// config and returned.
 func (c *Collection) CreateIndex(name string, config IndexConfig) (string, error) {
-	// check name
+	// prepare error
+	var err error
+
+	// compute name if missing
 	if name == "" {
-		return "", fmt.Errorf("missing index name")
+		name, err = config.Name()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// return if existing index is equal
+	if index, ok := c.Indexes[name]; ok {
+		if config.Equal(index.Config()) {
+			return name, nil
+		}
 	}
 
 	// check duplicate
