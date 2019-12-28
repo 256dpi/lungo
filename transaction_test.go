@@ -10,12 +10,13 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-func TestTransactionOplog(t *testing.T) {
+func TestTransactionOplogCleaning(t *testing.T) {
 	bsonkit.ResetCounter()
 
 	catalog := NewCatalog()
 
 	txn := NewTransaction(catalog)
+
 	id1 := primitive.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
 		bsonkit.Convert(bson.M{
@@ -23,6 +24,9 @@ func TestTransactionOplog(t *testing.T) {
 			"foo": "bar",
 		}),
 	}, true)
+	assert.NoError(t, err)
+
+	err = txn.Clean(1)
 	assert.NoError(t, err)
 
 	catalog = txn.Catalog()
@@ -48,6 +52,7 @@ func TestTransactionOplog(t *testing.T) {
 	}, catalog.Namespaces[Oplog].Documents.List)
 
 	txn = NewTransaction(catalog)
+
 	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.Convert(bson.M{
 		"_id": id1,
 	}), nil, bsonkit.Convert(bson.M{
@@ -57,26 +62,11 @@ func TestTransactionOplog(t *testing.T) {
 	}), 0, false)
 	assert.NoError(t, err)
 
+	err = txn.Clean(1)
+	assert.NoError(t, err)
+
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
-			"_id": bson.M{
-				"ts": primitive.Timestamp{I: 1},
-			},
-			"clusterTime": primitive.Timestamp{I: 1},
-			"documentKey": bson.M{
-				"_id": id1,
-			},
-			"fullDocument": bson.M{
-				"_id": id1,
-				"foo": "bar",
-			},
-			"ns": bson.M{
-				"db":   "foo",
-				"coll": "bar",
-			},
-			"operationType": "insert",
-		}),
 		bsonkit.Convert(bson.M{
 			"_id": bson.M{
 				"ts": primitive.Timestamp{I: 2},

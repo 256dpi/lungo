@@ -660,14 +660,6 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 		return err
 	}
 
-	// resize oplog
-	_, err = oplog.Delete(bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
-		"_id": -1,
-	}), 1000, 0)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -934,6 +926,36 @@ func (t *Transaction) Catalog() *Catalog {
 	defer t.mutex.RUnlock()
 
 	return t.catalog
+}
+
+// Clean will clean the oplog and only keep up to the specified amount of events.
+func (t *Transaction) Clean(maxSize int) error {
+	// acquire write lock
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	// clone catalog
+	clone := t.catalog.Clone()
+
+	// clone oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
+
+	// resize oplog
+	res, err := oplog.Delete(bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"_id": -1,
+	}), maxSize, 0)
+	if err != nil {
+		return err
+	}
+
+	// set catalog and flag
+	if len(res.Matched) > 0 {
+		t.catalog = clone
+		t.dirty = true
+	}
+
+	return nil
 }
 
 // Expire will remove documents that are expired due to a TTL index.

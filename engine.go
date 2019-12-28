@@ -146,8 +146,14 @@ func (e *Engine) Commit(txn *Transaction) error {
 		return nil
 	}
 
+	// clean oplog
+	err := txn.Clean(1000)
+	if err != nil {
+		return err
+	}
+
 	// write catalog
-	err := e.store.Store(txn.Catalog())
+	err = e.store.Store(txn.Catalog())
 	if err != nil {
 		return err
 	}
