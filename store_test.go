@@ -14,8 +14,6 @@ import (
 )
 
 func TestFileStore(t *testing.T) {
-	bsonkit.ResetCounter()
-
 	_ = os.Remove("./test.bson")
 
 	store := NewFileStore("./test.bson", 0666)
@@ -23,6 +21,10 @@ func TestFileStore(t *testing.T) {
 	engine, err := CreateEngine(Options{Store: store})
 	assert.NoError(t, err)
 	assert.NotNil(t, engine)
+
+	get := func(i int, name string) primitive.Timestamp {
+		return bsonkit.Get(engine.Catalog().Namespaces[Oplog].Documents.List[i], name).(primitive.Timestamp)
+	}
 
 	handle := Handle{"foo", "bar"}
 
@@ -100,9 +102,9 @@ func TestFileStore(t *testing.T) {
 				"documents": bson.A{
 					bson.M{
 						"_id": bson.M{
-							"ts": primitive.Timestamp{I: 1},
+							"ts": get(0, "_id.ts"),
 						},
-						"clusterTime": primitive.Timestamp{I: 1},
+						"clusterTime": get(0, "clusterTime"),
 						"documentKey": bson.M{
 							"_id": id1,
 						},
@@ -118,9 +120,9 @@ func TestFileStore(t *testing.T) {
 					},
 					bson.M{
 						"_id": bson.M{
-							"ts": primitive.Timestamp{I: 2},
+							"ts": get(1, "_id.ts"),
 						},
-						"clusterTime": primitive.Timestamp{I: 2},
+						"clusterTime": get(1, "clusterTime"),
 						"documentKey": bson.M{
 							"_id": id2,
 						},
