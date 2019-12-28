@@ -344,7 +344,7 @@ func (c *Collection) Upsert(query, repl, update bsonkit.Doc) (*Result, error) {
 }
 
 // Delete will remove all documents that match the specified query.
-func (c *Collection) Delete(query, sort bsonkit.Doc, limit int) (*Result, error) {
+func (c *Collection) Delete(query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// get documents
 	list := c.Documents.List
 
@@ -355,6 +355,13 @@ func (c *Collection) Delete(query, sort bsonkit.Doc, limit int) (*Result, error)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// apply skip
+	if skip > len(list) {
+		list = nil
+	} else {
+		list = list[skip:]
 	}
 
 	// filter documents

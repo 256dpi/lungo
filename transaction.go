@@ -532,7 +532,7 @@ func (t *Transaction) Delete(handle Handle, query, sort bsonkit.Doc, limit int) 
 
 func (t *Transaction) delete(handle Handle, oplog, namespace *mongokit.Collection, query, sort bsonkit.Doc, limit int) (*Result, error) {
 	// perform delete
-	res, err := namespace.Delete(query, sort, limit)
+	res, err := namespace.Delete(query, sort, 0, limit)
 	if err != nil {
 		return nil, err
 	}
