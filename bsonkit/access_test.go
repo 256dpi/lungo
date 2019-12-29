@@ -573,6 +573,8 @@ func TestMultiply(t *testing.T) {
 }
 
 func BenchmarkGet(b *testing.B) {
+	b.ReportAllocs()
+
 	doc := Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
@@ -587,6 +589,8 @@ func BenchmarkGet(b *testing.B) {
 }
 
 func BenchmarkAll(b *testing.B) {
+	b.ReportAllocs()
+
 	doc := Convert(bson.M{
 		"foo": bson.A{
 			"bar",
@@ -622,6 +626,8 @@ func BenchmarkAll(b *testing.B) {
 }
 
 func BenchmarkPut(b *testing.B) {
+	b.ReportAllocs()
+
 	doc := Convert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
