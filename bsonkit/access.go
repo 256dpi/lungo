@@ -19,7 +19,7 @@ var unsetValue interface{} = struct{}{}
 var pathEnd = "\x00"
 
 func pathShorten(path string) string {
-	i := strings.Index(path, ".")
+	i := strings.IndexByte(path, '.')
 	if i >= 0 {
 		return path[i+1:]
 	}
@@ -28,7 +28,7 @@ func pathShorten(path string) string {
 }
 
 func pathKey(path string) string {
-	i := strings.Index(path, ".")
+	i := strings.IndexByte(path, '.')
 	if i >= 0 {
 		return path[:i]
 	}
