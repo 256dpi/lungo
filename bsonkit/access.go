@@ -96,10 +96,13 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 		return Missing, false
 	}
 
+	// get key
+	key := pathKey(path)
+
 	// get document field
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
-			if el.Key == pathKey(path) {
+			if el.Key == key {
 				return get(el.Value, pathShorten(path), collect, compact)
 			}
 		}
@@ -108,8 +111,8 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 	// get array field
 	if arr, ok := v.(bson.A); ok {
 		// get indexed array element if number
-		if startsWithNumber(pathKey(path)) {
-			index, err := strconv.ParseInt(pathKey(path), 10, 64)
+		if startsWithNumber(key) {
+			index, err := strconv.ParseInt(key, 10, 64)
 			if err == nil && index >= 0 && index < int64(len(arr)) {
 				return get(arr[index], pathShorten(path), collect, compact)
 			}
@@ -178,10 +181,13 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		return Missing, false
 	}
 
+	// get key
+	key := pathKey(path)
+
 	// put document field
 	if doc, ok := v.(bson.D); ok {
 		for i, el := range doc {
-			if el.Key == pathKey(path) {
+			if el.Key == key {
 				return put(doc[i].Value, pathShorten(path), value, prepend, func(v interface{}) {
 					if v == unsetValue {
 						set(append(doc[:i], doc[i+1:]...))
@@ -198,7 +204,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		}
 
 		// capture value
-		e := bson.E{Key: pathKey(path)}
+		e := bson.E{Key: key}
 		res, ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
@@ -218,7 +224,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 	// put array field
 	if arr, ok := v.(bson.A); ok {
-		index, err := strconv.Atoi(pathKey(path))
+		index, err := strconv.Atoi(key)
 		if err != nil || index < 0 {
 			return Missing, false
 		}
@@ -266,7 +272,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 	// put new document
 	if v == Missing {
 		// capture value
-		e := bson.E{Key: pathKey(path)}
+		e := bson.E{Key: key}
 		res, ok := put(Missing, pathShorten(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
