@@ -36,6 +36,10 @@ func pathKey(path string) string {
 	return path
 }
 
+func startsWithNumber(str string) bool {
+	return len(str) > 0 && str[0] >= '0' && str[0] <= '9'
+}
+
 // Get returns the value in the document specified by path. It returns Missing
 // if the value has not been found. Dots may be used to descend into nested
 // documents e.g. "foo.bar.baz" and numbers may be used to descend into arrays
@@ -103,10 +107,12 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 
 	// get array field
 	if arr, ok := v.(bson.A); ok {
-		// get indexed array element
-		index, err := strconv.ParseInt(pathKey(path), 10, 64)
-		if err == nil && index >= 0 && index < int64(len(arr)) {
-			return get(arr[index], pathShorten(path), collect, compact)
+		// get indexed array element if number
+		if startsWithNumber(pathKey(path)) {
+			index, err := strconv.ParseInt(pathKey(path), 10, 64)
+			if err == nil && index >= 0 && index < int64(len(arr)) {
+				return get(arr[index], pathShorten(path), collect, compact)
+			}
 		}
 
 		// collect values from embedded documents
