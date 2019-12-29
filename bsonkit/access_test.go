@@ -571,3 +571,66 @@ func TestMultiply(t *testing.T) {
 		"quz": 0,
 	}), doc)
 }
+
+func BenchmarkGet(b *testing.B) {
+	doc := Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	for i := 0; i < b.N; i++ {
+		Get(doc, "foo.bar.baz")
+	}
+}
+
+func BenchmarkAll(b *testing.B) {
+	doc := Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			bson.M{
+				"baz": 7,
+				"quz": bson.A{
+					bson.M{
+						"foo": "bar",
+					},
+					bson.M{
+						"qux": 13,
+					},
+				},
+			},
+			bson.M{
+				"baz": 42,
+				"quz": bson.A{
+					bson.M{
+						"qux": 13,
+					},
+					bson.M{
+						"qux": 26,
+					},
+				},
+			},
+		},
+		"bar": "baz",
+	})
+
+	for i := 0; i < b.N; i++ {
+		All(doc, "foo.quz.qux", true, false)
+	}
+}
+
+func BenchmarkPut(b *testing.B) {
+	doc := Convert(bson.M{
+		"foo": bson.M{
+			"bar": bson.M{
+				"baz": 42,
+			},
+		},
+	})
+
+	for i := 0; i < b.N; i++ {
+		_, _ = Put(doc, "foo.bar.baz", 43, false)
+	}
+}
