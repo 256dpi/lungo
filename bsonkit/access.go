@@ -45,7 +45,7 @@ func startsWithNumber(str string) bool {
 // documents e.g. "foo.bar.baz" and numbers may be used to descend into arrays
 // e.g. "foo.2.bar".
 func Get(doc Doc, path string) interface{} {
-	value, _ := get(*doc, path, false, false)
+	value, _ := get(doc, path, false, false)
 	return value
 }
 
@@ -102,6 +102,15 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 	// get document field
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
+			if el.Key == key {
+				return get(el.Value, pathShorten(path), collect, compact)
+			}
+		}
+	}
+
+	// get document field (with pointer)
+	if doc, ok := v.(*bson.D); ok {
+		for _, el := range *doc {
 			if el.Key == key {
 				return get(el.Value, pathShorten(path), collect, compact)
 			}
