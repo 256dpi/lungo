@@ -57,7 +57,7 @@ func Get(doc Doc, path string) interface{} {
 // all values.
 func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	// get value
-	value, nested := get(*doc, path, true, compact)
+	value, nested := get(doc, path, true, compact)
 	if !nested || !merge {
 		return value, nested
 	}
