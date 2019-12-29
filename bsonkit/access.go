@@ -16,7 +16,7 @@ var Missing = MissingType{}
 
 var unsetValue interface{} = struct{}{}
 
-var pathEnd = "$$end$$"
+var pathEnd = "\x00"
 
 func pathShorten(path string) string {
 	i := strings.Index(path, ".")
