@@ -303,6 +303,8 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 }
 
 func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
+	// TODO: add support for the modifiers {$each, $slice, $sort, $position}
+
 	// add value
 	res, err := bsonkit.Push(doc, path, v)
 	if err != nil {
