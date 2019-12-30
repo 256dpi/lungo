@@ -409,8 +409,7 @@ func Multiply(doc Doc, path string, multiplier interface{}) (interface{}, error)
 
 // Push will add the value to the array at the location in the document
 // specified by path and return the new value. If the value is missing, the
-// value is added to a new array. The type of the field may be changed as
-// part of the operation.
+// value is added to a new array.
 func Push(doc Doc, path string, value interface{}) (interface{}, error) {
 	// get field
 	field := Get(doc, path)
@@ -423,7 +422,6 @@ func Push(doc Doc, path string, value interface{}) (interface{}, error) {
 		field = bson.A{value}
 	default:
 		return field, nil
-		// return nil, fmt.Errorf("Field %q is not a array", path)
 	}
 
 	// update field
