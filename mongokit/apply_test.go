@@ -32,17 +32,19 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, in
 				return
 			}
 
-			var d bson.D
-			err = coll.FindOne(nil, query).Decode(&d)
+			var m bson.M
+			err = coll.FindOne(nil, query).Decode(&m)
 			assert.NoError(t, err)
-			bsonkit.Unset(&d, "_id")
+
+			d := bsonkit.Convert(m)
+			bsonkit.Unset(d, "_id")
 
 			if cb, ok := result.(func(*testing.T, bson.D)); ok {
-				cb(t, d)
+				cb(t, *d)
 				return
 			}
 
-			assert.Equal(t, result, &d, update)
+			assert.Equal(t, result, d, update)
 		})
 	})
 
