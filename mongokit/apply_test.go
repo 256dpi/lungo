@@ -684,17 +684,23 @@ func TestApplyPush(t *testing.T) {
 
 	// non-array
 	applyTest(t, false, bson.M{
-		"foo": "bar",
-		"bar": int32(42),
+		"str": "bar",
+		"int": int32(42),
+		"nil": nil,
+		"obj": bson.D{},
 	}, func(fn func(bson.M, interface{})) {
 		fn(bson.M{
 			"$push": bson.M{
-				"foo": "baz",
-				"bar": "baz",
+				"str": "baz",
+				"int": "baz",
+				"nil": "baz",
+				"obj": "baz",
 			},
 		}, bsonkit.Convert(bson.M{
-			"foo": "bar",
-			"bar": int32(42),
+			"str": "bar",
+			"int": int32(42),
+			"nil": nil,
+			"obj": bson.D{},
 		}))
 	})
 
