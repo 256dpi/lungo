@@ -114,22 +114,24 @@ administrative and diagnostics commands e.g. `renameCollection` and `explain`.
 Leveraging the `mongokit.Match` function, lungo supports the following query
 operators:
 
-- `$and`, `$or`, `$nor`, `$not`
+- `$and`, `$or`, `$nor`, (`$not`)
 - `$eq`, `$gt`, `$lt`, `$gte`, `$lte`, `$ne`
-- `$in`, `$nin`, `$exist`, `$type`
+- (`$in`), (`$nin`), `$exist`, `$type`
 - `$all`, `$size`, `$elemMatch`
 
 And the `mongokit.Apply` function currently supports the following update
 operators:
 
 - `$set`, `$setOnInsert`, `$unset`, `$rename`
-- `$inc`, `$mul`, `$max`, `$min`
+- `$inc`, `$mul`, `$max`, `$min`, (`$push`)
 - `$currentDate`
 
 Finally, the `mongokit.Project` function currently supports the following
 projection operators:
 
 - `$slice`
+
+Operators in braces are only partially supported, see comments in code.
 
 ### Single, Compound and Partial Indexes
 
