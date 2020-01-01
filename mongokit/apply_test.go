@@ -195,7 +195,7 @@ func TestApplySetOnInsert(t *testing.T) {
 		}))
 	})
 
-	// upsert
+	// upsert nested
 	applyTest(t, true, nil, func(fn func(bson.M, interface{})) {
 		// add value
 		fn(bson.M{
@@ -658,44 +658,43 @@ func TestApplyCurrentDate(t *testing.T) {
 }
 
 func TestApplyPush(t *testing.T) {
-	// update
-	applyTest(t, false, bson.M{
-		"foo": bson.A{
-			"bar",
-			"baz",
-		},
-	}, func(fn func(bson.M, interface{})) {
-		// add element
-		fn(bson.M{
-			"$push": bson.M{
-				"foo": "bag",
-			},
-		}, bsonkit.Convert(bson.M{
-			"foo": bson.A{"bar", "baz", "bag"},
-		}))
-	})
-
+	// create array
 	applyTest(t, false, bson.M{}, func(fn func(bson.M, interface{})) {
-		// add element
 		fn(bson.M{
 			"$push": bson.M{
-				"foo": "bag",
+				"foo": "bar",
 			},
 		}, bsonkit.Convert(bson.M{
-			"foo": bson.A{"bag"},
+			"foo": bson.A{"bar"},
 		}))
 	})
 
+	// add element
 	applyTest(t, false, bson.M{
-		"foo": "bar",
+		"foo": bson.A{"bar"},
 	}, func(fn func(bson.M, interface{})) {
-		// add element
 		fn(bson.M{
 			"$push": bson.M{
 				"foo": "baz",
 			},
 		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{"bar", "baz"},
+		}))
+	})
+
+	// non-array
+	applyTest(t, false, bson.M{
+		"foo": "bar",
+		"bar": int32(42),
+	}, func(fn func(bson.M, interface{})) {
+		fn(bson.M{
+			"$push": bson.M{
+				"foo": "baz",
+				"bar": "baz",
+			},
+		}, bsonkit.Convert(bson.M{
 			"foo": "bar",
+			"bar": int32(42),
 		}))
 	})
 
@@ -704,14 +703,14 @@ func TestApplyPush(t *testing.T) {
 		"foo": bson.A{"bar"},
 	}), bsonkit.Convert(bson.M{
 		"$push": bson.M{
-			"foo": "bag",
+			"foo": "baz",
 		},
 	}), true)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
 		Upsert: true,
 		Updated: map[string]interface{}{
-			"foo": bson.A{"bar", "bag"},
+			"foo": bson.A{"bar", "baz"},
 		},
 		Removed: map[string]interface{}{},
 	}, changes)

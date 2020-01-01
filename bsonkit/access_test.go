@@ -572,6 +572,39 @@ func TestMultiply(t *testing.T) {
 	}), doc)
 }
 
+func TestPush(t *testing.T) {
+	doc := Convert(bson.M{
+		"bar": "42",
+	})
+
+	// create array
+	res, err := Push(doc, "foo", int64(42))
+	assert.NoError(t, err)
+	assert.Equal(t, bson.A{int64(42)}, res)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{42},
+		"bar": "42",
+	}), doc)
+
+	// add to array
+	res, err = Push(doc, "foo", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, bson.A{int64(42), int64(2)}, res)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{42, 2},
+		"bar": "42",
+	}), doc)
+
+	// non-array field
+	res, err = Push(doc, "bar", int64(2))
+	assert.NoError(t, err)
+	assert.Equal(t, "42", res)
+	assert.Equal(t, Convert(bson.M{
+		"foo": bson.A{42, 2},
+		"bar": "42",
+	}), doc)
+}
+
 func BenchmarkGet(b *testing.B) {
 	b.ReportAllocs()
 
