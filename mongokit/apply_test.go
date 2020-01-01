@@ -654,3 +654,63 @@ func TestApplyCurrentDate(t *testing.T) {
 		Removed: map[string]interface{}{},
 	}, changes)
 }
+
+func TestApplyPush(t *testing.T) {
+	// update
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			"bar",
+			"baz",
+		},
+	}, func(fn func(bson.M, interface{})) {
+		// add element
+		fn(bson.M{
+			"$push": bson.M{
+				"foo": "bag",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{"bar", "baz", "bag"},
+		}))
+	})
+
+	applyTest(t, false, bson.M{}, func(fn func(bson.M, interface{})) {
+		// add element
+		fn(bson.M{
+			"$push": bson.M{
+				"foo": "bag",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{"bag"},
+		}))
+	})
+
+	applyTest(t, false, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, interface{})) {
+		// add element
+		fn(bson.M{
+			"$push": bson.M{
+				"foo": "baz",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": "bar",
+		}))
+	})
+
+	// changes
+	changes, err := Apply(bsonkit.Convert(bson.M{
+		"foo": bson.A{"bar"},
+	}), bsonkit.Convert(bson.M{
+		"$push": bson.M{
+			"foo": "bag",
+		},
+	}), true)
+	assert.NoError(t, err)
+	assert.Equal(t, &Changes{
+		Upsert: true,
+		Updated: map[string]interface{}{
+			"foo": bson.A{"bar", "bag"},
+		},
+		Removed: map[string]interface{}{},
+	}, changes)
+}
