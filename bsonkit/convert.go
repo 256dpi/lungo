@@ -15,8 +15,19 @@ func Convert(m bson.M) Doc {
 	return &d
 }
 
+// ConvertList will convert a simple array to a list.
+func ConvertList(a []bson.M) List {
+	// convert all elements
+	l := make(List, len(a))
+	for i, item := range a {
+		l[i] = Convert(item)
+	}
+
+	return l
+}
+
 func convertMap(m bson.M) bson.D {
-	// prepare m
+	// prepare document
 	d := make(bson.D, 0, len(m))
 
 	// copy keys

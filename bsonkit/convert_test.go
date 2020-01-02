@@ -41,3 +41,30 @@ func TestConvert(t *testing.T) {
 		})
 	})
 }
+
+func TestConvertList(t *testing.T) {
+	res := ConvertList([]bson.M{
+		{
+			"foo": "bar",
+		},
+		{
+			"baz": bson.D{
+				bson.E{Key: "foo", Value: bson.M{
+					"foo": "bar",
+				}},
+			},
+		},
+	})
+	assert.Equal(t, List{
+		&bson.D{
+			bson.E{Key: "foo", Value: "bar"},
+		},
+		&bson.D{
+			bson.E{Key: "baz", Value: bson.D{
+				bson.E{Key: "foo", Value: bson.D{
+					bson.E{Key: "foo", Value: "bar"},
+				}},
+			}},
+		},
+	}, res)
+}

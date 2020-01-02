@@ -50,6 +50,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		var filter interface{}
 		var upsert *bool
 		var limit int
+		var arrayFilters []interface{}
 
 		// set variables
 		switch model := item.(type) {
@@ -69,12 +70,18 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 			document = model.Update
 			upsert = model.Upsert
 			limit = 1
+			if model.ArrayFilters != nil {
+				arrayFilters = model.ArrayFilters.Filters
+			}
 		case *mongo.UpdateManyModel:
 			opcode = Update
 			filter = model.Filter
 			document = model.Update
 			upsert = model.Upsert
 			limit = 0
+			if model.ArrayFilters != nil {
+				arrayFilters = model.ArrayFilters.Filters
+			}
 		case *mongo.DeleteOneModel:
 			opcode = Delete
 			filter = model.Filter
@@ -112,6 +119,15 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		// check upsert
 		if upsert != nil {
 			op.Upsert = *upsert
+		}
+
+		// transform array filters
+		if arrayFilters != nil {
+			arrFlt, err := bsonkit.TransformList(arrayFilters)
+			if err != nil {
+				return nil, err
+			}
+			op.ArrayFilters = arrFlt
 		}
 
 		// add operation
@@ -766,6 +782,7 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		"ReturnDocument": supported,
 		"Sort":           supported,
 		"Upsert":         supported,
+		"ArrayFilters":   supported,
 	})
 
 	// check filer
@@ -820,9 +837,18 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 		returnAfter = *opt.ReturnDocument == options.After
 	}
 
+	// get array filters
+	var arrayFilters bsonkit.List
+	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, sort, upd, 0, 1, upsert)
+		return txn.Update(c.handle, query, sort, upd, 0, 1, upsert, arrayFilters)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
@@ -1030,7 +1056,8 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"Upsert": supported,
+		"Upsert":       supported,
+		"ArrayFilters": supported,
 	})
 
 	// check filer
@@ -1061,9 +1088,18 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 		upsert = *opt.Upsert
 	}
 
+	// get array filters
+	var arrayFilters bsonkit.List
+	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, nil, doc, 0, 0, upsert)
+		return txn.Update(c.handle, query, nil, doc, 0, 0, upsert, arrayFilters)
 	})
 	if err != nil {
 		return nil, err
@@ -1093,7 +1129,8 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"Upsert": supported,
+		"Upsert":       supported,
+		"ArrayFilters": supported,
 	})
 
 	// check filer
@@ -1124,9 +1161,18 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 		upsert = *opt.Upsert
 	}
 
+	// get array filters
+	var arrayFilters bsonkit.List
+	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// update documents
 	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
-		return txn.Update(c.handle, query, nil, doc, 0, 1, upsert)
+		return txn.Update(c.handle, query, nil, doc, 0, 1, upsert, arrayFilters)
 	})
 	if err != nil {
 		return nil, err

@@ -37,7 +37,9 @@ type Changes struct {
 // Apply will apply a MongoDB update document on a document using the various
 // update operators. The document is updated in place. The changes to the
 // document are collected and returned.
-func Apply(doc, update bsonkit.Doc, upsert bool) (*Changes, error) {
+func Apply(doc, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.List) (*Changes, error) {
+	// TODO: Handle array filters.
+
 	// prepare changes
 	changes := &Changes{
 		Upsert:  upsert,

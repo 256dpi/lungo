@@ -185,7 +185,7 @@ func (c *Collection) Replace(query, repl, sort bsonkit.Doc) (*Result, error) {
 
 // Update will lookup all documents that match the specified query and update
 // them according to the update document.
-func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int) (*Result, error) {
+func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int, arrayFilters bsonkit.List) (*Result, error) {
 	// get documents
 	list := c.Documents.List
 
@@ -220,7 +220,7 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int) (*
 	newList := bsonkit.CloneList(list)
 
 	// update documents
-	changes, err := Update(newList, update, false)
+	changes, err := Update(newList, update, false, arrayFilters)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int) (*
 
 // Upsert will insert a document based on the specified query and either the
 // replacement document or update document.
-func (c *Collection) Upsert(query, repl, update bsonkit.Doc) (*Result, error) {
+func (c *Collection) Upsert(query, repl, update bsonkit.Doc, arrayFilters bsonkit.List) (*Result, error) {
 	// extract query
 	doc, err := Extract(query)
 	if err != nil {
@@ -316,7 +316,7 @@ func (c *Collection) Upsert(query, repl, update bsonkit.Doc) (*Result, error) {
 
 	// apply update if present
 	if update != nil {
-		_, err = Apply(doc, update, true)
+		_, err = Apply(doc, update, true, arrayFilters)
 		if err != nil {
 			return nil, err
 		}
