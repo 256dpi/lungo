@@ -60,6 +60,9 @@ type Operation struct {
 
 	// The limit (update, delete).
 	Limit int
+
+	// The array filter conditions (update).
+	ArrayFilters bsonkit.List
 }
 
 // Result describes the outcome of an operation.
@@ -173,7 +176,7 @@ func (t *Transaction) Bulk(handle Handle, ops []Operation, ordered bool) ([]Resu
 		case Replace:
 			res, err = t.replace(handle, oplog, namespace, op.Filter, op.Document, op.Sort, op.Upsert)
 		case Update:
-			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, op.Sort, op.Upsert, op.Skip, op.Limit)
+			res, err = t.update(handle, oplog, namespace, op.Filter, op.Document, op.Sort, op.Upsert, op.Skip, op.Limit, op.ArrayFilters)
 		case Delete:
 			res, err = t.delete(handle, oplog, namespace, op.Filter, op.Sort, op.Skip, op.Limit)
 		default:
@@ -384,7 +387,7 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 
 	// perform upsert
 	if len(res.Modified) == 0 && upsert {
-		res, err = namespace.Upsert(query, repl, nil)
+		res, err = namespace.Upsert(query, repl, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -419,7 +422,7 @@ func (t *Transaction) replace(handle Handle, oplog, namespace *mongokit.Collecti
 // constant parts of the query and apply the update and insert the document if
 // it is missing. The returned result will contain the matched and modified or
 // upserted document.
-func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, skip, limit int, upsert bool) (*Result, error) {
+func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, skip, limit int, upsert bool, arrayFilters bsonkit.List) (*Result, error) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -458,7 +461,7 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, ski
 	clone.Namespaces[Oplog] = oplog
 
 	// perform update
-	res, err := t.update(handle, oplog, namespace, query, update, sort, upsert, skip, limit)
+	res, err := t.update(handle, oplog, namespace, query, update, sort, upsert, skip, limit, arrayFilters)
 	if err != nil {
 		return nil, err
 	}
@@ -472,16 +475,16 @@ func (t *Transaction) Update(handle Handle, query, sort, update bsonkit.Doc, ski
 	return res, nil
 }
 
-func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, skip, limit int) (*Result, error) {
+func (t *Transaction) update(handle Handle, oplog, namespace *mongokit.Collection, query, update, sort bsonkit.Doc, upsert bool, skip, limit int, arrayFilters bsonkit.List) (*Result, error) {
 	// perform update
-	res, err := namespace.Update(query, update, sort, skip, limit)
+	res, err := namespace.Update(query, update, sort, skip, limit, arrayFilters)
 	if err != nil {
 		return nil, err
 	}
 
 	// perform upsert
 	if len(res.Modified) == 0 && upsert {
-		res, err = namespace.Upsert(query, nil, update)
+		res, err = namespace.Upsert(query, nil, update, arrayFilters)
 		if err != nil {
 			return nil, err
 		}
