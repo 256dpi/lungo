@@ -1,7 +1,6 @@
 package mongokit
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,14 +28,9 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 			opts := options.Update().SetUpsert(true)
 
 			if arrayFilters != nil {
-				slice := reflect.ValueOf(arrayFilters)
-				if slice.Kind() != reflect.Slice {
-					panic("expected slice")
-				}
-
-				list := make([]interface{}, slice.Len())
-				for i := 0; i < slice.Len(); i++ {
-					list[i] = slice.Index(i).Interface()
+				list := make([]interface{}, 0, len(arrayFilters))
+				for _, af := range arrayFilters {
+					list = append(list, af)
 				}
 
 				opts.SetArrayFilters(options.ArrayFilters{Filters: list})
