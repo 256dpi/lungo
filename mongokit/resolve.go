@@ -52,6 +52,8 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 			} else { // $[<identifier>]
 				//TODO: implement array filters
 			}
+		} else {
+			return fmt.Errorf("The operatpr %q is not supported", operator)
 		}
 	default:
 		return fmt.Errorf("The value pointed in the path %q isn't a *bson.D", path)
