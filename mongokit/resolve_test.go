@@ -1,7 +1,6 @@
 package mongokit
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/256dpi/lungo/bsonkit"
@@ -18,7 +17,6 @@ func ResolveTest(t *testing.T, path string, query, doc bsonkit.Doc, arrayFilters
 	})
 	require.NoError(t, err)
 	assert.ElementsMatch(t, expectedPaths, paths)
-	fmt.Println()
 }
 
 func TestDividePathStaticDynamicPart(t *testing.T) {
@@ -90,5 +88,58 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.0.bar.0",
 		"foo.0.bar.1",
 		"foo.1.bar.0",
+	})
+
+	ResolveTest(t, "foo.$[].$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.A{
+				"foobar",
+				"barfoo",
+			},
+			bson.A{
+				"foobar",
+			},
+		},
+	}), bsonkit.List{}, []string{
+		"foo.0.0",
+		"foo.0.1",
+		"foo.1.0",
+	})
+
+	ResolveTest(t, "foo.$[].$[].bar", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.A{
+				bson.M{
+					"bar": "foobar",
+				},
+				bson.M{
+					"bar": "barfoo",
+				},
+			},
+			bson.A{
+				bson.M{
+					"bar": "foobar",
+				},
+			},
+		},
+	}), bsonkit.List{}, []string{
+		"foo.0.0.bar",
+		"foo.0.1.bar",
+		"foo.1.0.bar",
+	})
+
+	ResolveTest(t, "foo.$[].0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.A{
+				"foobar",
+				"barfoo",
+			},
+			bson.A{
+				"foobar",
+			},
+		},
+	}), bsonkit.List{}, []string{
+		"foo.0.0",
+		"foo.1.0",
 	})
 }
