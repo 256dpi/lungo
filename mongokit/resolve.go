@@ -13,35 +13,23 @@ import (
 // query, document and array filters. For each match it will call the callback
 // with the generated absolute path.
 func Resolve(path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, callback func(path string) error) error {
-	return resolve("", path, query, *doc, arrayFilters, callback)
+	return resolve(path, query, *doc, arrayFilters, callback)
 }
 
-func resolve(prevPath string, path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonkit.List, callback func(path string) error) error {
-	// check if path is ended
-	if path == pathEnd || len(path) == 0 {
-		return callback(prevPath)
-	}
+func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonkit.List, callback func(path string) error) error {
 	// check if path includes positional operators
 	if !strings.ContainsRune(path, '$') {
 		//Build pathUpToNow
-		if prevPath != "" {
-			return callback(prevPath + "." + path)
-		} else {
-			return callback(path)
-		}
+		return callback(path)
 	}
 	//Get the parts
-	staticPath, dynamicPart := dividePathStaticDynamicPart(path)
+	staticPart, dynamicPart := dividePathStaticDynamicPart(path)
 	operator := pathKey(dynamicPart)
 	nextPath := pathShorten(dynamicPart)
-	staticPathUpToNow := staticPath
-	if prevPath != "" {
-		staticPathUpToNow = prevPath + "." + staticPathUpToNow
-	}
 
 	switch doc := doc.(type) {
 	case bson.D:
-		value := bsonkit.Get(&doc, staticPath)
+		value := bsonkit.Get(&doc, staticPart)
 
 		//TODO: implement the $ operator
 		if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { //$[], $[<identifier>]
@@ -49,20 +37,24 @@ func resolve(prevPath string, path string, query bsonkit.Doc, doc interface{}, a
 			identifier := operator[2 : len(operator)-1]
 			if identifier == "" { //$[]
 				if arr, ok := value.(bson.A); ok {
-					for i, v := range arr {
-						if err := resolve(staticPathUpToNow+"."+strconv.Itoa(i), nextPath, query, v, arrayFilters, callback); err != nil {
+					for i, _ := range arr {
+						currentPath := staticPart + "." + strconv.Itoa(i)
+						if nextPath != pathEnd && nextPath != "" {
+							currentPath += "." + nextPath
+						}
+						if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
 							return err
 						}
 					}
 				} else {
-					return fmt.Errorf("The value pointed in the path %q isn't a array", staticPathUpToNow)
+					return fmt.Errorf("The value pointed in the path %q isn't a array", staticPart)
 				}
 			} else { // $[<identifier>]
 				//TODO: implement array filters
 			}
 		}
 	default:
-		return fmt.Errorf("The value pointed in the path %q isn't a *bson.D", prevPath)
+		return fmt.Errorf("The value pointed in the path %q isn't a *bson.D", path)
 	}
 	return nil
 }
