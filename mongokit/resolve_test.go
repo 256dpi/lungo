@@ -143,3 +143,103 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.0",
 	})
 }
+
+func TestResolveArrayFilters(t *testing.T) {
+	ResolveTest(t, "foo.$[notfooz]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			"bar",
+			"baz",
+			"fooz",
+		},
+	}), bsonkit.ConvertList([]bson.M{
+		bson.M{
+			"notfooz": bson.M{
+				"$ne": "fooz",
+			},
+		},
+	}), []string{
+		"foo.0",
+		"foo.1",
+	})
+
+	ResolveTest(t, "foo.$[valid].bar.$[foobar]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.M{
+				"ok":  true,
+				"val": 20,
+				"bar": bson.A{
+					"foobar",
+					"barfoo",
+				},
+			},
+			bson.M{
+				"ok":  false,
+				"val": 100,
+				"bar": bson.A{
+					"foobar",
+					"barfoo",
+				},
+			},
+			bson.M{
+				"ok":  true,
+				"val": 120,
+				"bar": bson.A{
+					"foobar",
+					"barfoo",
+				},
+			},
+			bson.M{
+				"ok":  false,
+				"val": 20,
+				"bar": bson.A{
+					"foobar",
+					"barfoo",
+				},
+			},
+		},
+	}), bsonkit.ConvertList([]bson.M{
+		bson.M{
+			"valid.ok": true,
+			"valid.val": bson.M{
+				"$gt": 50,
+			},
+		},
+		bson.M{
+			"foobar": "foobar",
+		},
+	}), []string{
+		"foo.2.bar.0",
+	})
+
+	ResolveTest(t, "foo.$[ok].$[ok2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.A{
+				-10,
+				20,
+				30,
+				-40,
+				4,
+			},
+			bson.A{
+				10,
+				-20,
+				-30,
+				40,
+			},
+		},
+	}), bsonkit.ConvertList([]bson.M{
+		bson.M{
+			"ok": bson.M{
+				"$size": 5,
+			},
+		},
+		bson.M{
+			"ok2": bson.M{
+				"$lt": 0,
+			},
+		},
+	}), []string{
+		"foo.0.0",
+		"foo.0.3",
+	})
+}
