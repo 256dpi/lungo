@@ -122,6 +122,29 @@ func TestApply(t *testing.T) {
 			"foo": "baz",
 		}))
 	})
+
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			"bar",
+			"baz",
+			"foo",
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// valid update
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.$[foo]": "baz",
+			},
+		}, []bson.M{
+			bson.M{"foo": "foo"},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				"bar",
+				"baz",
+				"baz",
+			},
+		}))
+	})
 }
 
 func TestApplySet(t *testing.T) {
@@ -148,6 +171,52 @@ func TestApplySet(t *testing.T) {
 			"foo": "bar",
 			"quz": bson.M{
 				"qux": int32(42),
+			},
+		}))
+	})
+
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			"foo",
+			"bar",
+			"baz",
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// replace value
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.$[foo]": "baz",
+			},
+		}, []bson.M{
+			bson.M{
+				"foo": "foo",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				"baz",
+				"bar",
+				"baz",
+			},
+		}))
+
+		// add value
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.$[foo]": bson.M{
+					"qux": int32(42),
+				},
+			},
+		}, []bson.M{
+			bson.M{
+				"foo": "foo",
+			},
+		}, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"qux": int32(42),
+				},
+				"bar",
+				"baz",
 			},
 		}))
 	})
@@ -262,6 +331,23 @@ func TestApplyUnset(t *testing.T) {
 				"foo": nil,
 			},
 		}, nil, bsonkit.Convert(bson.M{}))
+	})
+
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			bson.M{"bar": "baz"},
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// unset value
+		fn(bson.M{
+			"$unset": bson.M{
+				"foo.$[].bar": nil,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{},
+			},
+		}))
 	})
 
 	// changes
@@ -385,6 +471,54 @@ func TestApplyInc(t *testing.T) {
 		}))
 	})
 
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			bson.M{
+				"bar": int32(42),
+			},
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// increment nested value
+		fn(bson.M{
+			"$inc": bson.M{
+				"foo.$[].bar": int64(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 44,
+				},
+			},
+		}))
+
+		// increment missing value
+		fn(bson.M{
+			"$inc": bson.M{
+				"foo.$[].baz": int32(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": int32(42),
+					"baz": int32(2),
+				},
+			},
+		}))
+
+		// increment with different type
+		fn(bson.M{
+			"$inc": bson.M{
+				"foo.$[].bar": 1.5,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 43.5,
+				},
+			},
+		}))
+	})
+
 	// changes
 	changes, err := Apply(bsonkit.Convert(bson.M{
 		"foo": bson.M{
@@ -441,6 +575,54 @@ func TestApplyMul(t *testing.T) {
 		}, nil, bsonkit.Convert(bson.M{
 			"foo": bson.M{
 				"bar": 63.0,
+			},
+		}))
+	})
+
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			bson.M{
+				"bar": int32(42),
+			},
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// multiply nested value
+		fn(bson.M{
+			"$mul": bson.M{
+				"foo.$[].bar": int64(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 84,
+				},
+			},
+		}))
+
+		// multiply missing value
+		fn(bson.M{
+			"$mul": bson.M{
+				"foo.$[].baz": int32(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": int32(42),
+					"baz": int32(0),
+				},
+			},
+		}))
+
+		// multiply with different type
+		fn(bson.M{
+			"$mul": bson.M{
+				"foo.$[].bar": 1.5,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 63.0,
+				},
 			},
 		}))
 	})
@@ -505,6 +687,54 @@ func TestApplyMax(t *testing.T) {
 		}))
 	})
 
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			bson.M{
+				"bar": int64(42),
+			},
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// keep value
+		fn(bson.M{
+			"$max": bson.M{
+				"foo.$[].bar": int32(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 42,
+				},
+			},
+		}))
+
+		// set value
+		fn(bson.M{
+			"$max": bson.M{
+				"foo.$[].bar": int32(44),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": int32(44),
+				},
+			},
+		}))
+
+		// add value
+		fn(bson.M{
+			"$max": bson.M{
+				"foo.$[].baz": int32(2),
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{
+					"bar": 42,
+					"baz": int32(2),
+				},
+			},
+		}))
+	})
+
 	// changes
 	changes, err := Apply(bsonkit.Convert(bson.M{
 		"foo": bson.M{
@@ -526,41 +756,49 @@ func TestApplyMax(t *testing.T) {
 
 func TestApplyMin(t *testing.T) {
 	applyTest(t, false, bson.M{
-		"foo": bson.M{
-			"bar": int64(42),
+		"foo": bson.A{
+			bson.M{
+				"bar": int64(42),
+			},
 		},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
 		// keep value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.bar": int32(44),
+				"foo.$[].bar": int32(44),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.M{
-				"bar": 42,
+			"foo": bson.A{
+				bson.M{
+					"bar": 42,
+				},
 			},
 		}))
 
 		// set value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.bar": int32(21),
+				"foo.$[].bar": int32(21),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.M{
-				"bar": int32(21),
+			"foo": bson.A{
+				bson.M{
+					"bar": int32(21),
+				},
 			},
 		}))
 
 		// add value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.baz": int32(2),
+				"foo.$[].baz": int32(2),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.M{
-				"bar": 42,
-				"baz": int32(2),
+			"foo": bson.A{
+				bson.M{
+					"bar": 42,
+					"baz": int32(2),
+				},
 			},
 		}))
 	})
@@ -651,6 +889,35 @@ func TestApplyCurrentDate(t *testing.T) {
 		})
 	})
 
+	applyTest(t, false, bson.M{
+		"foo": bson.A{"bar"},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// missing document
+		fn(bson.M{
+			"$currentDate": bson.M{
+				"foo.$[]": "baz",
+			},
+		}, nil, "$currentDate: expected boolean or document")
+
+		// invalid document
+		fn(bson.M{
+			"$currentDate": bson.M{
+				"foo.$[]": bson.M{
+					"foo": "bar",
+				},
+			},
+		}, nil, "$currentDate: expected document with a single $type field")
+
+		// invalid type
+		fn(bson.M{
+			"$currentDate": bson.M{
+				"foo.$[]": bson.M{
+					"$type": "foo",
+				},
+			},
+		}, nil, "$currentDate: expected $type 'date' or 'timestamp'")
+	})
+
 	// changes
 	changes, err := Apply(bsonkit.Convert(bson.M{
 		"foo": "bar",
@@ -713,6 +980,19 @@ func TestApplyPush(t *testing.T) {
 			"int": int32(42),
 			"nil": nil,
 			"obj": bson.D{},
+		}))
+	})
+
+	// add element
+	applyTest(t, false, bson.M{
+		"foo": bson.A{bson.A{"bar"}},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$push": bson.M{
+				"foo.$[]": "baz",
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{bson.A{"bar", "baz"}},
 		}))
 	})
 
