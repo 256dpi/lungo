@@ -31,6 +31,9 @@ type Context struct {
 
 	// A custom value available to the operators.
 	Value interface{}
+
+	// The available array filters
+	ArrayFilters bsonkit.List
 }
 
 // Process will process a document with a query using the MongoDB operator
