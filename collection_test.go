@@ -524,14 +524,14 @@ func TestCollectionFindOne(t *testing.T) {
 		c := client.Database("not-existing").Collection("not-existing")
 		res := c.FindOne(nil, bson.M{})
 		assert.Error(t, res.Err())
-		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
+		assert.Equal(t, ErrNoDocuments, res.Err())
 	})
 
 	// missing collection
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		res := d.Collection("not-existing").FindOne(nil, bson.M{})
 		assert.Error(t, res.Err())
-		assert.Equal(t, mongo.ErrNoDocuments, res.Err())
+		assert.Equal(t, ErrNoDocuments, res.Err())
 	})
 
 	collectionTest(t, func(t *testing.T, c ICollection) {
@@ -622,7 +622,7 @@ func TestCollectionFindOneAndDelete(t *testing.T) {
 			"_id": "foo",
 		}).Err()
 		assert.Error(t, err)
-		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Equal(t, ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -732,7 +732,7 @@ func TestCollectionFindOneAndReplace(t *testing.T) {
 			"_id": "foo",
 		}, bson.M{}).Err()
 		assert.Error(t, err)
-		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Equal(t, ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -883,7 +883,7 @@ func TestCollectionFindOneAndReplaceUpsert(t *testing.T) {
 			"bar": "baz",
 		}, options.FindOneAndReplace().SetUpsert(true)).Decode(&out)
 		assert.Error(t, err)
-		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Equal(t, ErrNoDocuments, err)
 		assert.Nil(t, out)
 		assert.Equal(t, []bson.M{
 			{
@@ -944,7 +944,7 @@ func TestCollectionFindOneAndUpdate(t *testing.T) {
 			},
 		}).Err()
 		assert.Error(t, err)
-		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Equal(t, ErrNoDocuments, err)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id,
@@ -1111,7 +1111,7 @@ func TestCollectionFindOneAndUpdateUpsert(t *testing.T) {
 			},
 		}, options.FindOneAndUpdate().SetUpsert(true)).Decode(&out)
 		assert.Error(t, err)
-		assert.Equal(t, mongo.ErrNoDocuments, err)
+		assert.Equal(t, ErrNoDocuments, err)
 		assert.Nil(t, out)
 		assert.Equal(t, []bson.M{
 			{

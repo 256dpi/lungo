@@ -7,6 +7,10 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// ErrNoDocuments is returned by SingleResult if not document has been found.
+// The value is the same as mongo.ErrNoDocuments and can be used interchangeably.
+var ErrNoDocuments = mongo.ErrNoDocuments
+
 var _ ISingleResult = &SingleResult{}
 
 // SingleResult wraps a result to be mongo compatible.
@@ -24,7 +28,7 @@ func (r *SingleResult) Decode(out interface{}) error {
 
 	// check document
 	if r.doc == nil {
-		return mongo.ErrNoDocuments
+		return ErrNoDocuments
 	}
 
 	// decode document
@@ -40,7 +44,7 @@ func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
 
 	// check document
 	if r.doc == nil {
-		return nil, mongo.ErrNoDocuments
+		return nil, ErrNoDocuments
 	}
 
 	// marshal document
@@ -56,7 +60,7 @@ func (r *SingleResult) Err() error {
 
 	// check document
 	if r.doc == nil {
-		return mongo.ErrNoDocuments
+		return ErrNoDocuments
 	}
 
 	return nil
