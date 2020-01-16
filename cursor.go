@@ -61,7 +61,7 @@ func (c *Cursor) Decode(out interface{}) error {
 	defer c.mutex.Unlock()
 
 	// check if exhausted
-	if c.pos > len(c.list) {
+	if c.pos == 0 || c.pos > len(c.list) {
 		return io.EOF
 	}
 

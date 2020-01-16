@@ -1,6 +1,7 @@
 package lungo
 
 import (
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -486,23 +487,33 @@ func TestCollectionFind(t *testing.T) {
 		}, readAll(csr))
 
 		// cursor
+		var m bson.M
 		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
+		err = csr.Decode(&m)
+		assert.Equal(t, io.EOF, err)
+		assert.Nil(t, m)
+		assert.NoError(t, csr.Err())
 		i := 0
 		for csr.Next(nil) {
+			err = csr.Decode(&m)
+			assert.NoError(t, err)
+			assert.NotEqual(t, bson.M{}, m)
+			assert.NoError(t, csr.Err())
 			i++
 		}
 		assert.Equal(t, 2, i)
-		assert.NoError(t, csr.Err())
-		var m bson.M
 		err = csr.Decode(&m)
 		assert.NoError(t, err)
 		assert.NotEqual(t, bson.M{}, m)
+		assert.NoError(t, csr.Err())
 		err = csr.Close(nil)
 		assert.NoError(t, err)
+		assert.NoError(t, csr.Err())
 		err = csr.Decode(&m)
 		assert.NoError(t, err)
 		assert.NotEqual(t, bson.M{}, m)
+		assert.NoError(t, csr.Err())
 
 		// project all
 		csr, err = c.Find(nil, bson.M{}, options.Find().SetProjection(bson.M{"_id": 0}))
