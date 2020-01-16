@@ -72,6 +72,15 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 	})
 }
 
+func bucketTest(t *testing.T, fn func(t *testing.T, b *Bucket)) {
+	testCollCounter++
+	name := fmt.Sprintf("n-%d", testCollCounter)
+
+	clientTest(t, func(t *testing.T, client IClient) {
+		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(name)))
+	})
+}
+
 func readAll(csr ICursor) []bson.M {
 	if csr == nil {
 		return nil
