@@ -3,8 +3,11 @@ package lungo
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -107,4 +110,55 @@ func timeout(ms time.Duration) context.Context {
 		cancel()
 	}()
 	return ctx
+}
+
+func methods(t reflect.Type, replacements map[string]string, skip ...string) []string {
+	// prepare list
+	var list []string
+
+	// handle all methods
+	for i := 0; i < t.NumMethod(); i++ {
+		// get method
+		m := t.Method(i)
+
+		// skip lowercase methods
+		if unicode.IsLower(rune(m.Name[0])) {
+			continue
+		}
+
+		// check if skipped
+		var skipped bool
+		for _, name := range skip {
+			if name == m.Name {
+				skipped = true
+			}
+		}
+		if skipped {
+			continue
+		}
+
+		// get signature
+		f := m.Type.String()[4:]
+
+		// remove first argument if not interface
+		if t.Kind() != reflect.Interface {
+			c := strings.Index(f, ",")
+			if c >= 0 && c < strings.Index(f, ")") {
+				f = "(" + f[c+2:]
+			} else {
+				c = strings.Index(f, ")")
+				f = "(" + f[c:]
+			}
+		}
+
+		// replace types
+		for a, b := range replacements {
+			f = strings.ReplaceAll(f, a, b)
+		}
+
+		// add method
+		list = append(list, m.Name+f)
+	}
+
+	return list
 }
