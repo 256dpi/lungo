@@ -95,6 +95,7 @@ planned to be implemented):
 - [x] Oplog & Change Streams
 - [ ] Aggregation Pipeline
 - [x] Memory & Single File Store
+- [x] GridFS
 
 While the goal is to implement all MongoDB features in a compatible way, the
 architectural difference has implications on some of the features. Furthermore,
@@ -174,6 +175,18 @@ The `lungo.Store` interface enables custom adapters that store the catalog to
 various mediums. The built-in `MemoryStore` keeps all data in memory while the
 `FileStore` writes all data atomically to a single BSON file. The interface may
 get more sophisticated in the future to allow more efficient storing methods.
+
+### GridFS
+
+The `lungo.Bucket`, `lungo.UploadStream` and `lungo.DownloadStream` provide a
+GridFS implementation similar to the one found in the `gridfs` package of the
+official Go driver. However, some improvements have been made while
+re-implementing the package:
+
+- Support for sessions via the `context.Context` parameter in all `lungo.Bucket`
+methods.
+- The `lungo.DowloadStream` implements the `io.Seeker` interface for convenient
+range queries on the file contents.
 
 ## License
 
