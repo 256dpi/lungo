@@ -14,8 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const uploadBufferSize = 64 * gridfs.DefaultChunkSize // ~16MB
-
 // ErrFileNotFound is returned if the specified file was not found in the bucket.
 // The value is the same as gridfs.ErrFileNotFound and can be used interchangeably.
 var ErrFileNotFound = gridfs.ErrFileNotFound
@@ -40,11 +38,11 @@ type BucketChunk struct {
 
 // Bucket provides access to a GridFS bucket.
 type Bucket struct {
-	files      ICollection
-	chunks     ICollection
-	chunkSize  int
-	idxMutex   sync.Mutex
-	idxChecked bool
+	files        ICollection
+	chunks       ICollection
+	chunkSize    int
+	indexMutex   sync.Mutex
+	indexEnsured bool
 }
 
 // NewBucket creates a bucket using the provided database and options.
@@ -68,7 +66,7 @@ func NewBucket(db IDatabase, opts ...*options.BucketOptions) *Bucket {
 	}
 
 	// get chunk size
-	var chunkSize = int(gridfs.DefaultChunkSize)
+	var chunkSize = int(options.DefaultChunkSize)
 	if opt.ChunkSizeBytes != nil {
 		chunkSize = int(*opt.ChunkSizeBytes)
 	}
@@ -223,7 +221,7 @@ func (b *Bucket) OpenDownloadStreamByName(ctx context.Context, name string, opts
 	})
 
 	// get revision
-	revision := -1
+	revision := int(options.DefaultRevision)
 	if opt.Revision != nil {
 		revision = int(*opt.Revision)
 	}
@@ -335,11 +333,11 @@ func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, nam
 
 func (b *Bucket) ensureIndexes(ctx context.Context) error {
 	// acquire mutex
-	b.idxMutex.Lock()
-	defer b.idxMutex.Unlock()
+	b.indexMutex.Lock()
+	defer b.indexMutex.Unlock()
 
-	// return if indexes have been checked
-	if b.idxChecked {
+	// return if indexes have been ensured
+	if b.indexEnsured {
 		return nil
 	}
 
@@ -349,11 +347,9 @@ func (b *Bucket) ensureIndexes(ctx context.Context) error {
 		return err
 	}
 
-	// skip if zero
+	// set flag and skip if not zero
 	if num != 0 {
-		// set flag
-		b.idxChecked = true
-
+		b.indexEnsured = true
 		return nil
 	}
 
@@ -385,7 +381,7 @@ func (b *Bucket) ensureIndexes(ctx context.Context) error {
 	}
 
 	// set flag
-	b.idxChecked = true
+	b.indexEnsured = true
 
 	return nil
 }
@@ -394,12 +390,12 @@ func (b *Bucket) ensureIndexes(ctx context.Context) error {
 type UploadStream struct {
 	context   context.Context
 	bucket    *Bucket
-	fileID    interface{}
-	fileLen   int
-	fileName  string
-	fileMeta  interface{}
+	id        interface{}
+	name      string
+	metadata  interface{}
 	chunkSize int
-	chunkNum  int
+	length    int
+	chunks    int
 	buffer    []byte
 	bufLen    int
 	closed    bool
@@ -410,11 +406,11 @@ func newUploadStream(ctx context.Context, bucket *Bucket, id interface{}, name s
 	return &UploadStream{
 		context:   ctx,
 		bucket:    bucket,
-		fileID:    id,
-		fileName:  name,
-		fileMeta:  metadata,
+		id:        id,
+		name:      name,
+		metadata:  metadata,
 		chunkSize: chunkSize,
-		buffer:    make([]byte, uploadBufferSize),
+		buffer:    make([]byte, gridfs.UploadBufferSize),
 	}
 }
 
@@ -431,7 +427,7 @@ func (s *UploadStream) Abort() error {
 
 	// delete uploaded chunks
 	_, err := s.bucket.chunks.DeleteMany(s.context, bson.M{
-		"files_id": s.fileID,
+		"files_id": s.id,
 	})
 	if err != nil {
 		return err
@@ -449,6 +445,11 @@ func (s *UploadStream) Close() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
+	// check if stream has been closed
+	if s.closed {
+		return gridfs.ErrStreamClosed
+	}
+
 	// upload buffered data
 	if s.bufLen > 0 {
 		err := s.upload(true)
@@ -459,12 +460,12 @@ func (s *UploadStream) Close() error {
 
 	// prepare file
 	file := BucketFile{
-		ID:         s.fileID,
-		Length:     s.fileLen,
+		ID:         s.id,
+		Length:     s.length,
 		ChunkSize:  s.chunkSize,
 		UploadDate: time.Now(),
-		Filename:   s.fileName,
-		Metadata:   s.fileMeta,
+		Filename:   s.name,
+		Metadata:   s.metadata,
 	}
 
 	// write file
@@ -500,8 +501,6 @@ func (s *UploadStream) Write(data []uint8) (int, error) {
 
 		// fill buffer
 		n := copy(s.buffer[s.bufLen:], data)
-
-		// update position
 		s.bufLen += n
 
 		// resize data
@@ -543,16 +542,10 @@ func (s *UploadStream) upload(final bool) error {
 		// append chunk
 		chunks = append(chunks, BucketChunk{
 			ID:   primitive.NewObjectID(),
-			File: s.fileID,
-			Num:  s.chunkNum,
+			File: s.id,
+			Num:  s.chunks + len(chunks),
 			Data: s.buffer[i : i+size],
 		})
-
-		// increment chunk counter
-		s.chunkNum++
-
-		// update file length
-		s.fileLen += size
 
 		// update counter
 		chunkedBytes += size
@@ -575,6 +568,12 @@ func (s *UploadStream) upload(final bool) error {
 	// reset buffer length
 	s.bufLen = remainingBytes
 
+	// increment chunk counter
+	s.chunks += len(chunks)
+
+	// update file length
+	s.length += chunkedBytes
+
 	return nil
 }
 
@@ -582,8 +581,8 @@ func (s *UploadStream) upload(final bool) error {
 type DownloadStream struct {
 	context  context.Context
 	bucket   *Bucket
-	fileID   interface{}
-	fileName string
+	id       interface{}
+	name     string
 	revision int
 	file     *BucketFile
 	chunks   int
@@ -599,10 +598,9 @@ func newDownloadStream(ctx context.Context, bucket *Bucket, id interface{}, name
 	return &DownloadStream{
 		context:  ctx,
 		bucket:   bucket,
-		fileID:   id,
-		fileName: name,
+		id:       id,
+		name:     name,
 		revision: revision,
-		cursor:   nil,
 	}
 }
 
@@ -732,14 +730,14 @@ func (s *DownloadStream) load() error {
 		return nil
 	}
 
-	// prepare filter and opt to load by id
-	filter := bson.M{"_id": s.fileID}
+	// prepare filter and options to load by id
+	filter := bson.M{"_id": s.id}
 	opt := options.FindOne()
 
-	// load by name id if missing
-	if s.fileID == nil {
+	// load by name if id is missing
+	if s.id == nil {
 		// set filter
-		filter = bson.M{"filename": s.fileName}
+		filter = bson.M{"filename": s.name}
 
 		// prepare sort and skip
 		sort := 1
