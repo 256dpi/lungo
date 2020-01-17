@@ -12,6 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 // ErrFileNotFound is returned if the specified file was not found in the bucket.
@@ -346,14 +349,20 @@ func (b *Bucket) ensureIndexes(ctx context.Context) error {
 		return nil
 	}
 
-	// count documents
-	num, err := b.files.CountDocuments(ctx, bson.M{}, options.Count().SetLimit(1))
+	// clone collection with primary read preference
+	files, err := b.files.Clone(options.Collection().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return err
 	}
 
-	// set flag and skip if not zero
-	if num != 0 {
+	// count documents
+	err = files.FindOne(ctx, bson.M{}).Err()
+	if err != nil && err != ErrNoDocuments {
+		return err
+	}
+
+	// set flag and skip if not empty
+	if err == nil {
 		b.indexEnsured = true
 		return nil
 	}
@@ -363,32 +372,76 @@ func (b *Bucket) ensureIndexes(ctx context.Context) error {
 		ctx = context.Background()
 	}
 
-	// create files index
-	_, err = b.files.Indexes().CreateOne(ctx, mongo.IndexModel{
+	// prepare files index
+	filesIndex := mongo.IndexModel{
 		Keys: bson.D{
 			{Key: "filename", Value: 1},
 			{Key: "uploadDate", Value: 1},
 		},
-	})
-	if err != nil {
-		return err
 	}
 
-	// create chunks index
-	_, err = b.chunks.Indexes().CreateOne(ctx, mongo.IndexModel{
+	// prepare chunks index
+	chunksIndex := mongo.IndexModel{
 		Keys: bson.D{
 			{Key: "files_id", Value: 1},
 			{Key: "n", Value: 1},
 		},
-	})
+	}
+
+	// check files index existence
+	hasFilesIndex, err := b.hasIndex(ctx, b.files, filesIndex)
 	if err != nil {
 		return err
+	}
+
+	// check chunks index existence
+	hasChunksIndex, err := b.hasIndex(ctx, b.chunks, chunksIndex)
+	if err != nil {
+		return err
+	}
+
+	// create files index if missing
+	if !hasFilesIndex {
+		_, err = b.files.Indexes().CreateOne(ctx, filesIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	// create chunks index if missing
+	if !hasChunksIndex {
+		_, err = b.chunks.Indexes().CreateOne(ctx, chunksIndex)
+		if err != nil {
+			return err
+		}
 	}
 
 	// set flag
 	b.indexEnsured = true
 
 	return nil
+}
+
+func (b *Bucket) hasIndex(ctx context.Context, coll ICollection, model mongo.IndexModel) (bool, error) {
+	// get indexes
+	var indexes []mongo.IndexModel
+	csr, err := coll.Indexes().List(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = csr.All(nil, &indexes)
+	if err != nil {
+		return false, err
+	}
+
+	// check if index with same keys already exists
+	for _, index := range indexes {
+		if bsonkit.Compare(index.Keys, model.Keys) == 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // UploadStream is used to upload a single file.
