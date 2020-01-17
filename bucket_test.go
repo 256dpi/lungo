@@ -86,6 +86,9 @@ func TestBucketBasic(t *testing.T) {
 
 		err = b.Rename(nil, id, "foo")
 		assert.Equal(t, ErrFileNotFound, err)
+
+		err = b.Drop(nil)
+		assert.NoError(t, err)
 	})
 }
 

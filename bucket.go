@@ -160,6 +160,11 @@ func (b *Bucket) Drop(ctx context.Context) error {
 		return err
 	}
 
+	// reset flag
+	b.indexMutex.Lock()
+	b.indexEnsured = false
+	b.indexMutex.Unlock()
+
 	return nil
 }
 
