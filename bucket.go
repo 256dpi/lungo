@@ -439,7 +439,7 @@ func (s *UploadStream) Abort() error {
 	return nil
 }
 
-// Close will finish the upload and lose the stream.
+// Close will finish the upload and close the stream.
 func (s *UploadStream) Close() error {
 	// acquire mutex
 	s.mutex.Lock()
@@ -604,7 +604,7 @@ func newDownloadStream(ctx context.Context, bucket *Bucket, id interface{}, name
 	}
 }
 
-// Skip will advanced the read head by the specified amount of bytes.
+// Skip will advance the read head by the specified amount of bytes.
 func (s *DownloadStream) Skip(skip int64) (int64, error) {
 	return s.Seek(skip, io.SeekCurrent)
 }
