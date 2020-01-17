@@ -16,6 +16,11 @@ func TestIndexViewCreateMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
 
+		// list
+		csr, err := c.Indexes().List(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, readAll(csr))
+
 		// invalid index
 		names, err := c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
 			{
@@ -53,7 +58,7 @@ func TestIndexViewCreateMany(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// list
-		csr, err := c.Indexes().List(nil)
+		csr, err = c.Indexes().List(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -116,6 +121,11 @@ func TestIndexViewCreateOne(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
 
+		// list
+		csr, err := c.Indexes().List(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, readAll(csr))
+
 		// invalid index
 		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
@@ -145,7 +155,7 @@ func TestIndexViewCreateOne(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// list
-		csr, err := c.Indexes().List(nil)
+		csr, err = c.Indexes().List(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -196,6 +206,11 @@ func TestIndexViewDropAll(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
 
+		// list
+		csr, err := c.Indexes().List(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, readAll(csr))
+
 		// unique and normal index
 		names, err := c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
 			{
@@ -220,7 +235,7 @@ func TestIndexViewDropAll(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// list
-		csr, err := c.Indexes().List(nil)
+		csr, err = c.Indexes().List(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -275,6 +290,11 @@ func TestIndexViewDropOne(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
 
+		// list
+		csr, err := c.Indexes().List(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, readAll(csr))
+
 		// unique and normal index
 		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
@@ -288,7 +308,7 @@ func TestIndexViewDropOne(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// list
-		csr, err := c.Indexes().List(nil)
+		csr, err = c.Indexes().List(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -338,6 +358,11 @@ func TestIndexExpiry(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		ns := c.Database().Name() + "." + c.Name()
 
+		// list
+		csr, err := c.Indexes().List(nil)
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{}, readAll(csr))
+
 		// invalid index
 		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.M{
@@ -362,7 +387,7 @@ func TestIndexExpiry(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// list
-		csr, err := c.Indexes().List(nil)
+		csr, err = c.Indexes().List(nil)
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{

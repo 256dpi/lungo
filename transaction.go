@@ -821,7 +821,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 
 	// check namespace
 	if t.catalog.Namespaces[handle] == nil {
-		return nil, fmt.Errorf("missing namespace %q", handle.String())
+		return nil, nil
 	}
 
 	// get namespace
