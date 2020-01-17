@@ -92,6 +92,26 @@ func TestBucketBasic(t *testing.T) {
 	})
 }
 
+func TestBucketEmptyFile(t *testing.T) {
+	bucketTest(t, func(t *testing.T, b *Bucket) {
+		data := make([]byte, 0)
+
+		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, id)
+
+		chunks, err := b.chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), chunks)
+
+		var buf bytes.Buffer
+		n, err := b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+	})
+}
+
 func TestBucketBigFile(t *testing.T) {
 	bucketTest(t, func(t *testing.T, b *Bucket) {
 		data := make([]byte, gridfs.UploadBufferSize*1.5)
