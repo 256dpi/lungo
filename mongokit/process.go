@@ -22,6 +22,10 @@ type Context struct {
 	// Whether missing operators should just be skipped.
 	SkipMissing bool
 
+	// If enabled, top level operators will expect a document with multiple
+	// invocations of the operator.
+	MultiTopLevel bool
+
 	// A custom value available to the operators.
 	Value interface{}
 }
@@ -65,8 +69,26 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 			}
 		}
 
-		// call operator
-		return operator(ctx, doc, pair.Key, prefix, pair.Value)
+		// call simple operator if not a multi top level
+		if !(root && ctx.MultiTopLevel) {
+			return operator(ctx, doc, pair.Key, prefix, pair.Value)
+		}
+
+		// otherwise get document
+		update, ok := pair.Value.(bson.D)
+		if !ok {
+			return fmt.Errorf("%s: expected document", pair.Key)
+		}
+
+		// call operator for each pair
+		for _, cond := range update {
+			err := operator(ctx, doc, pair.Key, cond.Key, cond.Value)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	// get path

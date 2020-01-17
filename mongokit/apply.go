@@ -25,11 +25,6 @@ func init() {
 	FieldUpdateOperators["$min"] = applyMin
 	FieldUpdateOperators["$currentDate"] = applyCurrentDate
 	FieldUpdateOperators["$push"] = applyPush
-
-	// wrap all operators
-	for name, operator := range FieldUpdateOperators {
-		FieldUpdateOperators[name] = applyAll(name, operator)
-	}
 }
 
 // Changes describes the applied changes to a document.
@@ -52,34 +47,15 @@ func Apply(doc, update bsonkit.Doc, upsert bool) (*Changes, error) {
 
 	// update document according to update
 	err := Process(Context{
-		Value:    changes,
-		TopLevel: FieldUpdateOperators,
+		Value:         changes,
+		TopLevel:      FieldUpdateOperators,
+		MultiTopLevel: true,
 	}, doc, *update, "", true)
 	if err != nil {
 		return nil, err
 	}
 
 	return changes, nil
-}
-
-func applyAll(name string, operator Operator) Operator {
-	return func(ctx Context, doc bsonkit.Doc, op, path string, v interface{}) error {
-		// get update document
-		update, ok := v.(bson.D)
-		if !ok {
-			return fmt.Errorf("%s: expected document", name)
-		}
-
-		// call operator for each pair
-		for _, pair := range update {
-			err := operator(ctx, doc, op, pair.Key, pair.Value)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
 }
 
 func applySet(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
