@@ -260,7 +260,7 @@ func (b *Bucket) OpenUploadStreamWithID(ctx context.Context, id interface{}, nam
 	})
 
 	// ensure indexes
-	err := b.EnsureIndexes(ctx)
+	err := b.EnsureIndexes(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +344,7 @@ func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, nam
 // using a bucket. However, when transactions are used to upload files, the
 // indexes must be created before the first upload as index creation is
 // prohibited during transactions.
-func (b *Bucket) EnsureIndexes(ctx context.Context) error {
+func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 	// acquire mutex
 	b.indexMutex.Lock()
 	defer b.indexMutex.Unlock()
@@ -360,16 +360,15 @@ func (b *Bucket) EnsureIndexes(ctx context.Context) error {
 		return err
 	}
 
-	// count documents
-	err = files.FindOne(ctx, bson.M{}).Err()
-	if err != nil && err != ErrNoDocuments {
-		return err
-	}
-
-	// set flag and skip if not empty
-	if err == nil {
-		b.indexEnsured = true
-		return nil
+	// unless force is specified, skip index ensuring if files exists already
+	if !force {
+		err = files.FindOne(ctx, bson.M{}).Err()
+		if err != nil && err != ErrNoDocuments {
+			return err
+		} else if err == nil {
+			b.indexEnsured = true
+			return nil
+		}
 	}
 
 	// ensure context

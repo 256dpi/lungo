@@ -261,7 +261,7 @@ func TestBucketTransaction(t *testing.T) {
 
 		b := NewBucket(c.Database(), options.GridFSBucket().SetName(c.Name()))
 
-		err = b.EnsureIndexes(nil)
+		err = b.EnsureIndexes(nil, true)
 		assert.NoError(t, err)
 
 		res, err := sess.WithTransaction(context.Background(), func(ctx ISessionContext) (interface{}, error) {
