@@ -129,9 +129,18 @@ func (e *Engine) Begin(ctx context.Context, lock bool) (*Transaction, error) {
 		ctx = context.Background()
 	}
 
+	// check for transaction
+	sess, ok := ctx.Value(sessionKey{}).(*Session)
+	if ok {
+		txn := sess.Transaction()
+		if txn != nil {
+			return nil, fmt.Errorf("detected nested transaction")
+		}
+	}
+
 	// acquire token (without lock)
 	e.mutex.Unlock()
-	ok := e.token.Acquire(ctx.Done(), time.Minute)
+	ok = e.token.Acquire(ctx.Done(), time.Minute)
 	e.mutex.Lock()
 	if !ok {
 		return nil, fmt.Errorf("token acquisition timeout")
