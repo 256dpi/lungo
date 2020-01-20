@@ -26,7 +26,7 @@ func TestBucketSymmetry(t *testing.T) {
 		b[i] = strings.Replace(b[i], ", )", ")", 1)
 	}
 
-	assert.Equal(t, a, b)
+	assert.Subset(t, a, b)
 }
 
 func TestUploadStreamSymmetry(t *testing.T) {
@@ -36,9 +36,9 @@ func TestUploadStreamSymmetry(t *testing.T) {
 }
 
 func TestDownloadStreamSymmetry(t *testing.T) {
-	a := methods(reflect.TypeOf(&DownloadStream{}), nil, "Seek")
+	a := methods(reflect.TypeOf(&DownloadStream{}), nil)
 	b := methods(reflect.TypeOf(&gridfs.DownloadStream{}), nil, "SetReadDeadline")
-	assert.Equal(t, a, b)
+	assert.Subset(t, a, b)
 }
 
 func TestBucketBasic(t *testing.T) {
