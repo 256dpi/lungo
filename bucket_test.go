@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"reflect"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var gridfsReplacements = map[string]string{
@@ -249,5 +251,61 @@ func TestBucketSeekDownload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 3, n2)
 		assert.Equal(t, []byte{245, 246, 247}, buf)
+	})
+}
+
+func TestBucketTransaction(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		sess, err := c.Database().Client().StartSession()
+		assert.NoError(t, err)
+
+		b := NewBucket(c.Database(), options.GridFSBucket().SetName(c.Name()))
+
+		err = b.EnsureIndexes(nil)
+		assert.NoError(t, err)
+
+		res, err := sess.WithTransaction(context.Background(), func(ctx ISessionContext) (interface{}, error) {
+
+			id, err := b.UploadFromStream(ctx, "foo", strings.NewReader("Hello World!"))
+			if err != nil {
+				return nil, err
+			}
+
+			var buf bytes.Buffer
+			_, err = b.DownloadToStream(ctx, id, &buf)
+			if err != nil {
+				return nil, err
+			}
+
+			return buf.String(), nil
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World!", res)
+	})
+}
+
+func TestBucketTransactionError(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		sess, err := c.Database().Client().StartSession()
+		assert.NoError(t, err)
+
+		b := NewBucket(c.Database(), options.GridFSBucket().SetName(c.Name()))
+
+		res, err := sess.WithTransaction(context.Background(), func(ctx ISessionContext) (interface{}, error) {
+			id, err := b.UploadFromStream(ctx, "foo", strings.NewReader("Hello World!"))
+			if err != nil {
+				return nil, err
+			}
+
+			var buf bytes.Buffer
+			_, err = b.DownloadToStream(ctx, id, &buf)
+			if err != nil {
+				return nil, err
+			}
+
+			return buf.String(), nil
+		})
+		assert.Error(t, err)
+		assert.Nil(t, res)
 	})
 }

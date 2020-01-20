@@ -260,7 +260,7 @@ func (b *Bucket) OpenUploadStreamWithID(ctx context.Context, id interface{}, nam
 	})
 
 	// ensure indexes
-	err := b.ensureIndexes(ctx)
+	err := b.EnsureIndexes(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,12 @@ func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, nam
 	return nil
 }
 
-func (b *Bucket) ensureIndexes(ctx context.Context) error {
+// EnsureIndexes will check if all required indexes exists and create them when
+// needed. Usually, this is done automatically when uploading the first file
+// using a bucket. However, when transactions are used to upload files, the
+// indexes must be created before the first upload as index creation is
+// prohibited during transactions.
+func (b *Bucket) EnsureIndexes(ctx context.Context) error {
 	// acquire mutex
 	b.indexMutex.Lock()
 	defer b.indexMutex.Unlock()
