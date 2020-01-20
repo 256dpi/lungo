@@ -34,7 +34,7 @@ func TestBucketSymmetry(t *testing.T) {
 func TestUploadStreamSymmetry(t *testing.T) {
 	a := methods(reflect.TypeOf(&UploadStream{}), nil)
 	b := methods(reflect.TypeOf(&gridfs.UploadStream{}), nil, "SetWriteDeadline")
-	assert.Equal(t, a, b)
+	assert.Subset(t, a, b)
 }
 
 func TestDownloadStreamSymmetry(t *testing.T) {
