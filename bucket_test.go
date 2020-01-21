@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -92,22 +93,87 @@ func TestBucketBasic(t *testing.T) {
 		err = b.Drop(nil)
 		assert.NoError(t, err)
 	})
+
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, _ *mongo.Collection) {
+		id, err := b.UploadFromStream("foo", strings.NewReader("Hello World!"))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, id)
+
+		var buf bytes.Buffer
+		n, err := b.DownloadToStream(id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(12), n)
+		assert.Equal(t, "Hello World!", buf.String())
+
+		csr, err := b.Find(bson.M{})
+		assert.NoError(t, err)
+		assert.Len(t, readAll(csr), 1)
+
+		err = b.Rename(id, "bar")
+		assert.NoError(t, err)
+
+		buf.Reset()
+		n, err = b.DownloadToStreamByName("foo", &buf)
+		assert.Equal(t, ErrFileNotFound, err)
+		assert.Zero(t, n)
+		assert.Empty(t, buf.String())
+
+		buf.Reset()
+		n, err = b.DownloadToStreamByName("bar", &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(12), n)
+		assert.Equal(t, "Hello World!", buf.String())
+
+		err = b.Delete(id)
+		assert.NoError(t, err)
+
+		buf.Reset()
+		n, err = b.DownloadToStreamByName("bar", &buf)
+		assert.Equal(t, ErrFileNotFound, err)
+		assert.Zero(t, n)
+		assert.Empty(t, buf.String())
+
+		err = b.Delete(id)
+		assert.Equal(t, ErrFileNotFound, err)
+
+		err = b.Rename(id, "foo")
+		assert.Equal(t, ErrFileNotFound, err)
+
+		err = b.Drop()
+		assert.NoError(t, err)
+	})
 }
 
 func TestBucketEmptyFile(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
-		data := make([]byte, 0)
+	data := make([]byte, 0)
 
+	bucketTest(t, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
 
-		chunks, err := b.chunks.CountDocuments(nil, bson.M{})
+		n, err := b.chunks.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
-		assert.Equal(t, int64(0), chunks)
+		assert.Equal(t, int64(0), n)
 
 		var buf bytes.Buffer
-		n, err := b.DownloadToStream(nil, id, &buf)
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+	})
+
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection) {
+		id, err := b.UploadFromStream("foo", bytes.NewReader(data))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, id)
+
+		n, err := chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), n)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStream(id, &buf)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(len(data)), n)
 		assert.Equal(t, data, buf.Bytes())
@@ -115,19 +181,35 @@ func TestBucketEmptyFile(t *testing.T) {
 }
 
 func TestBucketBigFile(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
-		data := make([]byte, gridfs.UploadBufferSize*1.5)
+	data := make([]byte, gridfs.UploadBufferSize*1.5)
 
+	bucketTest(t, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
 
-		chunks, err := b.chunks.CountDocuments(nil, bson.M{})
+		n, err := b.chunks.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
-		assert.Equal(t, int64(97), chunks)
+		assert.Equal(t, int64(97), n)
 
 		var buf bytes.Buffer
-		n, err := b.DownloadToStream(nil, id, &buf)
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+	})
+
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection) {
+		id, err := b.UploadFromStream("foo", bytes.NewReader(data))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, id)
+
+		n, err := chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(97), n)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStream(id, &buf)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(len(data)), n)
 		assert.Equal(t, data, buf.Bytes())
@@ -135,12 +217,12 @@ func TestBucketBigFile(t *testing.T) {
 }
 
 func TestBucketManyWrites(t *testing.T) {
+	data := make([]byte, gridfs.UploadBufferSize/100*1.5)
+
 	bucketTest(t, func(t *testing.T, b *Bucket) {
 		stream, err := b.OpenUploadStream(nil, "foo")
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
-
-		data := make([]byte, gridfs.UploadBufferSize/100*1.5)
 
 		for i := 0; i < 100; i++ {
 			n, err := stream.Write(data)
@@ -151,24 +233,20 @@ func TestBucketManyWrites(t *testing.T) {
 		err = stream.Close()
 		assert.NoError(t, err)
 
-		chunks, err := b.chunks.CountDocuments(nil, bson.M{})
+		n, err := b.chunks.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
-		assert.Equal(t, int64(97), chunks)
+		assert.Equal(t, int64(97), n)
 
 		var buf bytes.Buffer
-		n, err := b.DownloadToStreamByName(nil, "foo", &buf)
+		n, err = b.DownloadToStreamByName(nil, "foo", &buf)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(len(data)*100), n)
 	})
-}
 
-func TestBucketAbortUpload(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
-		stream, err := b.OpenUploadStream(nil, "foo")
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection) {
+		stream, err := b.OpenUploadStream("foo")
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
-
-		data := make([]byte, gridfs.UploadBufferSize/100*1.5)
 
 		for i := 0; i < 100; i++ {
 			n, err := stream.Write(data)
@@ -176,26 +254,77 @@ func TestBucketAbortUpload(t *testing.T) {
 			assert.Equal(t, len(data), n)
 		}
 
-		chunks, err := b.chunks.CountDocuments(nil, bson.M{})
+		err = stream.Close()
 		assert.NoError(t, err)
-		assert.Equal(t, int64(64), chunks)
+
+		n, err := chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(97), n)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStreamByName("foo", &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)*100), n)
+	})
+}
+
+func TestBucketAbortUpload(t *testing.T) {
+	data := make([]byte, gridfs.UploadBufferSize/100*1.5)
+
+	bucketTest(t, func(t *testing.T, b *Bucket) {
+		stream, err := b.OpenUploadStream(nil, "foo")
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		for i := 0; i < 100; i++ {
+			n, err := stream.Write(data)
+			assert.NoError(t, err)
+			assert.Equal(t, len(data), n)
+		}
+
+		n, err := b.chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(64), n)
 
 		err = stream.Abort()
 		assert.NoError(t, err)
 
-		chunks, err = b.chunks.CountDocuments(nil, bson.M{})
+		n, err = b.chunks.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
-		assert.Equal(t, int64(0), chunks)
+		assert.Equal(t, int64(0), n)
+	})
+
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection) {
+		stream, err := b.OpenUploadStream("foo")
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		for i := 0; i < 100; i++ {
+			n, err := stream.Write(data)
+			assert.NoError(t, err)
+			assert.Equal(t, len(data), n)
+		}
+
+		n, err := chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(64), n)
+
+		err = stream.Abort()
+		assert.NoError(t, err)
+
+		n, err = chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), n)
 	})
 }
 
 func TestBucketSeekDownload(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
-		data := make([]byte, 0, 255)
-		for i := byte(0); i < 255; i++ {
-			data = append(data, i)
-		}
+	data := make([]byte, 0, 255)
+	for i := byte(0); i < 255; i++ {
+		data = append(data, i)
+	}
 
+	bucketTest(t, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)

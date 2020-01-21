@@ -9,7 +9,10 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -63,21 +66,31 @@ func databaseTest(t *testing.T, fn func(t *testing.T, d IDatabase)) {
 	})
 }
 
-func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
+func collectionName() string {
 	testCollCounter++
-	name := fmt.Sprintf("n-%d", testCollCounter)
+	return fmt.Sprintf("n-%d", testCollCounter)
+}
 
+func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(t, client.Database(testDB).Collection(name))
+		fn(t, client.Database(testDB).Collection(collectionName()))
 	})
 }
 
 func bucketTest(t *testing.T, fn func(t *testing.T, b *Bucket)) {
-	testCollCounter++
-	name := fmt.Sprintf("n-%d", testCollCounter)
-
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(name)))
+		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName())))
+	})
+}
+
+func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection)) {
+	db := testMongoClient.Database(testDB).(*MongoDatabase).Database
+	name := collectionName()
+	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
+	assert.NoError(t, err)
+
+	t.Run("GridFs", func(t *testing.T) {
+		fn(t, b, db.Collection(name+".chunks"))
 	})
 }
 
