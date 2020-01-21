@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -315,6 +316,74 @@ func TestBucketAbortUpload(t *testing.T) {
 		n, err = chunks.CountDocuments(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), n)
+	})
+}
+
+func TestBucketReUpload(t *testing.T) {
+	data := []byte("Hello World!")
+
+	bucketTest(t, func(t *testing.T, b *Bucket) {
+		id := primitive.NewObjectID()
+
+		err := b.UploadFromStreamWithID(nil, id, "foo", bytes.NewReader(data))
+		assert.NoError(t, err)
+
+		n, err := b.chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+
+		/* second */
+
+		err = b.UploadFromStreamWithID(nil, id, "foo", bytes.NewReader(data))
+		assert.Error(t, err)
+
+		n, err = b.chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+
+		buf.Reset()
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+	})
+
+	gridfsTest(t, func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection) {
+		id := primitive.NewObjectID()
+
+		err := b.UploadFromStreamWithID(id, "foo", bytes.NewReader(data))
+		assert.NoError(t, err)
+
+		n, err := chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStream(id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
+
+		/* second */
+
+		err = b.UploadFromStreamWithID(id, "foo", bytes.NewReader(data))
+		assert.Error(t, err)
+
+		n, err = chunks.CountDocuments(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), n)
+
+		buf.Reset()
+		n, err = b.DownloadToStream(id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(data)), n)
+		assert.Equal(t, data, buf.Bytes())
 	})
 }
 
