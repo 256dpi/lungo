@@ -390,6 +390,7 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 			{Key: "files_id", Value: 1},
 			{Key: "n", Value: 1},
 		},
+		Options: options.Index().SetUnique(true),
 	}
 
 	// check files index existence
