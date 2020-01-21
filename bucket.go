@@ -781,6 +781,14 @@ func (s *DownloadStream) Close() error {
 		return gridfs.ErrStreamClosed
 	}
 
+	// close cursor
+	if s.cursor != nil {
+		err := s.cursor.Close(nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	// set flag
 	s.closed = true
 
