@@ -21,7 +21,26 @@ import (
 // The value is the same as gridfs.ErrFileNotFound and can be used interchangeably.
 var ErrFileNotFound = gridfs.ErrFileNotFound
 
-// BucketFile represents a document stored in the GridFS files collection.
+// The bucket marker states.
+const (
+	BucketMarkerStateUploading = "uploading"
+	BucketMarkerStateUploaded  = "uploaded"
+	BucketMarkerStateDeleted   = "deleted"
+)
+
+// BucketMarker represents a document stored in the bucket "markers" collection.
+type BucketMarker struct {
+	ID        primitive.ObjectID `bson:"_id"`
+	File      interface{}        `bson:"files_id"`
+	State     string             `bson:"state"`
+	Timestamp time.Time          `bson:"timestamp"`
+	Length    int                `bson:"length"`
+	ChunkSize int                `bson:"chunkSize"`
+	Filename  string             `bson:"filename"`
+	Metadata  interface{}        `bson:"metadata,omitempty"`
+}
+
+// BucketFile represents a document stored in the bucket "files" collection.
 type BucketFile struct {
 	ID         interface{} `bson:"_id"`
 	Length     int         `bson:"length"`
@@ -31,7 +50,7 @@ type BucketFile struct {
 	Metadata   interface{} `bson:"metadata,omitempty"`
 }
 
-// BucketChunk represents a document stored in the GridFS chunks collection.
+// BucketChunk represents a document stored in the bucket "chunks" collection.
 type BucketChunk struct {
 	ID   primitive.ObjectID `bson:"_id"`
 	File interface{}        `bson:"files_id"`
@@ -39,10 +58,17 @@ type BucketChunk struct {
 	Data []byte             `bson:"data"`
 }
 
-// Bucket provides access to a GridFS bucket.
+// Bucket provides access to a GridFS bucket. The type is generally compatible
+// with gridfs.Bucket from the official driver but allows the passing in of a
+// context on all methods. This ways the bucket theoretically supports multi-
+// document transactions. However, it is not recommended to use transactions for
+// large uploads and instead enable the the tracking mode and claim the uploads
+// to ensure operational safety.
 type Bucket struct {
+	tracked      bool
 	files        ICollection
 	chunks       ICollection
+	markers      ICollection
 	chunkSize    int
 	indexMutex   sync.Mutex
 	indexEnsured bool
@@ -83,12 +109,38 @@ func NewBucket(db IDatabase, opts ...*options.BucketOptions) *Bucket {
 	return &Bucket{
 		files:     db.Collection(name+".files", collOpt),
 		chunks:    db.Collection(name+".chunks", collOpt),
+		markers:   db.Collection(name+".markers", collOpt),
 		chunkSize: chunkSize,
 	}
 }
 
-// Delete will remove the specified file from the bucket.
+// EnableTracking will enable a non-standard mode in which in-progress uploads
+// and deletions are tracked by storing a document in an additional "markers"
+// collection. If enabled, uploads can be suspended and resumed later and must
+// be explicitly claimed. All unclaimed uploads and not fully deleted files
+// can be cleaned up.
+func (b *Bucket) EnableTracking() {
+	b.tracked = true
+}
+
+// Delete will remove the specified file from the bucket. If the bucket is
+// tracked, only a marker is inserted that will ensure the file and its chunks
+// are deleted during the next cleanup.
 func (b *Bucket) Delete(ctx context.Context, id interface{}) error {
+	// just ensure marker if tracked
+	if b.tracked {
+		_, err := b.markers.ReplaceOne(ctx, &BucketMarker{
+			File:      id,
+			State:     BucketMarkerStateDeleted,
+			Timestamp: time.Now(),
+		}, options.Replace().SetUpsert(true))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	// delete file
 	res1, err := b.files.DeleteOne(ctx, bson.M{
 		"_id": id,
@@ -149,7 +201,8 @@ func (b *Bucket) DownloadToStreamByName(ctx context.Context, name string, w io.W
 	return n, nil
 }
 
-// Drop will drop the files and chunks collection.
+// Drop will drop the files and chunks collection. If the bucket is tracked, the
+// markers collection is also dropped.
 func (b *Bucket) Drop(ctx context.Context) error {
 	// drop files
 	err := b.files.Drop(ctx)
@@ -161,6 +214,14 @@ func (b *Bucket) Drop(ctx context.Context) error {
 	err = b.chunks.Drop(ctx)
 	if err != nil {
 		return err
+	}
+
+	// drop markers if bucket is tracked
+	if b.tracked {
+		err = b.markers.Drop(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// reset flag
@@ -339,7 +400,137 @@ func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, nam
 	return nil
 }
 
-// EnsureIndexes will check if all required indexes exists and create them when
+// ClaimUpload will claim a tracked upload by creating the file and removing
+// the marker.
+func (b *Bucket) ClaimUpload(ctx context.Context, id interface{}) error {
+	// check if tracked
+	if !b.tracked {
+		return fmt.Errorf("bucket not tracked")
+	}
+
+	// get marker
+	var marker BucketMarker
+	err := b.markers.FindOne(ctx, bson.M{
+		"files_id": id,
+	}).Decode(&marker)
+	if err != nil {
+		return err
+	}
+
+	// check marker
+	if marker.State != BucketMarkerStateUploaded {
+		return fmt.Errorf("upload is not finished")
+	}
+
+	// create file
+	_, err = b.files.InsertOne(ctx, BucketFile{
+		ID:         id,
+		Length:     marker.Length,
+		ChunkSize:  marker.ChunkSize,
+		UploadDate: time.Now(),
+		Filename:   marker.Filename,
+		Metadata:   marker.Metadata,
+	})
+	if err != nil {
+		return err
+	}
+
+	// remove upload marker
+	_, err = b.markers.DeleteOne(nil, bson.M{
+		"_id": marker.ID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Cleanup will remove unfinished uploads older than the specified age and all
+// files marked for deletion.
+func (b *Bucket) Cleanup(ctx context.Context, age time.Duration) error {
+	// check if tracked
+	if !b.tracked {
+		return fmt.Errorf("bucket not tracked")
+	}
+
+	// get cursor for old uploads and delete markers
+	csr, err := b.markers.Find(ctx, bson.M{
+		"$or": []bson.M{
+			{
+				"state": bson.M{
+					"$in": bson.A{BucketMarkerStateUploading, BucketMarkerStateUploaded},
+				},
+				"timestamp": bson.M{
+					"$lt": time.Now().Add(-age),
+				},
+			},
+			{
+				"state": BucketMarkerStateDeleted,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	defer csr.Close(ctx)
+
+	// iterate over cursor
+	for csr.Next(ctx) {
+		// decode marker
+		var marker BucketMarker
+		err = csr.Decode(&marker)
+		if err != nil {
+			return err
+		}
+
+		// flag marker as deleted if not already
+		if marker.State != BucketMarkerStateDeleted {
+			res, err := b.markers.UpdateOne(ctx, bson.M{
+				"_id":   marker.ID,
+				"state": marker.State,
+			}, bson.M{
+				"state": BucketMarkerStateDeleted,
+			})
+			if err != nil {
+				return err
+			}
+
+			// continue if marker has been claimed
+			if res.ModifiedCount == 0 {
+				continue
+			}
+		}
+
+		// delete file
+		_, err := b.files.DeleteOne(ctx, bson.M{
+			"_id": marker.File,
+		})
+		if err != nil {
+			return err
+		}
+
+		// delete chunks
+		_, err = b.chunks.DeleteMany(ctx, bson.M{
+			"files_id": marker.File,
+		})
+		if err != nil {
+			return err
+		}
+
+		// delete marker
+		_, err = b.markers.DeleteOne(ctx, bson.M{
+			"_id": marker.ID,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// EnsureIndexes will check if all required indexes exist and create them when
 // needed. Usually, this is done automatically when uploading the first file
 // using a bucket. However, when transactions are used to upload files, the
 // indexes must be created before the first upload as index creation is
@@ -393,6 +584,14 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 		Options: options.Index().SetUnique(true),
 	}
 
+	// prepare markers index
+	markersIndex := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "files_id", Value: 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+
 	// check files index existence
 	hasFilesIndex, err := b.hasIndex(ctx, b.files, filesIndex)
 	if err != nil {
@@ -401,6 +600,12 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 
 	// check chunks index existence
 	hasChunksIndex, err := b.hasIndex(ctx, b.chunks, chunksIndex)
+	if err != nil {
+		return err
+	}
+
+	// check markers index existence
+	hasMarkersIndex, err := b.hasIndex(ctx, b.markers, markersIndex)
 	if err != nil {
 		return err
 	}
@@ -416,6 +621,14 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 	// create chunks index if missing
 	if !hasChunksIndex {
 		_, err = b.chunks.Indexes().CreateOne(ctx, chunksIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	// create markers index if missing
+	if !hasMarkersIndex {
+		_, err = b.markers.Indexes().CreateOne(ctx, markersIndex)
 		if err != nil {
 			return err
 		}
@@ -457,6 +670,7 @@ type UploadStream struct {
 	name      string
 	metadata  interface{}
 	chunkSize int
+	marker    *BucketMarker
 	length    int
 	chunks    int
 	buffer    []byte
@@ -477,7 +691,87 @@ func newUploadStream(ctx context.Context, bucket *Bucket, id interface{}, name s
 	}
 }
 
-// Abort will abort the upload and remove uploaded chunks.
+// Resume will try to resume a previous tracked upload that has been suspended.
+// It will return the amount of bytes that have already been written.
+func (s *UploadStream) Resume() (int64, error) {
+	// acquire mutex
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// check if tracked
+	if !s.bucket.tracked {
+		return 0, fmt.Errorf("bucket not tracked")
+	}
+
+	// check if pristine
+	if s.marker != nil || s.bufLen > 0 {
+		return 0, fmt.Errorf("stream not pristine")
+	}
+
+	// get marker
+	err := s.bucket.markers.FindOne(s.context, bson.M{
+		"files_id": s.id,
+	}).Decode(&s.marker)
+	if err != nil {
+		return 0, err
+	}
+
+	// check marker
+	if s.marker.State != BucketMarkerStateUploading {
+		return 0, fmt.Errorf("invalid marker state")
+	}
+
+	// check marker chunk size
+	if s.marker.ChunkSize != s.chunkSize {
+		return 0, fmt.Errorf("marker chunk size does not match")
+	}
+
+	// create cursor
+	csr, err := s.bucket.chunks.Find(s.context, bson.M{
+		"files_id": s.id,
+	}, options.Find().SetSort(bson.M{
+		"n": 1,
+	}))
+	if err != nil {
+		return 0, err
+	}
+
+	// ensure cursor is closed
+	defer csr.Close(s.context)
+
+	// prepare counters
+	var number int
+	var length int
+
+	// check all chunks
+	for csr.Next(s.context) {
+		// decode chunk
+		var chunk BucketChunk
+		err = csr.Decode(&chunk)
+		if err != nil {
+			return 0, err
+		}
+
+		// check chunk
+		if chunk.Num != number || len(chunk.Data) != s.chunkSize {
+			return 0, fmt.Errorf("found invalid chunk")
+		}
+
+		// increment
+		number = chunk.Num
+		length += len(chunk.Data)
+	}
+
+	// set state
+	s.chunks = number + 1
+	s.length = length
+
+	return int64(length), nil
+}
+
+// Abort will abort the upload and remove uploaded chunks. If the bucket is
+// tracked it will also remove the potentially created marker. If the abort
+// fails the upload may get cleaned up.
 func (s *UploadStream) Abort() error {
 	// acquire mutex
 	s.mutex.Lock()
@@ -489,11 +783,23 @@ func (s *UploadStream) Abort() error {
 	}
 
 	// delete uploaded chunks
-	_, err := s.bucket.chunks.DeleteMany(s.context, bson.M{
-		"files_id": s.id,
-	})
-	if err != nil {
-		return err
+	if s.chunks > 0 {
+		_, err := s.bucket.chunks.DeleteMany(s.context, bson.M{
+			"files_id": s.id,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// delete marker if it exists
+	if s.marker != nil {
+		_, err := s.bucket.markers.DeleteOne(s.context, bson.M{
+			"_id": s.marker.ID,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// set flag
@@ -502,7 +808,42 @@ func (s *UploadStream) Abort() error {
 	return nil
 }
 
-// Close will finish the upload and close the stream.
+// Suspend will upload fully buffered chunks and close the stream. The stream
+// may be reopened and resumed later to finish the upload. Until that happens
+// the upload my be cleaned up.
+func (s *UploadStream) Suspend() (int64, error) {
+	// acquire mutex
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// check if tracked
+	if !s.bucket.tracked {
+		return 0, fmt.Errorf("bucket not tracked")
+	}
+
+	// check if stream has been closed
+	if s.closed {
+		return 0, gridfs.ErrStreamClosed
+	}
+
+	// upload buffered data
+	if s.bufLen > 0 {
+		err := s.upload(false)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// set flag
+	s.closed = true
+
+	return int64(s.length), nil
+}
+
+// Close will finish the upload and close the stream. If the bucket is tracked
+// the method will not finalize the upload by creating a file. Instead the user
+// should call ClaimUpload as part of a multi-document transaction to safely
+// claim the upload. Until that happens the upload may be cleaned up.
 func (s *UploadStream) Close() error {
 	// acquire mutex
 	s.mutex.Lock()
@@ -521,20 +862,40 @@ func (s *UploadStream) Close() error {
 		}
 	}
 
-	// prepare file
-	file := BucketFile{
-		ID:         s.id,
-		Length:     s.length,
-		ChunkSize:  s.chunkSize,
-		UploadDate: time.Now(),
-		Filename:   s.name,
-		Metadata:   s.metadata,
+	// update marker if bucket is tracked
+	if s.bucket.tracked {
+		res, err := s.bucket.markers.ReplaceOne(s.context, bson.M{
+			"_id": s.marker.ID,
+		}, &BucketMarker{
+			ID:        s.marker.ID,
+			File:      s.id,
+			State:     BucketMarkerStateUploaded,
+			Timestamp: time.Now(),
+			Length:    s.length,
+			ChunkSize: s.chunkSize,
+			Filename:  s.name,
+			Metadata:  s.metadata,
+		})
+		if err != nil {
+			return err
+		} else if res.ModifiedCount != 1 {
+			return fmt.Errorf("unable to update marker")
+		}
 	}
 
-	// write file
-	_, err := s.bucket.files.InsertOne(s.context, file)
-	if err != nil {
-		return err
+	// otherwise create file directly
+	if !s.bucket.tracked {
+		_, err := s.bucket.files.InsertOne(s.context, BucketFile{
+			ID:         s.id,
+			Length:     s.length,
+			ChunkSize:  s.chunkSize,
+			UploadDate: time.Now(),
+			Filename:   s.name,
+			Metadata:   s.metadata,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// set flag
@@ -543,7 +904,9 @@ func (s *UploadStream) Close() error {
 	return nil
 }
 
-// Write will write the provided data to chunks in the background.
+// Write will write the provided data to chunks in the background. If the bucket
+// is tracked and an upload already exists, it must be resumed before writing
+// more data.
 func (s *UploadStream) Write(data []uint8) (int, error) {
 	// acquire mutex
 	s.mutex.Lock()
@@ -554,7 +917,7 @@ func (s *UploadStream) Write(data []uint8) (int, error) {
 		return 0, gridfs.ErrStreamClosed
 	}
 
-	// upload data in chunks
+	// buffer and upload data in chunks
 	var written int
 	for {
 		// check if done
@@ -612,6 +975,26 @@ func (s *UploadStream) upload(final bool) error {
 
 		// update counter
 		chunkedBytes += size
+	}
+
+	// insert upload marker before first write if tracked
+	if s.marker == nil && s.bucket.tracked {
+		// prepare marker
+		s.marker = &BucketMarker{
+			ID:        primitive.NewObjectID(),
+			File:      s.id,
+			State:     BucketMarkerStateUploading,
+			Timestamp: time.Now(),
+			ChunkSize: s.chunkSize,
+			Filename:  s.name,
+			Metadata:  s.metadata,
+		}
+
+		// insert marker
+		_, err := s.bucket.markers.InsertOne(s.context, s.marker)
+		if err != nil {
+			return err
+		}
 	}
 
 	// write chunks

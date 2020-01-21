@@ -187,6 +187,10 @@ re-implementing the package:
 methods.
 - The `lungo.DowloadStream` implements the `io.Seeker` interface for convenient
 range queries on the file contents.
+- A non-standard "tracking" mode in which in-progress uploads and deletions are
+tracked by storing a document in an additional "markers" collection. If enabled,
+uploads can be suspended and resumed later and must be explicitly claimed. All
+unclaimed uploads and not fully deleted files can be cleaned up.
 
 ## License
 

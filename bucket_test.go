@@ -452,6 +452,97 @@ func TestBucketSeekDownload(t *testing.T) {
 	})
 }
 
+func TestBucketTracking(t *testing.T) {
+	bucketTest(t, func(t *testing.T, b *Bucket) {
+		b.EnableTracking()
+
+		id, err := b.UploadFromStream(nil, "foo", strings.NewReader("Hello World!"))
+		assert.NoError(t, err)
+		assert.NotEmpty(t, id)
+
+		var buf bytes.Buffer
+		n, err := b.DownloadToStream(nil, id, &buf)
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), n)
+		assert.Equal(t, "", buf.String())
+		assert.Equal(t, ErrFileNotFound, err)
+
+		err = b.ClaimUpload(nil, id)
+		assert.NoError(t, err)
+
+		buf.Reset()
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(12), n)
+		assert.Equal(t, "Hello World!", buf.String())
+
+		csr, err := b.Find(nil, bson.M{})
+		assert.NoError(t, err)
+		assert.Len(t, readAll(csr), 1)
+
+		err = b.Delete(nil, id)
+		assert.NoError(t, err)
+
+		buf.Reset()
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(12), n)
+		assert.Equal(t, "Hello World!", buf.String())
+
+		err = b.Cleanup(nil, 0)
+		assert.NoError(t, err)
+
+		buf.Reset()
+		n, err = b.DownloadToStreamByName(nil, "bar", &buf)
+		assert.Equal(t, ErrFileNotFound, err)
+		assert.Zero(t, n)
+		assert.Empty(t, buf.String())
+	})
+}
+
+func TestBucketUploadResuming(t *testing.T) {
+	bucketTest(t, func(t *testing.T, b *Bucket) {
+		b.EnableTracking()
+
+		id := primitive.NewObjectID()
+		opt := options.GridFSUpload().SetChunkSizeBytes(5)
+
+		stream, err := b.OpenUploadStreamWithID(nil, id, "foo", opt)
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		_, err = stream.Write([]byte("Hello"))
+		assert.NoError(t, err)
+
+		n, err := stream.Suspend()
+		assert.NoError(t, err)
+		assert.Equal(t, int64(5), n)
+
+		stream, err = b.OpenUploadStreamWithID(nil, id, "foo", opt)
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		n, err = stream.Resume()
+		assert.NoError(t, err)
+		assert.Equal(t, int64(5), n)
+
+		_, err = stream.Write([]byte(" World!"))
+		assert.NoError(t, err)
+
+		err = stream.Close()
+		assert.NoError(t, err)
+
+		err = b.ClaimUpload(nil, id)
+		assert.NoError(t, err)
+
+		var buf bytes.Buffer
+		n, err = b.DownloadToStream(nil, id, &buf)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(12), n)
+		assert.Equal(t, "Hello World!", buf.String())
+	})
+}
+
 func TestBucketTransaction(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		sess, err := c.Database().Client().StartSession()
