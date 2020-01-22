@@ -32,8 +32,13 @@ type Context struct {
 	// A custom value available to the operators.
 	Value interface{}
 
-	// The available array filters
-	ArrayFilters bsonkit.List
+	// The query used to resolve positional operators in top level operator
+	// invocation paths.
+	TopLevelQuery bsonkit.Doc
+
+	// The array filters used to resolve positional operators in top level
+	// operator invocation paths.
+	TopLevelArrayFilters bsonkit.List
 }
 
 // Process will process a document with a query using the MongoDB operator
@@ -88,7 +93,9 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 
 		// call operator for each pair
 		for _, cond := range update {
-			err := operator(ctx, doc, pair.Key, cond.Key, cond.Value)
+			err := Resolve(cond.Key, ctx.TopLevelQuery, doc, ctx.TopLevelArrayFilters, func(path string) error {
+				return operator(ctx, doc, pair.Key, path, cond.Value)
+			})
 			if err != nil {
 				return err
 			}
