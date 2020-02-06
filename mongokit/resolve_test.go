@@ -26,14 +26,14 @@ func TestDividePathStaticDynamicPart(t *testing.T) {
 
 	static, dynamic = dividePathStaticDynamicPart("foo.bar.boo")
 	assert.Equal(t, static, "foo.bar.boo")
-	assert.Equal(t, dynamic, pathEnd)
+	assert.Equal(t, dynamic, bsonkit.PathEnd)
 
 	static, dynamic = dividePathStaticDynamicPart("$[].foo.bar.boo")
-	assert.Equal(t, static, pathEnd)
+	assert.Equal(t, static, bsonkit.PathEnd)
 	assert.Equal(t, dynamic, "$[].foo.bar.boo")
 
 	static, dynamic = dividePathStaticDynamicPart("$")
-	assert.Equal(t, static, pathEnd)
+	assert.Equal(t, static, bsonkit.PathEnd)
 	assert.Equal(t, dynamic, "$")
 }
 

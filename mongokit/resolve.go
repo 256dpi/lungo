@@ -18,15 +18,15 @@ func Resolve(path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, cal
 }
 
 func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonkit.List, callback func(path string) error) error {
-	// check if path includes positional operators
+	// immediately yield path if it does not include positional operators
 	if !strings.ContainsRune(path, '$') {
-		// Build pathUpToNow
 		return callback(path)
 	}
+
 	// Get the parts
 	staticPart, dynamicPart := dividePathStaticDynamicPart(path)
-	operator := pathKey(dynamicPart)
-	nextPath := pathShorten(dynamicPart)
+	operator := bsonkit.PathSegment(dynamicPart)
+	nextPath := bsonkit.PathReduce(dynamicPart)
 
 	switch doc := doc.(type) {
 	case bson.D:
@@ -40,7 +40,7 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 				if identifier == "" { // $[]
 					for i := range arr {
 						currentPath := staticPart + "." + strconv.Itoa(i)
-						if nextPath != pathEnd && nextPath != "" {
+						if nextPath != bsonkit.PathEnd && nextPath != "" {
 							currentPath += "." + nextPath
 						}
 						if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
@@ -67,7 +67,7 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 						if !matched {
 							continue
 						}
-						if nextPath != pathEnd && nextPath != "" {
+						if nextPath != bsonkit.PathEnd && nextPath != "" {
 							currentPath += "." + nextPath
 						}
 						if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
@@ -87,35 +87,15 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 	return nil
 }
 
-var pathEnd = "\x00"
-
-func pathShorten(path string) string {
-	i := strings.IndexByte(path, '.')
-	if i >= 0 {
-		return path[i+1:]
-	}
-
-	return pathEnd
-}
-
-func pathKey(path string) string {
-	i := strings.IndexByte(path, '.')
-	if i >= 0 {
-		return path[:i]
-	}
-
-	return path
-}
-
 func dividePathStaticDynamicPart(remainingPath string) (string, string) {
-	if strings.HasPrefix(remainingPath, "$") || remainingPath == pathEnd || remainingPath == "" {
-		return pathEnd, remainingPath
+	if strings.HasPrefix(remainingPath, "$") || remainingPath == bsonkit.PathEnd || remainingPath == "" {
+		return bsonkit.PathEnd, remainingPath
 	}
 
-	pathKey := pathKey(remainingPath)
-	subStaticPart, subDynamicPart := dividePathStaticDynamicPart(pathShorten(remainingPath))
+	pathKey := bsonkit.PathSegment(remainingPath)
+	subStaticPart, subDynamicPart := dividePathStaticDynamicPart(bsonkit.PathReduce(remainingPath))
 
-	if subStaticPart == pathEnd {
+	if subStaticPart == bsonkit.PathEnd {
 		return pathKey, subDynamicPart
 	}
 
