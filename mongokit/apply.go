@@ -53,7 +53,7 @@ func Apply(doc, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.List) (*Ch
 		TopLevel:             FieldUpdateOperators,
 		MultiTopLevel:        true,
 		TopLevelArrayFilters: arrayFilters,
-		//TODO: Add TopLevelQuery
+		// TODO: Add TopLevelQuery
 	}, doc, *update, "", true)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) err
 }
 
 func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	//TODO: implement resolve() support
+	// TODO: implement resolve() support
 
 	// get new path
 	newPath, ok := v.(string)
@@ -141,7 +141,6 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 }
 
 func applyInc(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-
 	// increment value
 	res, err := bsonkit.Increment(doc, path, v)
 	if err != nil {
@@ -155,7 +154,6 @@ func applyInc(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 }
 
 func applyMul(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-
 	// multiply value
 	res, err := bsonkit.Multiply(doc, path, v)
 	if err != nil {
@@ -169,7 +167,6 @@ func applyMul(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 }
 
 func applyMax(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
-
 	// get value
 	value := bsonkit.Get(doc, path)
 	if value == bsonkit.Missing {
