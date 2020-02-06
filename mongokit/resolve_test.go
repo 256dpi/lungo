@@ -3,19 +3,19 @@ package mongokit
 import (
 	"testing"
 
-	"github.com/256dpi/lungo/bsonkit"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
-func ResolveTest(t *testing.T, path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, expectedPaths []string) {
+func resolveTest(t *testing.T, path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, expectedPaths []string) {
 	paths := make([]string, 0)
 	err := Resolve(path, query, doc, arrayFilters, func(path string) error {
 		paths = append(paths, path)
 		return nil
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	assert.ElementsMatch(t, expectedPaths, paths)
 }
 
@@ -38,27 +38,27 @@ func TestDividePathStaticDynamicPart(t *testing.T) {
 }
 
 func TestResolveSimplePath(t *testing.T) {
-	ResolveTest(t, "foo", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo",
 	})
 
-	ResolveTest(t, "foo.bar.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.bar.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.bar.baz",
 	})
 }
 
 func TestResolveArrayIndexPath(t *testing.T) {
-	ResolveTest(t, "foo.0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.0",
 	})
 
-	ResolveTest(t, "foo.2.bar.7.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.2.bar.7.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.2.bar.7.baz",
 	})
 }
 
 func TestResolveArrayPath(t *testing.T) {
-	ResolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			"bar",
 			"baz",
@@ -70,7 +70,7 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.2",
 	})
 
-	ResolveTest(t, "foo.$[].bar.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].bar.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"bar": bson.A{
@@ -90,7 +90,7 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.bar.0",
 	})
 
-	ResolveTest(t, "foo.$[].$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				"foobar",
@@ -106,7 +106,7 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.0",
 	})
 
-	ResolveTest(t, "foo.$[].$[].bar", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].$[].bar", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				bson.M{
@@ -128,7 +128,7 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.0.bar",
 	})
 
-	ResolveTest(t, "foo.$[].0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				"foobar",
@@ -145,14 +145,14 @@ func TestResolveArrayPath(t *testing.T) {
 }
 
 func TestResolveArrayFilters(t *testing.T) {
-	ResolveTest(t, "foo.$[notfooz]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[notfooz]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			"bar",
 			"baz",
 			"fooz",
 		},
 	}), bsonkit.ConvertList([]bson.M{
-		bson.M{
+		{
 			"notfooz": bson.M{
 				"$ne": "fooz",
 			},
@@ -162,7 +162,7 @@ func TestResolveArrayFilters(t *testing.T) {
 		"foo.1",
 	})
 
-	ResolveTest(t, "foo.$[valid].bar.$[foobar]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[valid].bar.$[foobar]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"ok":  true,
@@ -198,20 +198,20 @@ func TestResolveArrayFilters(t *testing.T) {
 			},
 		},
 	}), bsonkit.ConvertList([]bson.M{
-		bson.M{
+		{
 			"valid.ok": true,
 			"valid.val": bson.M{
 				"$gt": 50,
 			},
 		},
-		bson.M{
+		{
 			"foobar": "foobar",
 		},
 	}), []string{
 		"foo.2.bar.0",
 	})
 
-	ResolveTest(t, "foo.$[ok].$[ok2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[ok].$[ok2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				-10,
@@ -228,12 +228,12 @@ func TestResolveArrayFilters(t *testing.T) {
 			},
 		},
 	}), bsonkit.ConvertList([]bson.M{
-		bson.M{
+		{
 			"ok": bson.M{
 				"$size": 5,
 			},
 		},
-		bson.M{
+		{
 			"ok2": bson.M{
 				"$lt": 0,
 			},

@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/256dpi/lungo/bsonkit"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 // Resolve will resolve all positional operators in the provided path using the
@@ -19,10 +20,10 @@ func Resolve(path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, cal
 func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonkit.List, callback func(path string) error) error {
 	// check if path includes positional operators
 	if !strings.ContainsRune(path, '$') {
-		//Build pathUpToNow
+		// Build pathUpToNow
 		return callback(path)
 	}
-	//Get the parts
+	// Get the parts
 	staticPart, dynamicPart := dividePathStaticDynamicPart(path)
 	operator := pathKey(dynamicPart)
 	nextPath := pathShorten(dynamicPart)
@@ -31,13 +32,13 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 	case bson.D:
 		value := bsonkit.Get(&doc, staticPart)
 
-		//TODO: implement the $ operator
-		if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { //$[], $[<identifier>]
+		// TODO: implement the $ operator
+		if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { // $[], $[<identifier>]
 			if arr, ok := value.(bson.A); ok {
-				//Extract the identifier operand
+				// Extract the identifier operand
 				identifier := operator[2 : len(operator)-1]
-				if identifier == "" { //$[]
-					for i, _ := range arr {
+				if identifier == "" { // $[]
+					for i := range arr {
 						currentPath := staticPart + "." + strconv.Itoa(i)
 						if nextPath != pathEnd && nextPath != "" {
 							currentPath += "." + nextPath
@@ -47,13 +48,13 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 						}
 					}
 				} else { // $[<identifier>]
-					//TODO: implement array filters<identifier>
+					// TODO: implement array filters<identifier>
 					for i, val := range arr {
 						currentPath := staticPart + "." + strconv.Itoa(i)
 						matched := false
-						//Check if the current item match don't the arrayFilters with identifier name
+						// Check if the current item match don't the arrayFilters with identifier name
 						for _, filter := range arrayFilters {
-							//TODO: Add filter checking!
+							// TODO: Add filter checking!
 							if val, err := Match(&bson.D{
 								bson.E{Key: identifier, Value: val},
 							}, filter); err != nil {
@@ -75,13 +76,13 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 					}
 				}
 			} else {
-				return fmt.Errorf("The value pointed in the path %q isn't a array", staticPart)
+				return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
 			}
 		} else {
-			return fmt.Errorf("The operatpr %q is not supported", operator)
+			return fmt.Errorf("the operatpr %q is not supported", operator)
 		}
 	default:
-		return fmt.Errorf("The value pointed in the path %q isn't a *bson.D", path)
+		return fmt.Errorf("the value pointed in the path %q isn't a *bson.D", path)
 	}
 	return nil
 }
@@ -116,7 +117,7 @@ func dividePathStaticDynamicPart(remainingPath string) (string, string) {
 
 	if subStaticPart == pathEnd {
 		return pathKey, subDynamicPart
-	} else {
-		return pathKey + "." + subStaticPart, subDynamicPart
 	}
+
+	return pathKey + "." + subStaticPart, subDynamicPart
 }
