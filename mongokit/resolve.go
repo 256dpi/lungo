@@ -17,7 +17,7 @@ func Resolve(path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, cal
 	return resolve(path, query, *doc, arrayFilters, callback)
 }
 
-func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonkit.List, callback func(path string) error) error {
+func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.List, callback func(path string) error) error {
 	// immediately yield path if it does not include positional operators
 	if !strings.ContainsRune(path, '$') {
 		return callback(path)
@@ -28,62 +28,58 @@ func resolve(path string, query bsonkit.Doc, doc interface{}, arrayFilters bsonk
 	operator := bsonkit.PathSegment(dynamicPart)
 	nextPath := bsonkit.PathReduce(dynamicPart)
 
-	switch doc := doc.(type) {
-	case bson.D:
-		value := bsonkit.Get(&doc, staticPart)
+	value := bsonkit.Get(&doc, staticPart)
 
-		// TODO: implement the $ operator
-		if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { // $[], $[<identifier>]
-			if arr, ok := value.(bson.A); ok {
-				// Extract the identifier operand
-				identifier := operator[2 : len(operator)-1]
-				if identifier == "" { // $[]
-					for i := range arr {
-						currentPath := staticPart + "." + strconv.Itoa(i)
-						if nextPath != bsonkit.PathEnd && nextPath != "" {
-							currentPath += "." + nextPath
-						}
-						if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
-							return err
-						}
+	// TODO: implement the $ operator
+	if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { // $[], $[<identifier>]
+		if arr, ok := value.(bson.A); ok {
+			// Extract the identifier operand
+			identifier := operator[2 : len(operator)-1]
+			if identifier == "" { // $[]
+				for i := range arr {
+					currentPath := staticPart + "." + strconv.Itoa(i)
+					if nextPath != bsonkit.PathEnd && nextPath != "" {
+						currentPath += "." + nextPath
 					}
-				} else { // $[<identifier>]
-					// TODO: implement array filters<identifier>
-					for i, val := range arr {
-						currentPath := staticPart + "." + strconv.Itoa(i)
-						matched := false
-						// Check if the current item match don't the arrayFilters with identifier name
-						for _, filter := range arrayFilters {
-							// TODO: Add filter checking!
-							if val, err := Match(&bson.D{
-								bson.E{Key: identifier, Value: val},
-							}, filter); err != nil {
-								return err
-							} else if val {
-								matched = true
-								break
-							}
-						}
-						if !matched {
-							continue
-						}
-						if nextPath != bsonkit.PathEnd && nextPath != "" {
-							currentPath += "." + nextPath
-						}
-						if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
-							return err
-						}
+					if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
+						return err
 					}
 				}
-			} else {
-				return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
+			} else { // $[<identifier>]
+				// TODO: implement array filters<identifier>
+				for i, val := range arr {
+					currentPath := staticPart + "." + strconv.Itoa(i)
+					matched := false
+					// Check if the current item match don't the arrayFilters with identifier name
+					for _, filter := range arrayFilters {
+						// TODO: Add filter checking!
+						if val, err := Match(&bson.D{
+							bson.E{Key: identifier, Value: val},
+						}, filter); err != nil {
+							return err
+						} else if val {
+							matched = true
+							break
+						}
+					}
+					if !matched {
+						continue
+					}
+					if nextPath != bsonkit.PathEnd && nextPath != "" {
+						currentPath += "." + nextPath
+					}
+					if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
+						return err
+					}
+				}
 			}
 		} else {
-			return fmt.Errorf("the operatpr %q is not supported", operator)
+			return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
 		}
-	default:
-		return fmt.Errorf("the value pointed in the path %q isn't a *bson.D", path)
+	} else {
+		return fmt.Errorf("the operatpr %q is not supported", operator)
 	}
+
 	return nil
 }
 
