@@ -618,49 +618,41 @@ func TestApplyMax(t *testing.T) {
 
 func TestApplyMin(t *testing.T) {
 	applyTest(t, false, bson.M{
-		"foo": bson.A{
-			bson.M{
-				"bar": int64(42),
-			},
+		"foo": bson.M{
+			"bar": int64(42),
 		},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
 		// keep value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.$[].bar": int32(44),
+				"foo.bar": int32(44),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.A{
-				bson.M{
-					"bar": 42,
-				},
+			"foo": bson.M{
+				"bar": 42,
 			},
 		}))
 
 		// set value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.$[].bar": int32(21),
+				"foo.bar": int32(21),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.A{
-				bson.M{
-					"bar": int32(21),
-				},
+			"foo": bson.M{
+				"bar": int32(21),
 			},
 		}))
 
 		// add value
 		fn(bson.M{
 			"$min": bson.M{
-				"foo.$[].baz": int32(2),
+				"foo.baz": int32(2),
 			},
 		}, nil, bsonkit.Convert(bson.M{
-			"foo": bson.A{
-				bson.M{
-					"bar": 42,
-					"baz": int32(2),
-				},
+			"foo": bson.M{
+				"bar": 42,
+				"baz": int32(2),
 			},
 		}))
 	})
