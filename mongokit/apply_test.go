@@ -122,7 +122,10 @@ func TestApply(t *testing.T) {
 			"foo": "baz",
 		}))
 	})
+}
 
+func TestApplyPositionalOperators(t *testing.T) {
+	// valid update, single positional operator
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
 			"bar",
@@ -130,7 +133,6 @@ func TestApply(t *testing.T) {
 			"foo",
 		},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
-		// valid update
 		fn(bson.M{
 			"$set": bson.M{
 				"foo.$[foo]": "baz",
@@ -145,21 +147,31 @@ func TestApply(t *testing.T) {
 			},
 		}))
 	})
-}
 
-func TestApplyPositionalOperators(t *testing.T) {
+	// valid update, double positional operator
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
-			"bar",
-			"baz",
-			"foo",
-		},
-		"foo2": bson.A{
 			bson.A{"x", "y", "z"},
 			bson.A{"v", "w"},
 			bson.A{"i", "j", "k"},
 		},
-		"foo3": bson.A{
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.$[].$[]": "baz",
+			},
+		}, []bson.M{}, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.A{"baz", "baz", "baz"},
+				bson.A{"baz", "baz"},
+				bson.A{"baz", "baz", "baz"},
+			},
+		}))
+	})
+
+	// valid update, double concatenated positional operators
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
 			bson.M{
 				"val":  int32(10),
 				"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
@@ -174,76 +186,9 @@ func TestApplyPositionalOperators(t *testing.T) {
 			},
 		},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
-		// valid update, single positional operator
 		fn(bson.M{
 			"$set": bson.M{
-				"foo.$[foo]": "baz",
-			},
-		}, []bson.M{
-			{"foo": "foo"},
-		}, bsonkit.Convert(bson.M{
-			"foo": bson.A{
-				"bar",
-				"baz",
-				"baz",
-			},
-			"foo2": bson.A{
-				bson.A{"x", "y", "z"},
-				bson.A{"v", "w"},
-				bson.A{"i", "j", "k"},
-			},
-			"foo3": bson.A{
-				bson.M{
-					"val":  int32(10),
-					"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
-				},
-				bson.M{
-					"val":  int32(20),
-					"ints": bson.A{int32(10), int32(-20), int32(30), int32(-40)},
-				},
-				bson.M{
-					"val":  int32(30),
-					"ints": bson.A{int32(-100), int32(200), int32(-300), int32(400)},
-				},
-			},
-		}))
-
-		// valid update, double positional operator
-		fn(bson.M{
-			"$set": bson.M{
-				"foo2.$[].$[]": "baz",
-			},
-		}, []bson.M{}, bsonkit.Convert(bson.M{
-			"foo": bson.A{
-				"bar",
-				"baz",
-				"foo",
-			},
-			"foo2": bson.A{
-				bson.A{"baz", "baz", "baz"},
-				bson.A{"baz", "baz"},
-				bson.A{"baz", "baz", "baz"},
-			},
-			"foo3": bson.A{
-				bson.M{
-					"val":  int32(10),
-					"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
-				},
-				bson.M{
-					"val":  int32(20),
-					"ints": bson.A{int32(10), int32(-20), int32(30), int32(-40)},
-				},
-				bson.M{
-					"val":  int32(30),
-					"ints": bson.A{int32(-100), int32(200), int32(-300), int32(400)},
-				},
-			},
-		}))
-
-		// valid update, double concatenated positional operators
-		fn(bson.M{
-			"$set": bson.M{
-				"foo3.$[gt15].ints.$[neg]": int32(0),
+				"foo.$[gt15].ints.$[neg]": int32(0),
 			},
 		}, []bson.M{
 			{"gt15.val": bson.M{
@@ -254,16 +199,6 @@ func TestApplyPositionalOperators(t *testing.T) {
 			}},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.A{
-				"bar",
-				"baz",
-				"foo",
-			},
-			"foo2": bson.A{
-				bson.A{"x", "y", "z"},
-				bson.A{"v", "w"},
-				bson.A{"i", "j", "k"},
-			},
-			"foo3": bson.A{
 				bson.M{
 					"val":  int32(10),
 					"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
