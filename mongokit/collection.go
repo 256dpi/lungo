@@ -220,7 +220,7 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int, ar
 	newList := bsonkit.CloneList(list)
 
 	// update documents
-	changes, err := Update(newList, update, false, arrayFilters)
+	changes, err := Update(newList, query, update, false, arrayFilters)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func (c *Collection) Upsert(query, repl, update bsonkit.Doc, arrayFilters bsonki
 
 	// apply update if present
 	if update != nil {
-		_, err = Apply(doc, update, true, arrayFilters)
+		_, err = Apply(doc, query, update, true, arrayFilters)
 		if err != nil {
 			return nil, err
 		}
