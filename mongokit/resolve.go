@@ -10,6 +10,8 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// TODO: Implement implicit positional operators.
+
 // Resolve will resolve all positional operators in the provided path using the
 // query, document and array filters. For each match it will call the callback
 // with the generated absolute path.
@@ -30,15 +32,14 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 
 	value := bsonkit.Get(&doc, staticPart)
 
-	// check value
+	// get array
 	array, ok := value.(bson.A)
 	if !ok {
 		return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
 	}
 
-	// handle implicit positional operator
+	// check implicit positional operator
 	if operator == "$" {
-		// TODO: Implement.
 		return fmt.Errorf("implicit positional operator not supported")
 	}
 
