@@ -30,54 +30,86 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 
 	value := bsonkit.Get(&doc, staticPart)
 
-	// TODO: implement the $ operator
-	if strings.HasPrefix(operator, "$[") && strings.HasSuffix(operator, "]") { // $[], $[<identifier>]
-		if arr, ok := value.(bson.A); ok {
-			// Extract the identifier operand
-			identifier := operator[2 : len(operator)-1]
-			if identifier == "" { // $[]
-				for i := range arr {
-					currentPath := staticPart + "." + strconv.Itoa(i)
-					if nextPath != bsonkit.PathEnd && nextPath != "" {
-						currentPath += "." + nextPath
-					}
-					if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
-						return err
-					}
-				}
-			} else { // $[<identifier>]
-				// TODO: implement array filters<identifier>
-				for i, val := range arr {
-					currentPath := staticPart + "." + strconv.Itoa(i)
-					matched := false
-					// Check if the current item match don't the arrayFilters with identifier name
-					for _, filter := range arrayFilters {
-						// TODO: Add filter checking!
-						if val, err := Match(&bson.D{
-							bson.E{Key: identifier, Value: val},
-						}, filter); err != nil {
-							return err
-						} else if val {
-							matched = true
-							break
-						}
-					}
-					if !matched {
-						continue
-					}
-					if nextPath != bsonkit.PathEnd && nextPath != "" {
-						currentPath += "." + nextPath
-					}
-					if err := resolve(currentPath, query, doc, arrayFilters, callback); err != nil {
-						return err
-					}
-				}
+	// check value
+	array, ok := value.(bson.A)
+	if !ok {
+		return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
+	}
+
+	// handle implicit positional operator
+	if operator == "$" {
+		// TODO: Implement.
+		return fmt.Errorf("implicit positional operator not supported")
+	}
+
+	// check operator
+	if !strings.HasPrefix(operator, "$[") || !strings.HasSuffix(operator, "]") {
+		return fmt.Errorf("the positional operator %q is not supported", operator)
+	}
+
+	// get identifier
+	identifier := operator[2 : len(operator)-1]
+
+	// handle "all" positional operator: $[]
+	if identifier == "" {
+		// construct path for all array elements
+		for i := range array {
+			// construct static path
+			currentPath := staticPart + "." + strconv.Itoa(i)
+
+			// append next path if available
+			if nextPath != bsonkit.PathEnd && nextPath != "" {
+				currentPath += "." + nextPath
 			}
-		} else {
-			return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
+
+			// resolve path
+			err := resolve(currentPath, query, doc, arrayFilters, callback)
+			if err != nil {
+				return err
+			}
 		}
-	} else {
-		return fmt.Errorf("the operatpr %q is not supported", operator)
+
+		return nil
+	}
+
+	// handle identified positional operator: $[<identifier>]
+	for i, val := range array {
+		// check if the current item match don't the arrayFilters with identifier name
+		matched := false
+		for _, filter := range arrayFilters {
+			// TODO: Add filter checking!
+			ok, err := Match(&bson.D{
+				bson.E{Key: identifier, Value: val},
+			}, filter)
+			if err != nil {
+				return err
+			}
+
+			// check if matched
+			if ok {
+				matched = true
+				break
+			}
+		}
+
+		// continue if not matched
+		if !matched {
+			continue
+		}
+
+		// construct static path
+		currentPath := staticPart + "." + strconv.Itoa(i)
+
+		// append next path if available
+		if nextPath != bsonkit.PathEnd && nextPath != "" {
+			currentPath += "." + nextPath
+		}
+
+		// resolve path
+		err := resolve(currentPath, query, doc, arrayFilters, callback)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
