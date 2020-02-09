@@ -136,7 +136,7 @@ func TestApply(t *testing.T) {
 				"foo.$[foo]": "baz",
 			},
 		}, []bson.M{
-			bson.M{"foo": "foo"},
+			{"foo": "foo"},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.A{
 				"bar",
@@ -180,7 +180,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 				"foo.$[foo]": "baz",
 			},
 		}, []bson.M{
-			bson.M{"foo": "foo"},
+			{"foo": "foo"},
 		}, bsonkit.Convert(bson.M{
 			"foo": bson.A{
 				"bar",
@@ -208,7 +208,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 			},
 		}))
 
-		//valid update, double positional operator
+		// valid update, double positional operator
 		fn(bson.M{
 			"$set": bson.M{
 				"foo2.$[].$[]": "baz",
@@ -240,16 +240,16 @@ func TestApplyPositionalOperators(t *testing.T) {
 			},
 		}))
 
-		//valid update, double concatenated positional operators
+		// valid update, double concatenated positional operators
 		fn(bson.M{
 			"$set": bson.M{
 				"foo3.$[gt15].ints.$[neg]": int32(0),
 			},
 		}, []bson.M{
-			bson.M{"gt15.val": bson.M{
+			{"gt15.val": bson.M{
 				"$gt": 15,
 			}},
-			bson.M{"neg": bson.M{
+			{"neg": bson.M{
 				"$lt": 0,
 			}},
 		}, bsonkit.Convert(bson.M{
