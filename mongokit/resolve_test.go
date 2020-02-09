@@ -37,51 +37,40 @@ func TestDividePathStaticDynamicPart(t *testing.T) {
 	assert.Equal(t, dynamic, "$")
 }
 
-func TestResolveSimplePath(t *testing.T) {
+func TestResolve(t *testing.T) {
+	// no operators
 	resolveTest(t, "foo", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo",
 	})
-
 	resolveTest(t, "foo.bar.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.bar.baz",
 	})
-}
 
-func TestResolveArrayIndexPath(t *testing.T) {
+	// no operators but index
 	resolveTest(t, "foo.0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.0",
 	})
-
 	resolveTest(t, "foo.2.bar.7.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
 		"foo.2.bar.7.baz",
 	})
-}
 
-func TestResolveArrayPath(t *testing.T) {
+	// single operator
 	resolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
-		"foo": bson.A{
-			"bar",
-			"baz",
-			"fooz",
-		},
+		"foo": bson.A{1, 2, 3},
 	}), bsonkit.List{}, []string{
 		"foo.0",
 		"foo.1",
 		"foo.2",
 	})
 
+	// nested operator
 	resolveTest(t, "foo.$[].bar.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.M{
-				"bar": bson.A{
-					"foobar",
-					"barfoo",
-				},
+				"bar": bson.A{1, 2},
 			},
 			bson.M{
-				"bar": bson.A{
-					"foobar",
-				},
+				"bar": bson.A{3},
 			},
 		},
 	}), bsonkit.List{}, []string{
@@ -90,15 +79,11 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.bar.0",
 	})
 
+	// adjacent operators
 	resolveTest(t, "foo.$[].$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
-			bson.A{
-				"foobar",
-				"barfoo",
-			},
-			bson.A{
-				"foobar",
-			},
+			bson.A{1, 2},
+			bson.A{3},
 		},
 	}), bsonkit.List{}, []string{
 		"foo.0.0",
@@ -106,19 +91,20 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.0",
 	})
 
+	// trailing field
 	resolveTest(t, "foo.$[].$[].bar", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				bson.M{
-					"bar": "foobar",
+					"bar": 1,
 				},
 				bson.M{
-					"bar": "barfoo",
+					"bar": 2,
 				},
 			},
 			bson.A{
 				bson.M{
-					"bar": "foobar",
+					"bar": 3,
 				},
 			},
 		},
@@ -128,15 +114,11 @@ func TestResolveArrayPath(t *testing.T) {
 		"foo.1.0.bar",
 	})
 
+	// trailing index
 	resolveTest(t, "foo.$[].0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
-			bson.A{
-				"foobar",
-				"barfoo",
-			},
-			bson.A{
-				"foobar",
-			},
+			bson.A{1, 2},
+			bson.A{1},
 		},
 	}), bsonkit.List{}, []string{
 		"foo.0.0",
@@ -145,16 +127,17 @@ func TestResolveArrayPath(t *testing.T) {
 }
 
 func TestResolveArrayFilters(t *testing.T) {
-	resolveTest(t, "foo.$[notfooz]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	// single expression
+	resolveTest(t, "foo.$[af1]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			"bar",
 			"baz",
-			"fooz",
+			"quz",
 		},
 	}), bsonkit.ConvertList([]bson.M{
 		{
-			"notfooz": bson.M{
-				"$ne": "fooz",
+			"af1": bson.M{
+				"$ne": "quz",
 			},
 		},
 	}), []string{
@@ -162,84 +145,75 @@ func TestResolveArrayFilters(t *testing.T) {
 		"foo.1",
 	})
 
-	resolveTest(t, "foo.$[valid].bar.$[foobar]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	// multiple expressions
+	resolveTest(t, "foo.$[af1].$[af2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
-			bson.M{
-				"ok":  true,
-				"val": 20,
-				"bar": bson.A{
-					"foobar",
-					"barfoo",
-				},
-			},
-			bson.M{
-				"ok":  false,
-				"val": 100,
-				"bar": bson.A{
-					"foobar",
-					"barfoo",
-				},
-			},
-			bson.M{
-				"ok":  true,
-				"val": 120,
-				"bar": bson.A{
-					"foobar",
-					"barfoo",
-				},
-			},
-			bson.M{
-				"ok":  false,
-				"val": 20,
-				"bar": bson.A{
-					"foobar",
-					"barfoo",
-				},
-			},
+			bson.A{-10, 20, 30, -40, 4},
+			bson.A{10, -20, -30, 40},
 		},
 	}), bsonkit.ConvertList([]bson.M{
 		{
-			"valid.ok": true,
-			"valid.val": bson.M{
-				"$gt": 50,
-			},
-		},
-		{
-			"foobar": "foobar",
-		},
-	}), []string{
-		"foo.2.bar.0",
-	})
-
-	resolveTest(t, "foo.$[ok].$[ok2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
-		"foo": bson.A{
-			bson.A{
-				-10,
-				20,
-				30,
-				-40,
-				4,
-			},
-			bson.A{
-				10,
-				-20,
-				-30,
-				40,
-			},
-		},
-	}), bsonkit.ConvertList([]bson.M{
-		{
-			"ok": bson.M{
+			"af1": bson.M{
 				"$size": 5,
 			},
 		},
 		{
-			"ok2": bson.M{
+			"af2": bson.M{
 				"$lt": 0,
 			},
 		},
 	}), []string{
 		"foo.0.0",
 		"foo.0.3",
+	})
+
+	// complex expressions
+	resolveTest(t, "foo.$[af1].bar.$[af2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.M{
+				"ok":  true,
+				"val": 20,
+				"bar": bson.A{
+					"foo",
+					"bar",
+				},
+			},
+			bson.M{
+				"ok":  false,
+				"val": 100,
+				"bar": bson.A{
+					"foo",
+					"bar",
+				},
+			},
+			bson.M{
+				"ok":  true,
+				"val": 120,
+				"bar": bson.A{
+					"foo",
+					"bar",
+				},
+			},
+			bson.M{
+				"ok":  false,
+				"val": 20,
+				"bar": bson.A{
+					"foo",
+					"bar",
+				},
+			},
+		},
+	}), bsonkit.ConvertList([]bson.M{
+		{
+			"af1.ok": true,
+			"af1.val": bson.M{
+				"$gt": 50,
+			},
+		},
+		{
+			"af2": "foo",
+		},
+	}), []string{
+		"foo.2.bar.0",
 	})
 }
