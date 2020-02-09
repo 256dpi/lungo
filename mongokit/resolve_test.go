@@ -19,24 +19,6 @@ func resolveTest(t *testing.T, path string, query, doc bsonkit.Doc, arrayFilters
 	assert.ElementsMatch(t, expectedPaths, paths)
 }
 
-func TestDividePathStaticDynamicPart(t *testing.T) {
-	static, dynamic := dividePathStaticDynamicPart("foo.bar.$[baz].boo")
-	assert.Equal(t, static, "foo.bar")
-	assert.Equal(t, dynamic, "$[baz].boo")
-
-	static, dynamic = dividePathStaticDynamicPart("foo.bar.boo")
-	assert.Equal(t, static, "foo.bar.boo")
-	assert.Equal(t, dynamic, bsonkit.PathEnd)
-
-	static, dynamic = dividePathStaticDynamicPart("$[].foo.bar.boo")
-	assert.Equal(t, static, bsonkit.PathEnd)
-	assert.Equal(t, dynamic, "$[].foo.bar.boo")
-
-	static, dynamic = dividePathStaticDynamicPart("$")
-	assert.Equal(t, static, bsonkit.PathEnd)
-	assert.Equal(t, dynamic, "$")
-}
-
 func TestResolve(t *testing.T) {
 	// no operators
 	resolveTest(t, "foo", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
@@ -54,6 +36,10 @@ func TestResolve(t *testing.T) {
 		"foo.2.bar.7.baz",
 	})
 
+	// root operator
+	err := Resolve("$[]", nil, &bson.D{}, nil, nil)
+	assert.Error(t, err)
+
 	// single operator
 	resolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{1, 2, 3},
@@ -63,7 +49,7 @@ func TestResolve(t *testing.T) {
 		"foo.2",
 	})
 
-	// nested operator
+	// nested operators
 	resolveTest(t, "foo.$[].bar.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{
 			bson.M{

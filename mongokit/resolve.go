@@ -20,25 +20,28 @@ func Resolve(path string, query, doc bsonkit.Doc, arrayFilters bsonkit.List, cal
 }
 
 func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.List, callback func(path string) error) error {
-	// immediately yield path if it does not include positional operators
-	if !strings.ContainsRune(path, '$') {
-		return callback(path)
+	// split path
+	head, operator, tail := SplitDynamicPath(path)
+
+	// check head
+	if head == bsonkit.PathEnd {
+		return fmt.Errorf("root positional operators are not supported")
 	}
 
-	// get the parts
-	staticPart, dynamicPart := dividePathStaticDynamicPart(path)
-	operator := bsonkit.PathSegment(dynamicPart)
-	nextPath := bsonkit.PathReduce(dynamicPart)
+	// immediately yield path if it does not include positional operators
+	if operator == bsonkit.PathEnd {
+		return callback(head)
+	}
 
 	// get array
-	array, ok := bsonkit.Get(&doc, staticPart).(bson.A)
+	array, ok := bsonkit.Get(&doc, head).(bson.A)
 	if !ok {
-		return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
+		return fmt.Errorf("the value pointed in the path %q isn't a array", head)
 	}
 
 	// check implicit positional operator "$"
 	if operator == "$" {
-		return fmt.Errorf("implicit positional operator not supported")
+		return fmt.Errorf("the implicit positional operator is not supported")
 	}
 
 	// check operator
@@ -54,11 +57,11 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 		// construct path for all array elements
 		for i := range array {
 			// construct static path
-			currentPath := staticPart + "." + strconv.Itoa(i)
+			currentPath := head + "." + strconv.Itoa(i)
 
 			// append next path if available
-			if nextPath != bsonkit.PathEnd && nextPath != "" {
-				currentPath += "." + nextPath
+			if tail != bsonkit.PathEnd && tail != "" {
+				currentPath += "." + tail
 			}
 
 			// resolve path
@@ -97,11 +100,11 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 		}
 
 		// construct static path
-		currentPath := staticPart + "." + strconv.Itoa(i)
+		currentPath := head + "." + strconv.Itoa(i)
 
 		// append next path if available
-		if nextPath != bsonkit.PathEnd && nextPath != "" {
-			currentPath += "." + nextPath
+		if tail != bsonkit.PathEnd && tail != "" {
+			currentPath += "." + tail
 		}
 
 		// resolve path
@@ -112,19 +115,4 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	}
 
 	return nil
-}
-
-func dividePathStaticDynamicPart(remainingPath string) (string, string) {
-	if strings.HasPrefix(remainingPath, "$") || remainingPath == bsonkit.PathEnd || remainingPath == "" {
-		return bsonkit.PathEnd, remainingPath
-	}
-
-	pathKey := bsonkit.PathSegment(remainingPath)
-	subStaticPart, subDynamicPart := dividePathStaticDynamicPart(bsonkit.PathReduce(remainingPath))
-
-	if subStaticPart == bsonkit.PathEnd {
-		return pathKey, subDynamicPart
-	}
-
-	return pathKey + "." + subStaticPart, subDynamicPart
 }
