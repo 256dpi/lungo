@@ -125,7 +125,7 @@ func TestApply(t *testing.T) {
 }
 
 func TestApplyPositionalOperators(t *testing.T) {
-	// valid update, single positional operator
+	// single positional operator
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
 			"bar",
@@ -148,7 +148,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 		}))
 	})
 
-	// valid update, double positional operator
+	// multiple adjacent positional operators
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
 			bson.A{"x", "y", "z"},
@@ -169,7 +169,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 		}))
 	})
 
-	// valid update, double concatenated positional operators
+	// multiple nested positional operators
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
 			bson.M{
@@ -411,6 +411,23 @@ func TestApplyRename(t *testing.T) {
 		}, nil, bsonkit.Convert(bson.M{
 			"foo": bson.M{
 				"bar": "baz",
+			},
+		}))
+	})
+
+	// ignored array values
+	applyTest(t, false, bson.M{
+		"foo": bson.A{
+			bson.M{"bar": "baz"},
+		},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$rename": bson.M{
+				"foo.0.bar": "foo.0.baz",
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{
+				bson.M{"bar": "baz"},
 			},
 		}))
 	})
