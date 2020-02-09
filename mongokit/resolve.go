@@ -23,30 +23,30 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	// split path
 	head, operator, tail := SplitDynamicPath(path)
 
-	// check head
-	if head == bsonkit.PathEnd {
-		return fmt.Errorf("root positional operators are not supported")
-	}
-
 	// immediately yield path if it does not include positional operators
 	if operator == bsonkit.PathEnd {
 		return callback(head)
 	}
 
+	// return error if path begins with a positional operator
+	if head == bsonkit.PathEnd {
+		return fmt.Errorf("unsupportefd positional operator %q at the beginning of the path %q", operator, path)
+	}
+
 	// get array
 	array, ok := bsonkit.Get(&doc, head).(bson.A)
 	if !ok {
-		return fmt.Errorf("the value pointed in the path %q isn't a array", head)
+		return fmt.Errorf("the value found ad the path %q isn't an array", head)
 	}
 
 	// check implicit positional operator "$"
 	if operator == "$" {
-		return fmt.Errorf("the implicit positional operator is not supported")
+		return fmt.Errorf("the implicit positional operator is not yet supported")
 	}
 
 	// check operator
 	if !strings.HasPrefix(operator, "$[") || !strings.HasSuffix(operator, "]") {
-		return fmt.Errorf("the positional operator %q is not supported", operator)
+		return fmt.Errorf("unknown positional operator %q", operator)
 	}
 
 	// get identifier
@@ -56,16 +56,14 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	if identifier == "" {
 		// construct path for all array elements
 		for i := range array {
-			// construct static path
-			currentPath := head + "." + strconv.Itoa(i)
-
-			// append next path if available
-			if tail != bsonkit.PathEnd && tail != "" {
-				currentPath += "." + tail
+			// construct next path
+			nextPath := head + "." + strconv.Itoa(i)
+			if tail != bsonkit.PathEnd {
+				nextPath += "." + tail
 			}
 
 			// resolve path
-			err := resolve(currentPath, query, doc, arrayFilters, callback)
+			err := resolve(nextPath, query, doc, arrayFilters, callback)
 			if err != nil {
 				return err
 			}
@@ -99,16 +97,14 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 			continue
 		}
 
-		// construct static path
-		currentPath := head + "." + strconv.Itoa(i)
-
-		// append next path if available
-		if tail != bsonkit.PathEnd && tail != "" {
-			currentPath += "." + tail
+		// construct next path
+		nextPath := head + "." + strconv.Itoa(i)
+		if tail != bsonkit.PathEnd {
+			nextPath += "." + tail
 		}
 
 		// resolve path
-		err := resolve(currentPath, query, doc, arrayFilters, callback)
+		err := resolve(nextPath, query, doc, arrayFilters, callback)
 		if err != nil {
 			return err
 		}
