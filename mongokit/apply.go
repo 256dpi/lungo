@@ -104,12 +104,15 @@ func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) err
 }
 
 func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
-	// TODO: implement resolve() support
-
 	// get new path
 	newPath, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("%s: expected string", name)
+	}
+
+	// ignore indexed paths
+	if IndexedPath(path) || IndexedPath(newPath) {
+		return nil
 	}
 
 	// get old value
