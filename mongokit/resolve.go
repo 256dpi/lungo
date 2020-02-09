@@ -25,20 +25,18 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 		return callback(path)
 	}
 
-	// Get the parts
+	// get the parts
 	staticPart, dynamicPart := dividePathStaticDynamicPart(path)
 	operator := bsonkit.PathSegment(dynamicPart)
 	nextPath := bsonkit.PathReduce(dynamicPart)
 
-	value := bsonkit.Get(&doc, staticPart)
-
 	// get array
-	array, ok := value.(bson.A)
+	array, ok := bsonkit.Get(&doc, staticPart).(bson.A)
 	if !ok {
 		return fmt.Errorf("the value pointed in the path %q isn't a array", staticPart)
 	}
 
-	// check implicit positional operator
+	// check implicit positional operator "$"
 	if operator == "$" {
 		return fmt.Errorf("implicit positional operator not supported")
 	}
@@ -51,7 +49,7 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	// get identifier
 	identifier := operator[2 : len(operator)-1]
 
-	// handle "all" positional operator: $[]
+	// handle "all" positional operator "$[]"
 	if identifier == "" {
 		// construct path for all array elements
 		for i := range array {
@@ -73,14 +71,14 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 		return nil
 	}
 
-	// handle identified positional operator: $[<identifier>]
-	for i, val := range array {
-		// check if the current item match don't the arrayFilters with identifier name
+	// handle identified positional operator "$[<identifier>]"
+	for i, item := range array {
+		// match item against provided array filters
 		matched := false
 		for _, filter := range arrayFilters {
-			// TODO: Add filter checking!
+			// match item
 			ok, err := Match(&bson.D{
-				bson.E{Key: identifier, Value: val},
+				bson.E{Key: identifier, Value: item},
 			}, filter)
 			if err != nil {
 				return err
