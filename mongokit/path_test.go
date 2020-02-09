@@ -8,6 +8,16 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+func TestIndexedPath(t *testing.T) {
+	assert.False(t, IndexedPath(""))
+	assert.False(t, IndexedPath(bsonkit.PathEnd))
+	assert.False(t, IndexedPath("foo.bar"))
+	assert.False(t, IndexedPath("foo1.2bar"))
+	assert.True(t, IndexedPath("0.foo.bar"))
+	assert.True(t, IndexedPath("foo.1.bar"))
+	assert.True(t, IndexedPath("foo.bar.2"))
+}
+
 func TestSplitDynamicPath(t *testing.T) {
 	head, operator, tail := SplitDynamicPath("foo.bar.$[baz].quz")
 	assert.Equal(t, "foo.bar", head)
