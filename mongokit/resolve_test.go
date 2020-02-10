@@ -203,3 +203,34 @@ func TestResolveArrayFilters(t *testing.T) {
 		"foo.2.bar.0",
 	})
 }
+
+func BenchmarkResolve(b *testing.B) {
+	doc := bsonkit.Convert(bson.M{
+		"foo": bson.A{
+			bson.M{
+				"bar": bson.A{1, 2, 3, 4, 5},
+			},
+			bson.M{
+				"bar": bson.A{1, 2, 3, 4, 5},
+			},
+			bson.M{
+				"bar": bson.A{1, 2, 3, 4, 5},
+			},
+			bson.M{
+				"bar": bson.A{1, 2, 3, 4, 5},
+			},
+			bson.M{
+				"bar": bson.A{1, 2, 3, 4, 5},
+			},
+		},
+	})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = Resolve("foo.$[].bar.$[]", nil, doc, nil, func(_ string) error {
+			return nil
+		})
+	}
+}
