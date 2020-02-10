@@ -2,7 +2,6 @@ package mongokit
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -54,16 +53,27 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 
 	// handle "all" positional operator "$[]"
 	if identifier == "" {
+		// prepare builder
+		builder := NewPathBuilder(len(head) + 22 + len(tail))
+
+		// add head
+		fixed := builder.AddSegment(head)
+
 		// construct path for all array elements
 		for i := range array {
-			// construct next path
-			nextPath := head + "." + strconv.Itoa(i)
+			// truncate builder
+			builder.Truncate(fixed)
+
+			// append index
+			builder.AddIndex(i)
+
+			// append tail if available
 			if tail != bsonkit.PathEnd {
-				nextPath += "." + tail
+				builder.AddSegment(tail)
 			}
 
 			// resolve path
-			err := resolve(nextPath, query, doc, arrayFilters, callback)
+			err := resolve(builder.String(), query, doc, arrayFilters, callback)
 			if err != nil {
 				return err
 			}
@@ -71,6 +81,12 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 
 		return nil
 	}
+
+	// prepare builder
+	builder := NewPathBuilder(len(head) + 22 + len(tail))
+
+	// add head
+	fixed := builder.AddSegment(head)
 
 	// handle identified positional operator "$[<identifier>]"
 	for i, item := range array {
@@ -97,14 +113,19 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 			continue
 		}
 
-		// construct next path
-		nextPath := head + "." + strconv.Itoa(i)
+		// truncate builder
+		builder.Truncate(fixed)
+
+		// append index
+		builder.AddIndex(i)
+
+		// append tail if available
 		if tail != bsonkit.PathEnd {
-			nextPath += "." + tail
+			builder.AddSegment(tail)
 		}
 
 		// resolve path
-		err := resolve(nextPath, query, doc, arrayFilters, callback)
+		err := resolve(builder.String(), query, doc, arrayFilters, callback)
 		if err != nil {
 			return err
 		}
