@@ -36,10 +36,6 @@ func TestResolve(t *testing.T) {
 		"foo.2.bar.7.baz",
 	})
 
-	// root operator
-	err := Resolve("$[]", nil, &bson.D{}, nil, nil)
-	assert.Error(t, err)
-
 	// single operator
 	resolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
 		"foo": bson.A{1, 2, 3},
@@ -202,6 +198,30 @@ func TestResolveArrayFilters(t *testing.T) {
 	}), []string{
 		"foo.2.bar.0",
 	})
+}
+
+func TestResolverErrors(t *testing.T) {
+	err := Resolve("$[]", nil, &bson.D{}, nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, `unsupported root positional operator "$[]"`, err.Error())
+
+	err = Resolve("bar.$[]", nil, bsonkit.Convert(bson.M{
+		"bar": 1,
+	}), nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, `expected array at "bar" to match against positional operator`, err.Error())
+
+	err = Resolve("bar.$", nil, bsonkit.Convert(bson.M{
+		"bar": bson.A{},
+	}), nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, `the implicit positional operator is not yet supported`, err.Error())
+
+	err = Resolve("bar.$foo", nil, bsonkit.Convert(bson.M{
+		"bar": bson.A{},
+	}), nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, `unknown positional operator "$foo"`, err.Error())
 }
 
 func BenchmarkResolve(b *testing.B) {
