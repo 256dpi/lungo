@@ -29,13 +29,13 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 
 	// return error if path begins with a positional operator
 	if head == bsonkit.PathEnd {
-		return fmt.Errorf("unsupportefd positional operator %q at the beginning of the path %q", operator, path)
+		return fmt.Errorf("unsupported root positional operator %q", operator)
 	}
 
 	// get array
 	array, ok := bsonkit.Get(&doc, head).(bson.A)
 	if !ok {
-		return fmt.Errorf("the value found ad the path %q isn't an array", head)
+		return fmt.Errorf("expected array at %q to match against positional operator", head)
 	}
 
 	// check implicit positional operator "$"
