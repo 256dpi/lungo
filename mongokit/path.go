@@ -7,12 +7,17 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-const numbers = "1234567890"
-
 // IndexedPath returns true if the specified path contains array indices.
 func IndexedPath(path string) bool {
-	// fast check
-	if !strings.ContainsAny(path, numbers) {
+	// preliminary check
+	hasNumber := false
+	for _, s := range path {
+		if s >= '0' && s <= '9' {
+			hasNumber = true
+			break
+		}
+	}
+	if !hasNumber {
 		return false
 	}
 
