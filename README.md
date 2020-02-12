@@ -125,7 +125,7 @@ operators:
 
 - `$set`, `$setOnInsert`, `$unset`, `$rename`
 - `$inc`, `$mul`, `$max`, `$min`, (`$push`)
-- `$currentDate`
+- `$currentDate`, `$[]`, `$[<identifier>]`
 
 Finally, the `mongokit.Project` function currently supports the following
 projection operators:

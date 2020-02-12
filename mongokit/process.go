@@ -8,8 +8,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Add support for positional operators `$` (apply and project), `$[]` and
-//  `$[<identifier>]`.
+// TODO: Add support for positional operator `$` (apply and project).
 
 // Operator is a generic operator.
 type Operator func(ctx Context, doc bsonkit.Doc, op, path string, v interface{}) error
