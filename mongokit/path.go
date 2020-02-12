@@ -3,7 +3,6 @@ package mongokit
 import (
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -111,6 +110,5 @@ func (b *PathBuilder) Truncate(len int) {
 
 // String will return the built path.
 func (b *PathBuilder) String() string {
-	buf := b.buf[:b.len]
-	return *(*string)(unsafe.Pointer(&buf))
+	return string(b.buf[:b.len])
 }
