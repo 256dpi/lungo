@@ -50,9 +50,9 @@ enjoy working with SQLite as a simple alternative to bigger SQL databases. It
 allows running tests without setting up a database or even small production
 apps that write their data to a single backed-up file.
 
-Lungo wants to offer a similar experience by implementing a full MongoDB 
+Lungo wants to offer a similar experience by implementing a full MongoDB
 compatible embeddable database that persists data in a single file. The
-project aims to provide drop-in compatibility with the API exported by the 
+project aims to provide drop-in compatibility with the API exported by the
 official Go driver. This way, applications may use lungo for running their
 tests or even low-write production deployments without big code changes.
 
@@ -125,7 +125,7 @@ operators:
 
 - `$set`, `$setOnInsert`, `$unset`, `$rename`
 - `$inc`, `$mul`, `$max`, `$min`, (`$push`)
-- `$currentDate`, `$[]`, `$[<identifier>]`
+- `$pop`, `$currentDate`, `$[]`, `$[<identifier>]`
 
 Finally, the `mongokit.Project` function currently supports the following
 projection operators:
