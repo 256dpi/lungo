@@ -428,3 +428,36 @@ func Push(doc Doc, path string, value interface{}) (interface{}, error) {
 
 	return field, nil
 }
+
+// Pop will remove the first or last element from the array at the location in
+// the document specified byt path and return the updated array. If the array is
+// empty, the value is missing or not an array, it will do nothing and return
+// Missing.
+func Pop(doc Doc, path string, last bool) (interface{}, error) {
+	// get field
+	field := Get(doc, path)
+
+	// get and check array
+	array, ok := field.(bson.A)
+	if !ok || len(array) == 0 {
+		return Missing, nil
+	}
+
+	// pop last or first value
+	var res interface{}
+	if last {
+		res = array[len(array)-1]
+		field = array[:len(array)-1]
+	} else {
+		res = array[0]
+		field = array[1:]
+	}
+
+	// update field
+	_, err := Put(doc, path, field, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

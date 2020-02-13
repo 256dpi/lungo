@@ -605,6 +605,49 @@ func TestPush(t *testing.T) {
 	}), doc)
 }
 
+func TestPop(t *testing.T) {
+	doc := Convert(bson.M{
+		"bar": "42",
+		"foo": bson.A{7, 13, 42},
+	})
+
+	// pop first element
+	res, err := Pop(doc, "foo", false)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(7), res)
+	assert.Equal(t, Convert(bson.M{
+		"bar": "42",
+		"foo": bson.A{13, 42},
+	}), doc)
+
+	// pop last element
+	res, err = Pop(doc, "foo", true)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(42), res)
+	assert.Equal(t, Convert(bson.M{
+		"bar": "42",
+		"foo": bson.A{13},
+	}), doc)
+
+	// pop first element
+	res, err = Pop(doc, "foo", false)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(13), res)
+	assert.Equal(t, Convert(bson.M{
+		"bar": "42",
+		"foo": bson.A{},
+	}), doc)
+
+	// non-array field
+	res, err = Pop(doc, "bar", false)
+	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
+	assert.Equal(t, Convert(bson.M{
+		"bar": "42",
+		"foo": bson.A{},
+	}), doc)
+}
+
 func BenchmarkGet(b *testing.B) {
 	b.ReportAllocs()
 
