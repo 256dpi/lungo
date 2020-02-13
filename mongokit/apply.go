@@ -101,11 +101,12 @@ func applySetOnInsert(ctx Context, doc bsonkit.Doc, _, path string, v interface{
 func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) error {
 	// remove value
 	res := bsonkit.Unset(doc, path)
-
-	// record change if value existed
-	if res != bsonkit.Missing {
-		ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
+	if res == bsonkit.Missing {
+		return nil
 	}
+
+	// record change
+	ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
 
 	return nil
 }
@@ -122,18 +123,10 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 		return nil
 	}
 
-	// get old value
-	value := bsonkit.Get(doc, path)
+	// unset old value
+	value := bsonkit.Unset(doc, path)
 	if value == bsonkit.Missing {
 		return nil
-	}
-
-	// unset old value
-	res := bsonkit.Unset(doc, path)
-
-	// record change if value existed
-	if res != bsonkit.Missing {
-		ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
 	}
 
 	// set new value
@@ -142,7 +135,8 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 		return err
 	}
 
-	// record change
+	// record changes
+	ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
 	ctx.Value.(*Changes).Updated[newPath] = value
 
 	return nil
