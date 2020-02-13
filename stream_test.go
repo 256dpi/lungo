@@ -28,7 +28,9 @@ func TestStream(t *testing.T) {
 
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
-			"foo": "bar",
+			"foo": bson.M{
+				"bar": "baz",
+			},
 		})
 		assert.NoError(t, err)
 
@@ -48,7 +50,9 @@ func TestStream(t *testing.T) {
 			},
 			"fullDocument": bson.M{
 				"_id": id1,
-				"foo": "bar",
+				"foo": bson.M{
+					"bar": "baz",
+				},
 			},
 			"ns": bson.M{
 				"db":   c.Database().Name(),
@@ -66,7 +70,9 @@ func TestStream(t *testing.T) {
 			"_id": id1,
 		}, bson.M{
 			"_id": id1,
-			"foo": "baz",
+			"foo": bson.M{
+				"bar": "quz",
+			},
 		})
 		assert.NoError(t, err)
 
@@ -86,7 +92,9 @@ func TestStream(t *testing.T) {
 			},
 			"fullDocument": bson.M{
 				"_id": id1,
-				"foo": "baz",
+				"foo": bson.M{
+					"bar": "quz",
+				},
 			},
 			"ns": bson.M{
 				"db":   c.Database().Name(),
@@ -98,13 +106,13 @@ func TestStream(t *testing.T) {
 		ret = stream.TryNext(timeout(50))
 		assert.False(t, ret)
 
-		/* update */
+		/* update (change field) */
 
 		_, err = c.UpdateOne(nil, bson.M{
 			"_id": id1,
 		}, bson.M{
 			"$set": bson.M{
-				"foo": "quz",
+				"foo.bar": "baz",
 			},
 		})
 		assert.NoError(t, err)
@@ -125,7 +133,9 @@ func TestStream(t *testing.T) {
 			},
 			"fullDocument": bson.M{
 				"_id": id1,
-				"foo": "quz",
+				"foo": bson.M{
+					"bar": "baz",
+				},
 			},
 			"ns": bson.M{
 				"db":   c.Database().Name(),
@@ -134,9 +144,54 @@ func TestStream(t *testing.T) {
 			"operationType": "update",
 			"updateDescription": bson.M{
 				"updatedFields": bson.M{
-					"foo": "quz",
+					"foo.bar": "baz",
 				},
 				"removedFields": bson.A{},
+			},
+		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
+		/* update (remove field) */
+
+		_, err = c.UpdateOne(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"$unset": bson.M{
+				"foo.bar": "",
+			},
+		})
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.True(t, ret)
+
+		event = nil
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": bson.M{},
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "update",
+			"updateDescription": bson.M{
+				"updatedFields": bson.M{},
+				"removedFields": bson.A{
+					"foo.bar",
+				},
 			},
 		}, event)
 
