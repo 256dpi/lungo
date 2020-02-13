@@ -361,9 +361,8 @@ func TestStreamArrayChanges(t *testing.T) {
 		_, err = c.UpdateOne(nil, bson.M{
 			"_id": id1,
 		}, bson.M{
-			// TODO: Test with $pop.
-			"$unset": bson.M{
-				"foo.0": "",
+			"$pop": bson.M{
+				"foo": -1,
 			},
 		})
 		assert.NoError(t, err)
@@ -385,7 +384,6 @@ func TestStreamArrayChanges(t *testing.T) {
 			"fullDocument": bson.M{
 				"_id": id1,
 				"foo": bson.A{
-					nil,
 					bson.M{
 						"bar": "baz",
 					},
@@ -397,10 +395,14 @@ func TestStreamArrayChanges(t *testing.T) {
 			},
 			"operationType": "update",
 			"updateDescription": bson.M{
-				"updatedFields": bson.M{},
-				"removedFields": bson.A{
-					"foo.0",
+				"updatedFields": bson.M{
+					"foo": bson.A{
+						bson.M{
+							"bar": "baz",
+						},
+					},
 				},
+				"removedFields": bson.A{},
 			},
 		}, event)
 
