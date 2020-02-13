@@ -837,7 +837,7 @@ func TestApplyPush(t *testing.T) {
 	assert.Equal(t, &Changes{
 		Upsert: true,
 		Updated: map[string]interface{}{
-			"foo": bson.A{"bar", "baz"},
+			"foo.1": "baz",
 		},
 		Removed: map[string]interface{}{},
 	}, changes)

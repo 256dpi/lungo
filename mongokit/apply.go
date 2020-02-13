@@ -295,11 +295,11 @@ func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 		return err
 	}
 
-	// compute added path
-	addedPath := path + "." + strconv.Itoa(len(res.(bson.A))-1)
-
-	// record change
-	ctx.Value.(*Changes).Updated[addedPath] = v
+	// record change if result is an array
+	if array, ok := res.(bson.A); ok {
+		addedPath := path + "." + strconv.Itoa(len(array)-1)
+		ctx.Value.(*Changes).Updated[addedPath] = v
+	}
 
 	return nil
 }
