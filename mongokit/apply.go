@@ -38,7 +38,7 @@ type Changes struct {
 	Updated map[string]interface{}
 
 	// The fields that have been removed from the document.
-	Removed map[string]interface{}
+	Removed []string
 }
 
 // Apply will apply a MongoDB update document on a document using the various
@@ -49,7 +49,7 @@ func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.Lis
 	changes := &Changes{
 		Upsert:  upsert,
 		Updated: map[string]interface{}{},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}
 
 	// update document according to update
@@ -104,7 +104,7 @@ func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) err
 
 	// record change if value existed
 	if res != bsonkit.Missing {
-		ctx.Value.(*Changes).Removed[path] = res
+		ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
 	}
 
 	return nil
@@ -133,7 +133,7 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 
 	// record change if value existed
 	if res != bsonkit.Missing {
-		ctx.Value.(*Changes).Removed[path] = res
+		ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
 	}
 
 	// set new value

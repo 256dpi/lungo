@@ -257,7 +257,7 @@ func TestApplySet(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo": "baz",
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -329,7 +329,7 @@ func TestApplySetOnInsert(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo": "baz",
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -369,8 +369,8 @@ func TestApplyUnset(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
 		Updated: map[string]interface{}{},
-		Removed: map[string]interface{}{
-			"foo.bar": "baz",
+		Removed: []string{
+			"foo.bar",
 		},
 	}, changes)
 }
@@ -447,8 +447,8 @@ func TestApplyRename(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.baz": "baz",
 		},
-		Removed: map[string]interface{}{
-			"foo.bar": "baz",
+		Removed: []string{
+			"foo.bar",
 		},
 	}, changes)
 }
@@ -509,7 +509,7 @@ func TestApplyInc(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.bar": int64(44),
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -569,7 +569,7 @@ func TestApplyMul(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.bar": int64(84),
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -629,7 +629,7 @@ func TestApplyMax(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.bar": int32(44),
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -689,7 +689,7 @@ func TestApplyMin(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.bar": int32(21),
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -774,7 +774,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo": changes.Updated["foo"],
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -839,7 +839,7 @@ func TestApplyPush(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo.1": "baz",
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }
 
@@ -897,6 +897,6 @@ func TestApplyPop(t *testing.T) {
 		Updated: map[string]interface{}{
 			"foo": bson.A{"bar"},
 		},
-		Removed: map[string]interface{}{},
+		Removed: []string{},
 	}, changes)
 }

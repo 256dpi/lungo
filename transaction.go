@@ -680,16 +680,9 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 
 	// add changes
 	if changes != nil {
-		// collect remove fields
-		removed := make([]string, 0, len(changes.Removed))
-		for field := range changes.Removed {
-			removed = append(removed, field)
-		}
-
-		// add update description
 		event["updateDescription"] = bson.M{
 			"updatedFields": changes.Updated,
-			"removedFields": removed,
+			"removedFields": changes.Removed,
 		}
 	}
 
