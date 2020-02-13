@@ -842,3 +842,61 @@ func TestApplyPush(t *testing.T) {
 		Removed: map[string]interface{}{},
 	}, changes)
 }
+
+func TestApplyPop(t *testing.T) {
+	// unsupported value
+	applyTest(t, false, bson.M{
+		"foo": bson.A{"bar", "baz"},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"foo": 0,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{"bar", "baz"},
+		}))
+	})
+
+	// remove first element
+	applyTest(t, false, bson.M{
+		"foo": bson.A{"bar", "baz"},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"foo": -1,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{"baz"},
+		}))
+	})
+
+	// remove last value
+	applyTest(t, false, bson.M{
+		"foo": bson.A{"bar", "baz"},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"foo": 1,
+			},
+		}, nil, bsonkit.Convert(bson.M{
+			"foo": bson.A{"bar"},
+		}))
+	})
+
+	// changes
+	changes, err := Apply(bsonkit.Convert(bson.M{
+		"foo": bson.A{"bar", "baz"},
+	}), nil, bsonkit.Convert(bson.M{
+		"$pop": bson.M{
+			"foo": 1,
+		},
+	}), false, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, &Changes{
+		Upsert: false,
+		Updated: map[string]interface{}{
+			"foo": bson.A{"bar"},
+		},
+		Removed: map[string]interface{}{},
+	}, changes)
+}

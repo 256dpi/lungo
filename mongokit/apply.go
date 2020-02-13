@@ -26,12 +26,18 @@ func init() {
 	FieldUpdateOperators["$min"] = applyMin
 	FieldUpdateOperators["$currentDate"] = applyCurrentDate
 	FieldUpdateOperators["$push"] = applyPush
+	FieldUpdateOperators["$pop"] = applyPop
 }
 
 // Changes describes the applied changes to a document.
 type Changes struct {
-	Upsert  bool
+	// Whether the operation was an upsert.
+	Upsert bool
+
+	// The fields that have been added or changed in the document.
 	Updated map[string]interface{}
+
+	// The fields that have been removed from the document.
 	Removed map[string]interface{}
 }
 
@@ -300,6 +306,32 @@ func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 		addedPath := path + "." + strconv.Itoa(len(array)-1)
 		ctx.Value.(*Changes).Updated[addedPath] = v
 	}
+
+	return nil
+}
+
+func applyPop(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	// check value
+	last := false
+	if bsonkit.Compare(v, int64(1)) == 0 {
+		last = true
+	} else if bsonkit.Compare(v, int64(-1)) != 0 {
+		return nil
+	}
+
+	// pop element
+	res, err := bsonkit.Pop(doc, path, last)
+	if err != nil {
+		return err
+	}
+
+	// check result
+	if res == bsonkit.Missing {
+		return nil
+	}
+
+	// record change
+	ctx.Value.(*Changes).Updated[path] = bsonkit.Get(doc, path)
 
 	return nil
 }
