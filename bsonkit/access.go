@@ -404,7 +404,8 @@ func Multiply(doc Doc, path string, multiplier interface{}) (interface{}, error)
 
 // Push will add the value to the array at the location in the document
 // specified by path and return the new value. If the value is missing, the
-// value is added to a new array.
+// value is added to a new array. If the value is not an array, it will do
+// nothing and return the existing value.
 func Push(doc Doc, path string, value interface{}) (interface{}, error) {
 	// get field
 	field := Get(doc, path)
