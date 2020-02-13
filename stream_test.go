@@ -242,6 +242,184 @@ func TestStream(t *testing.T) {
 	})
 }
 
+func TestStreamArrayChanges(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		ret := stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
+		id1 := primitive.NewObjectID()
+
+		/* insert */
+
+		_, err = c.InsertOne(nil, bson.M{
+			"_id": id1,
+			"foo": bson.A{
+				bson.M{
+					"foo": "bar",
+				},
+			},
+		})
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.True(t, ret)
+
+		var event bson.M
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": bson.A{
+					bson.M{
+						"foo": "bar",
+					},
+				},
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "insert",
+		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
+		/* update (change field) */
+
+		_, err = c.UpdateOne(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			"$push": bson.M{
+				"foo": bson.M{
+					"bar": "baz",
+				},
+			},
+		})
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.True(t, ret)
+
+		event = nil
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": bson.A{
+					bson.M{
+						"foo": "bar",
+					},
+					bson.M{
+						"bar": "baz",
+					},
+				},
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "update",
+			"updateDescription": bson.M{
+				"updatedFields": bson.M{
+					"foo.1": bson.M{
+						"bar": "baz",
+					},
+				},
+				"removedFields": bson.A{},
+			},
+		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
+		/* update (remove field) */
+
+		_, err = c.UpdateOne(nil, bson.M{
+			"_id": id1,
+		}, bson.M{
+			// TODO: Test with $pop.
+			"$unset": bson.M{
+				"foo.0": "",
+			},
+		})
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.True(t, ret)
+
+		event = nil
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, event["_id"])
+		assert.NotEmpty(t, event["clusterTime"])
+		assert.Equal(t, bson.M{
+			"_id":         event["_id"],
+			"clusterTime": event["clusterTime"],
+			"documentKey": bson.M{
+				"_id": id1,
+			},
+			"fullDocument": bson.M{
+				"_id": id1,
+				"foo": bson.A{
+					nil,
+					bson.M{
+						"bar": "baz",
+					},
+				},
+			},
+			"ns": bson.M{
+				"db":   c.Database().Name(),
+				"coll": c.Name(),
+			},
+			"operationType": "update",
+			"updateDescription": bson.M{
+				"updatedFields": bson.M{},
+				"removedFields": bson.A{
+					"foo.0",
+				},
+			},
+		}, event)
+
+		ret = stream.TryNext(timeout(50))
+		assert.False(t, ret)
+
+		/* close */
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		ret = stream.Next(timeout(50))
+		assert.False(t, ret)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+	})
+}
+
 func TestStreamAsync(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))

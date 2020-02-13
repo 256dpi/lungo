@@ -2,6 +2,7 @@ package mongokit
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -288,14 +289,17 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// TODO: Add support for the modifiers {$each, $slice, $sort, $position}
 
-	// add value
+	// push value
 	res, err := bsonkit.Push(doc, path, v)
 	if err != nil {
 		return err
 	}
 
+	// compute added path
+	addedPath := path + "." + strconv.Itoa(len(res.(bson.A))-1)
+
 	// record change
-	ctx.Value.(*Changes).Updated[path] = res
+	ctx.Value.(*Changes).Updated[addedPath] = v
 
 	return nil
 }
