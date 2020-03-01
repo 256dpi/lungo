@@ -94,7 +94,7 @@ func TestApply(t *testing.T) {
 		// not an operator
 		fn(bson.M{
 			"foo": "bar",
-		}, nil, `unknown top level operator "foo"`)
+		}, nil, `missing default operator`)
 
 		// unknown operator
 		fn(bson.M{

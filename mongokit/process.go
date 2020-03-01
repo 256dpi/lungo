@@ -41,7 +41,7 @@ type Context struct {
 }
 
 // Process will process a document with a query using the MongoDB operator
-// algorithm.
+// processing algorithm.
 func Process(ctx Context, doc bsonkit.Doc, query bson.D, prefix string, root bool) error {
 	// process all expressions (implicit and)
 	for _, exp := range query {
@@ -57,11 +57,9 @@ func Process(ctx Context, doc bsonkit.Doc, query bson.D, prefix string, root boo
 // ProcessExpression will process a document with a query using the MongoDB
 // operator algorithm.
 func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E, root bool) error {
-	// check for top level operators which may appear together with field
-	// expressions in the document, or force top level operators if there are
-	// no expression operators
-	if (len(pair.Key) > 0 && pair.Key[0] == '$') || len(ctx.Expression) == 0 {
-		// lookup top level operator
+	// handle operator
+	if len(pair.Key) > 0 && pair.Key[0] == '$' {
+		// lookup operator
 		var operator Operator
 		if root {
 			operator = ctx.TopLevel[pair.Key]
@@ -79,7 +77,7 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 			}
 		}
 
-		// call simple operator if not a multi top level
+		// call operator if not a multi top level
 		if !(root && ctx.MultiTopLevel) {
 			return operator(ctx, doc, pair.Key, prefix, pair.Value)
 		}
