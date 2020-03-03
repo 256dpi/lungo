@@ -90,6 +90,12 @@ func convertValue(v interface{}) interface{} {
 			a[i] = convertValue(item)
 		}
 		return a
+	case []primitive.ObjectID:
+		a := make(bson.A, len(value))
+		for i, item := range value {
+			a[i] = item
+		}
+		return a
 	case nil, int32, int64, float64, string, bool:
 		return value
 	case int:
