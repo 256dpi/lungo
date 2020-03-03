@@ -71,6 +71,12 @@ func convertValue(v interface{}) interface{} {
 			a[i] = item
 		}
 		return a
+	case []bson.M:
+		a := make(bson.A, len(value))
+		for i, item := range value {
+			a[i] = convertValue(item)
+		}
+		return a
 	case bson.D:
 		d := make(bson.D, len(value))
 		for i, item := range value {
@@ -78,6 +84,12 @@ func convertValue(v interface{}) interface{} {
 			d[i].Value = convertValue(item.Value)
 		}
 		return d
+	case []bson.D:
+		a := make(bson.A, len(value))
+		for i, item := range value {
+			a[i] = convertValue(item)
+		}
+		return a
 	case nil, int32, int64, float64, string, bool:
 		return value
 	case int:
