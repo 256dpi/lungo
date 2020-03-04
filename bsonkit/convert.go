@@ -103,8 +103,20 @@ func convertValue(v interface{}) interface{} {
 	case primitive.Null, primitive.ObjectID, primitive.DateTime,
 		primitive.Timestamp, primitive.Regex, primitive.Binary:
 		return value
+	case *primitive.ObjectID:
+		if value != nil {
+			return *value
+		} else {
+			return nil
+		}
 	case time.Time:
 		return primitive.NewDateTimeFromTime(value.UTC())
+	case *time.Time:
+		if value != nil {
+			return primitive.NewDateTimeFromTime(value.UTC())
+		} else {
+			return nil
+		}
 	default:
 		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
 	}
