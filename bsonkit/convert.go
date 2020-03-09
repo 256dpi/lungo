@@ -13,7 +13,13 @@ import (
 // to be a bson.M or bson.D composed of standard types.
 func MustConvert(v interface{}) Doc {
 	// convert value
-	doc, ok := convertValue(v).(bson.D)
+	res, err := convertValue(v)
+	if err != nil {
+		panic(err)
+	}
+
+	// convert value
+	doc, ok := res.(bson.D)
 	if !ok {
 		panic(`bsonkit: expected conversion to result in a "bson.D"`)
 	}
@@ -25,7 +31,10 @@ func MustConvert(v interface{}) Doc {
 // bson.A of bson.M or bson.D elements composed of standard types.
 func MustConvertList(v interface{}) List {
 	// convert value
-	doc := convertValue(v)
+	doc, err := convertValue(v)
+	if err != nil {
+		panic(err)
+	}
 
 	// get array
 	array, ok := doc.(bson.A)
@@ -46,8 +55,9 @@ func MustConvertList(v interface{}) List {
 	return list
 }
 
-func convertValue(v interface{}) interface{} {
+func convertValue(v interface{}) (interface{}, error) {
 	// convert recursively
+	var err error
 	switch value := v.(type) {
 	case bson.M:
 		return convertMap(value)
@@ -56,79 +66,99 @@ func convertValue(v interface{}) interface{} {
 	case bson.A:
 		a := make(bson.A, len(value))
 		for i, item := range value {
-			a[i] = convertValue(item)
+			a[i], err = convertValue(item)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return a
+		return a, nil
 	case []interface{}:
 		a := make(bson.A, len(value))
 		for i, item := range value {
-			a[i] = convertValue(item)
+			a[i], err = convertValue(item)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return a
+		return a, nil
 	case []string:
 		a := make(bson.A, len(value))
 		for i, item := range value {
 			a[i] = item
 		}
-		return a
+		return a, nil
 	case []bson.M:
 		a := make(bson.A, len(value))
 		for i, item := range value {
-			a[i] = convertValue(item)
+			a[i], err = convertValue(item)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return a
+		return a, nil
 	case bson.D:
 		d := make(bson.D, len(value))
 		for i, item := range value {
 			d[i].Key = item.Key
-			d[i].Value = convertValue(item.Value)
+			d[i].Value, err = convertValue(item.Value)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return d
+		return d, nil
 	case []bson.D:
 		a := make(bson.A, len(value))
 		for i, item := range value {
-			a[i] = convertValue(item)
+			a[i], err = convertValue(item)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return a
+		return a, nil
 	case []primitive.ObjectID:
 		a := make(bson.A, len(value))
 		for i, item := range value {
 			a[i] = item
 		}
-		return a
+		return a, nil
 	case nil, int32, int64, float64, string, bool:
-		return value
+		return value, nil
 	case int:
-		return int64(value)
+		return int64(value), nil
 	case primitive.Null, primitive.ObjectID, primitive.DateTime,
 		primitive.Timestamp, primitive.Regex, primitive.Binary:
-		return value
+		return value, nil
 	case *primitive.ObjectID:
 		if value != nil {
-			return *value
+			return *value, nil
 		}
-		return nil
+		return nil, nil
 	case time.Time:
-		return primitive.NewDateTimeFromTime(value.UTC())
+		return primitive.NewDateTimeFromTime(value.UTC()), nil
 	case *time.Time:
 		if value != nil {
-			return primitive.NewDateTimeFromTime(value.UTC())
+			return primitive.NewDateTimeFromTime(value.UTC()), nil
 		}
-		return nil
+		return nil, nil
 	default:
-		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
+		return nil, fmt.Errorf("unsupported type %T", v)
 	}
 }
 
-func convertMap(m bson.M) bson.D {
+func convertMap(m bson.M) (bson.D, error) {
 	// prepare document
 	d := make(bson.D, 0, len(m))
 
 	// copy keys
 	for key, field := range m {
+		v, err := convertValue(field)
+		if err != nil {
+			return nil, err
+		}
+
 		d = append(d, bson.E{
 			Key:   key,
-			Value: convertValue(field),
+			Value: v,
 		})
 	}
 
@@ -137,5 +167,5 @@ func convertMap(m bson.M) bson.D {
 		return d[i].Key < d[j].Key
 	})
 
-	return d
+	return d, nil
 }

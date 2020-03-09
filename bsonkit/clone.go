@@ -11,6 +11,9 @@ import (
 // mutated without mutating the original document with one exception: the content
 // of primitive.Binary values is not cloned and references the same byte slice
 // as the original.
+//
+// The function may panic if the doc is not obtained using Convert or Transform
+// and contains unsupported types.
 func Clone(doc Doc) Doc {
 	// check if nil
 	if doc == nil {
@@ -24,6 +27,9 @@ func Clone(doc Doc) Doc {
 }
 
 // CloneList will clone a list of documents.
+//
+// The function may panic if a doc is not obtained using Convert or Transform
+// and contains unsupported types.
 func CloneList(list List) List {
 	// check if nil
 	if list == nil {
@@ -58,9 +64,14 @@ func cloneValue(v interface{}) interface{} {
 
 		// copy all elements and convert values
 		for _, e := range value {
+			v, err := convertValue(e.Value)
+			if err != nil {
+				panic(err)
+			}
+
 			d = append(d, bson.E{
 				Key:   e.Key,
-				Value: convertValue(e.Value),
+				Value: v,
 			})
 		}
 
@@ -71,7 +82,12 @@ func cloneValue(v interface{}) interface{} {
 
 		// copy all elements and convert them
 		for _, e := range value {
-			a = append(a, convertValue(e))
+			v, err := convertValue(e)
+			if err != nil {
+				panic(err)
+			}
+
+			a = append(a, v)
 		}
 
 		return a
