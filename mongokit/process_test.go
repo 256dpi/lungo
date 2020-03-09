@@ -13,15 +13,15 @@ func TestProcess(t *testing.T) {
 	/* empty */
 
 	ctx := Context{}
-	doc := bsonkit.Convert(bson.M{})
-	query := bsonkit.Convert(bson.M{})
+	doc := bsonkit.MustConvert(bson.M{})
+	query := bsonkit.MustConvert(bson.M{})
 
 	err := Process(ctx, doc, *query, "", true)
 	assert.NoError(t, err)
 
 	/* unknown operators */
 
-	query = bsonkit.Convert(bson.M{
+	query = bsonkit.MustConvert(bson.M{
 		"$foo": "bar",
 	})
 
@@ -33,7 +33,7 @@ func TestProcess(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, `unknown expression operator "$foo"`, err.Error())
 
-	query = bsonkit.Convert(bson.M{
+	query = bsonkit.MustConvert(bson.M{
 		"foo": "bar",
 	})
 

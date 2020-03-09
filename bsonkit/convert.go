@@ -9,9 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Convert will convert the provided value to a document. The value is expected
+// MustConvert will convert the provided value to a document. The value is expected
 // to be a bson.M or bson.D composed of standard types.
-func Convert(v interface{}) Doc {
+func MustConvert(v interface{}) Doc {
 	// convert value
 	doc, ok := convertValue(v).(bson.D)
 	if !ok {
@@ -21,9 +21,9 @@ func Convert(v interface{}) Doc {
 	return &doc
 }
 
-// ConvertList will convert an array to a list. The value is expected to be a
+// MustConvertList will convert an array to a list. The value is expected to be a
 // bson.A of bson.M or bson.D elements composed of standard types.
-func ConvertList(v interface{}) List {
+func MustConvertList(v interface{}) List {
 	// convert value
 	doc := convertValue(v)
 
@@ -106,17 +106,15 @@ func convertValue(v interface{}) interface{} {
 	case *primitive.ObjectID:
 		if value != nil {
 			return *value
-		} else {
-			return nil
 		}
+		return nil
 	case time.Time:
 		return primitive.NewDateTimeFromTime(value.UTC())
 	case *time.Time:
 		if value != nil {
 			return primitive.NewDateTimeFromTime(value.UTC())
-		} else {
-			return nil
 		}
+		return nil
 	default:
 		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
 	}

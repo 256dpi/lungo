@@ -8,8 +8,8 @@ import (
 )
 
 func TestIndex(t *testing.T) {
-	d1 := Convert(bson.M{"a": "1"})
-	d2 := Convert(bson.M{"a": "1"})
+	d1 := MustConvert(bson.M{"a": "1"})
+	d2 := MustConvert(bson.M{"a": "1"})
 
 	index := NewIndex(false, []Column{
 		{Path: "a"},
@@ -56,8 +56,8 @@ func TestIndex(t *testing.T) {
 }
 
 func TestIndexCompound(t *testing.T) {
-	d1 := Convert(bson.M{"a": "1", "b": true})
-	d2 := Convert(bson.M{"a": "1", "b": false})
+	d1 := MustConvert(bson.M{"a": "1", "b": true})
+	d2 := MustConvert(bson.M{"a": "1", "b": false})
 
 	index := NewIndex(false, []Column{
 		{Path: "a"},
@@ -105,9 +105,9 @@ func TestIndexCompound(t *testing.T) {
 }
 
 func TestIndexUnique(t *testing.T) {
-	d1 := Convert(bson.M{"a": "1"})
-	d2 := Convert(bson.M{"a": "2"})
-	d3 := Convert(bson.M{"a": "2"})
+	d1 := MustConvert(bson.M{"a": "1"})
+	d2 := MustConvert(bson.M{"a": "2"})
+	d3 := MustConvert(bson.M{"a": "2"})
 
 	index := NewIndex(true, []Column{
 		{Path: "a"},
@@ -161,9 +161,9 @@ func TestIndexUnique(t *testing.T) {
 }
 
 func TestIndexCompoundUnique(t *testing.T) {
-	d1 := Convert(bson.M{"a": "1", "b": true})
-	d2 := Convert(bson.M{"a": "2", "b": true})
-	d3 := Convert(bson.M{"a": "2", "b": true})
+	d1 := MustConvert(bson.M{"a": "1", "b": true})
+	d2 := MustConvert(bson.M{"a": "2", "b": true})
+	d3 := MustConvert(bson.M{"a": "2", "b": true})
 
 	index := NewIndex(true, []Column{
 		{Path: "a"},
@@ -218,9 +218,9 @@ func TestIndexCompoundUnique(t *testing.T) {
 }
 
 func TestIndexClone(t *testing.T) {
-	d1 := Convert(bson.M{"a": "1"})
-	d2 := Convert(bson.M{"a": "2"})
-	d3 := Convert(bson.M{"a": "2"})
+	d1 := MustConvert(bson.M{"a": "1"})
+	d2 := MustConvert(bson.M{"a": "2"})
+	d3 := MustConvert(bson.M{"a": "2"})
 
 	index1 := NewIndex(false, []Column{
 		{Path: "a"},

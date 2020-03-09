@@ -21,23 +21,23 @@ func resolveTest(t *testing.T, path string, query, doc bsonkit.Doc, arrayFilters
 
 func TestResolve(t *testing.T) {
 	// no operators
-	resolveTest(t, "foo", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{}), bsonkit.List{}, []string{
 		"foo",
 	})
-	resolveTest(t, "foo.bar.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.bar.baz", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{}), bsonkit.List{}, []string{
 		"foo.bar.baz",
 	})
 
 	// no operators but index
-	resolveTest(t, "foo.0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.0", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{}), bsonkit.List{}, []string{
 		"foo.0",
 	})
-	resolveTest(t, "foo.2.bar.7.baz", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{}), bsonkit.List{}, []string{
+	resolveTest(t, "foo.2.bar.7.baz", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{}), bsonkit.List{}, []string{
 		"foo.2.bar.7.baz",
 	})
 
 	// single operator
-	resolveTest(t, "foo.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{1, 2, 3},
 	}), bsonkit.List{}, []string{
 		"foo.0",
@@ -46,7 +46,7 @@ func TestResolve(t *testing.T) {
 	})
 
 	// nested operators
-	resolveTest(t, "foo.$[].bar.$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].bar.$[]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"bar": bson.A{1, 2},
@@ -62,7 +62,7 @@ func TestResolve(t *testing.T) {
 	})
 
 	// adjacent operators
-	resolveTest(t, "foo.$[].$[]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].$[]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.A{1, 2},
 			bson.A{3},
@@ -74,7 +74,7 @@ func TestResolve(t *testing.T) {
 	})
 
 	// trailing field
-	resolveTest(t, "foo.$[].$[].bar", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].$[].bar", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.A{
 				bson.M{
@@ -97,7 +97,7 @@ func TestResolve(t *testing.T) {
 	})
 
 	// trailing index
-	resolveTest(t, "foo.$[].0", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[].0", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.A{1, 2},
 			bson.A{1},
@@ -110,13 +110,13 @@ func TestResolve(t *testing.T) {
 
 func TestResolveArrayFilters(t *testing.T) {
 	// single expression
-	resolveTest(t, "foo.$[af1]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[af1]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			"baz",
 			"quz",
 		},
-	}), bsonkit.ConvertList([]bson.M{
+	}), bsonkit.MustConvertList([]bson.M{
 		{
 			"af1": bson.M{
 				"$ne": "quz",
@@ -128,12 +128,12 @@ func TestResolveArrayFilters(t *testing.T) {
 	})
 
 	// multiple expressions
-	resolveTest(t, "foo.$[af1].$[af2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[af1].$[af2]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.A{-10, 20, 30, -40, 4},
 			bson.A{10, -20, -30, 40},
 		},
-	}), bsonkit.ConvertList([]bson.M{
+	}), bsonkit.MustConvertList([]bson.M{
 		{
 			"af1": bson.M{
 				"$size": 5,
@@ -150,7 +150,7 @@ func TestResolveArrayFilters(t *testing.T) {
 	})
 
 	// complex expressions
-	resolveTest(t, "foo.$[af1].bar.$[af2]", bsonkit.Convert(bson.M{}), bsonkit.Convert(bson.M{
+	resolveTest(t, "foo.$[af1].bar.$[af2]", bsonkit.MustConvert(bson.M{}), bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"ok":  true,
@@ -185,7 +185,7 @@ func TestResolveArrayFilters(t *testing.T) {
 				},
 			},
 		},
-	}), bsonkit.ConvertList([]bson.M{
+	}), bsonkit.MustConvertList([]bson.M{
 		{
 			"af1.ok": true,
 			"af1.val": bson.M{
@@ -205,19 +205,19 @@ func TestResolverErrors(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, `unsupported root positional operator "$[]"`, err.Error())
 
-	err = Resolve("bar.$[]", nil, bsonkit.Convert(bson.M{
+	err = Resolve("bar.$[]", nil, bsonkit.MustConvert(bson.M{
 		"bar": 1,
 	}), nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, `expected array at "bar" to match against positional operator`, err.Error())
 
-	err = Resolve("bar.$", nil, bsonkit.Convert(bson.M{
+	err = Resolve("bar.$", nil, bsonkit.MustConvert(bson.M{
 		"bar": bson.A{},
 	}), nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, `the implicit positional operator is not yet supported`, err.Error())
 
-	err = Resolve("bar.$foo", nil, bsonkit.Convert(bson.M{
+	err = Resolve("bar.$foo", nil, bsonkit.MustConvert(bson.M{
 		"bar": bson.A{},
 	}), nil, nil)
 	assert.Error(t, err)
@@ -225,7 +225,7 @@ func TestResolverErrors(t *testing.T) {
 }
 
 func BenchmarkResolve(b *testing.B) {
-	doc := bsonkit.Convert(bson.M{
+	doc := bsonkit.MustConvert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"bar": bson.A{1, 2, 3, 4, 5},

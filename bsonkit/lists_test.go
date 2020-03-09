@@ -33,10 +33,10 @@ func TestSelect(t *testing.T) {
 }
 
 func TestPick(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1"})
-	a2 := Convert(bson.M{"a": "2"})
-	a3 := Convert(bson.M{"a": "2"})
-	b1 := Convert(bson.M{"b": "3"})
+	a1 := MustConvert(bson.M{"a": "1"})
+	a2 := MustConvert(bson.M{"a": "2"})
+	a3 := MustConvert(bson.M{"a": "2"})
+	b1 := MustConvert(bson.M{"b": "3"})
 
 	// raw values
 	res := Pick(List{a1, a2, b1, a3}, "a", false)
@@ -48,10 +48,10 @@ func TestPick(t *testing.T) {
 }
 
 func TestCollect(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1"})
-	a2 := Convert(bson.M{"a": "2"})
-	a3 := Convert(bson.M{"a": "2"})
-	b1 := Convert(bson.M{"b": "3"})
+	a1 := MustConvert(bson.M{"a": "1"})
+	a2 := MustConvert(bson.M{"a": "2"})
+	a3 := MustConvert(bson.M{"a": "2"})
+	b1 := MustConvert(bson.M{"b": "3"})
 
 	// raw values
 	res := Collect(List{a1, a2, b1, a3}, "a", false, false, false, false)
@@ -71,9 +71,9 @@ func TestCollect(t *testing.T) {
 }
 
 func TestCollectArray(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1"})
-	a2 := Convert(bson.M{"a": bson.A{"1", "2"}})
-	a3 := Convert(bson.M{"a": "2"})
+	a1 := MustConvert(bson.M{"a": "1"})
+	a2 := MustConvert(bson.M{"a": bson.A{"1", "2"}})
+	a3 := MustConvert(bson.M{"a": "2"})
 
 	// raw values
 	res := Collect(List{a1, a2, a3}, "a", false, false, false, false)
@@ -89,9 +89,9 @@ func TestCollectArray(t *testing.T) {
 }
 
 func TestCollectEmbedded(t *testing.T) {
-	a1 := Convert(bson.M{"a": bson.A{bson.M{"b": "1"}}})
-	a2 := Convert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}})
-	a3 := Convert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}})
+	a1 := MustConvert(bson.M{"a": bson.A{bson.M{"b": "1"}}})
+	a2 := MustConvert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}})
+	a3 := MustConvert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}})
 
 	// raw values
 	res := Collect(List{a1, a2, a3}, "a.b", false, false, false, false)

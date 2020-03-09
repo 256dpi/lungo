@@ -687,7 +687,7 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 	}
 
 	// insert event
-	_, err := oplog.Insert(bsonkit.Convert(event))
+	_, err := oplog.Insert(bsonkit.MustConvert(event))
 	if err != nil {
 		return err
 	}
@@ -1063,7 +1063,7 @@ func (t *Transaction) Expire() error {
 		}
 
 		// delete all expired documents
-		res, err := t.delete(handle, oplog, namespace, bsonkit.Convert(bson.M{
+		res, err := t.delete(handle, oplog, namespace, bsonkit.MustConvert(bson.M{
 			"$or": conditions,
 		}), nil, 0, 0)
 		if err != nil {

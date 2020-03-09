@@ -29,7 +29,7 @@ func matchTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))) 
 
 	t.Run("Lungo", func(t *testing.T) {
 		fn(func(query bson.M, result interface{}) {
-			res, err := Match(bsonkit.Convert(doc), bsonkit.Convert(query))
+			res, err := Match(bsonkit.MustConvert(doc), bsonkit.MustConvert(query))
 			if str, ok := result.(string); ok {
 				assert.Error(t, err)
 				assert.Equal(t, str, err.Error())

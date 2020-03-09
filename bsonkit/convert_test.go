@@ -8,7 +8,7 @@ import (
 )
 
 func TestConvert(t *testing.T) {
-	res := Convert(bson.M{
+	res := MustConvert(bson.M{
 		"foo": "bar",
 		"bar": bson.A{
 			bson.M{
@@ -36,14 +36,14 @@ func TestConvert(t *testing.T) {
 	}, res)
 
 	assert.Panics(t, func() {
-		Convert(bson.M{
+		MustConvert(bson.M{
 			"foo": uint(1),
 		})
 	})
 }
 
 func TestConvertList(t *testing.T) {
-	res := ConvertList([]bson.M{
+	res := MustConvertList([]bson.M{
 		{
 			"foo": "bar",
 		},

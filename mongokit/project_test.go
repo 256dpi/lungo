@@ -34,13 +34,13 @@ func projectTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))
 
 	t.Run("Lungo", func(t *testing.T) {
 		fn(func(projection bson.M, result interface{}) {
-			res, err := Project(bsonkit.Convert(doc), bsonkit.Convert(projection))
+			res, err := Project(bsonkit.MustConvert(doc), bsonkit.MustConvert(projection))
 			if str, ok := result.(string); ok {
 				assert.Error(t, err)
 				assert.Equal(t, str, err.Error())
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, bsonkit.Convert(result.(bson.M)), res)
+				assert.Equal(t, bsonkit.MustConvert(result.(bson.M)), res)
 			}
 		})
 	})

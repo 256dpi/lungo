@@ -10,19 +10,19 @@ import (
 )
 
 func TestFilter(t *testing.T) {
-	a1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	a2 := bsonkit.Convert(bson.M{"a": "2", "b": false})
-	a3 := bsonkit.Convert(bson.M{"a": "3", "b": true})
+	a1 := bsonkit.MustConvert(bson.M{"a": "1", "b": true})
+	a2 := bsonkit.MustConvert(bson.M{"a": "2", "b": false})
+	a3 := bsonkit.MustConvert(bson.M{"a": "3", "b": true})
 
 	// field condition
-	list, err := Filter(bsonkit.List{a1, a2, a3}, bsonkit.Convert(bson.M{
+	list, err := Filter(bsonkit.List{a1, a2, a3}, bsonkit.MustConvert(bson.M{
 		"b": true,
 	}), 0)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a1, a3}, list)
 
 	// expression
-	list, err = Filter(bsonkit.List{a1, a2, a3}, bsonkit.Convert(bson.M{
+	list, err = Filter(bsonkit.List{a1, a2, a3}, bsonkit.MustConvert(bson.M{
 		"a": bson.M{
 			"$gt": "1",
 		},

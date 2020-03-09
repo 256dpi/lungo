@@ -18,11 +18,11 @@ func mustHas(ok bool, err error) bool {
 }
 
 func TestIndex(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "1"})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1"})
+	d2 := bsonkit.MustConvert(bson.M{"a": "1"})
 
 	index, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 		}),
 	})
@@ -68,11 +68,11 @@ func TestIndex(t *testing.T) {
 }
 
 func TestIndexCompound(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	d2 := bsonkit.Convert(bson.M{"a": "1", "b": false})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1", "b": true})
+	d2 := bsonkit.MustConvert(bson.M{"a": "1", "b": false})
 
 	index, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 			"b": int32(1),
 		}),
@@ -119,12 +119,12 @@ func TestIndexCompound(t *testing.T) {
 }
 
 func TestIndexUnique(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "2"})
-	d3 := bsonkit.Convert(bson.M{"a": "2"})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1"})
+	d2 := bsonkit.MustConvert(bson.M{"a": "2"})
+	d3 := bsonkit.MustConvert(bson.M{"a": "2"})
 
 	index, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 		}),
 		Unique: true,
@@ -178,12 +178,12 @@ func TestIndexUnique(t *testing.T) {
 }
 
 func TestIndexCompoundUnique(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	d2 := bsonkit.Convert(bson.M{"a": "2", "b": true})
-	d3 := bsonkit.Convert(bson.M{"a": "2", "b": true})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1", "b": true})
+	d2 := bsonkit.MustConvert(bson.M{"a": "2", "b": true})
+	d3 := bsonkit.MustConvert(bson.M{"a": "2", "b": true})
 
 	index, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 			"b": int32(1),
 		}),
@@ -238,12 +238,12 @@ func TestIndexCompoundUnique(t *testing.T) {
 }
 
 func TestIndexClone(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1"})
-	d2 := bsonkit.Convert(bson.M{"a": "2"})
-	d3 := bsonkit.Convert(bson.M{"a": "2"})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1"})
+	d2 := bsonkit.MustConvert(bson.M{"a": "2"})
+	d3 := bsonkit.MustConvert(bson.M{"a": "2"})
 
 	index1, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 		}),
 	})
@@ -277,14 +277,14 @@ func TestIndexClone(t *testing.T) {
 }
 
 func TestIndexPartial(t *testing.T) {
-	d1 := bsonkit.Convert(bson.M{"a": "1", "b": 2.0})
-	d2 := bsonkit.Convert(bson.M{"a": "1", "b": 42.0})
+	d1 := bsonkit.MustConvert(bson.M{"a": "1", "b": 2.0})
+	d2 := bsonkit.MustConvert(bson.M{"a": "1", "b": 42.0})
 
 	index, err := CreateIndex(IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 		}),
-		Partial: bsonkit.Convert(bson.M{
+		Partial: bsonkit.MustConvert(bson.M{
 			"b": bson.M{
 				"$gt": 7.0,
 			},

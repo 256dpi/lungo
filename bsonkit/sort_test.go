@@ -8,9 +8,9 @@ import (
 )
 
 func TestSort(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1", "b": true})
-	a2 := Convert(bson.M{"a": "2", "b": false})
-	a3 := Convert(bson.M{"a": "3", "b": true})
+	a1 := MustConvert(bson.M{"a": "1", "b": true})
+	a2 := MustConvert(bson.M{"a": "2", "b": false})
+	a3 := MustConvert(bson.M{"a": "3", "b": true})
 
 	// sort forwards single
 	list := List{a3, a1, a2}
@@ -52,10 +52,10 @@ func TestSort(t *testing.T) {
 }
 
 func TestSortIdentity(t *testing.T) {
-	a1 := Convert(bson.M{"a": "1", "b": true})
-	a2 := Convert(bson.M{"a": "2", "b": false})
-	a3 := Convert(bson.M{"a": "2", "b": false})
-	a4 := Convert(bson.M{"a": "3", "b": true})
+	a1 := MustConvert(bson.M{"a": "1", "b": true})
+	a2 := MustConvert(bson.M{"a": "2", "b": false})
+	a3 := MustConvert(bson.M{"a": "2", "b": false})
+	a4 := MustConvert(bson.M{"a": "3", "b": true})
 
 	// sort forwards single
 	list := List{a3, a1, a4, a2}

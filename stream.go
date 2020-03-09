@@ -89,7 +89,7 @@ func (s *Stream) Next(ctx context.Context) bool {
 
 	// check if dropped
 	if s.dropped {
-		s.event = bsonkit.Convert(bson.M{
+		s.event = bsonkit.MustConvert(bson.M{
 			"_id":           bson.M{"ts": "drop"},
 			"operationType": "invalidate",
 			"clusterTime":   bsonkit.Now(),

@@ -47,7 +47,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 			err = coll.FindOne(nil, query).Decode(&m)
 			assert.NoError(t, err)
 
-			d := bsonkit.Convert(m)
+			d := bsonkit.MustConvert(m)
 			bsonkit.Unset(d, "_id")
 
 			if cb, ok := result.(func(*testing.T, bson.D)); ok {
@@ -61,9 +61,9 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 
 	t.Run("Lungo", func(t *testing.T) {
 		fn(func(update bson.M, arrayFilters []bson.M, result interface{}) {
-			d := bsonkit.Convert(doc)
-			l := bsonkit.ConvertList(arrayFilters)
-			_, err := Apply(d, nil, bsonkit.Convert(update), upsert, l)
+			d := bsonkit.MustConvert(doc)
+			l := bsonkit.MustConvertList(arrayFilters)
+			_, err := Apply(d, nil, bsonkit.MustConvert(update), upsert, l)
 			if str, ok := result.(string); ok {
 				assert.Error(t, err)
 				assert.Equal(t, str, err.Error())
@@ -87,7 +87,7 @@ func TestApply(t *testing.T) {
 		"foo": "bar",
 	}, func(fn func(bson.M, []bson.M, interface{})) {
 		// empty update
-		fn(bson.M{}, nil, bsonkit.Convert(bson.M{
+		fn(bson.M{}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "bar",
 		}))
 
@@ -109,7 +109,7 @@ func TestApply(t *testing.T) {
 		// empty document
 		fn(bson.M{
 			"$set": bson.M{},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "bar",
 		}))
 
@@ -118,7 +118,7 @@ func TestApply(t *testing.T) {
 			"$set": bson.M{
 				"foo": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "baz",
 		}))
 	})
@@ -139,7 +139,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 			},
 		}, []bson.M{
 			{"foo": "foo"},
-		}, bsonkit.Convert(bson.M{
+		}, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{
 				"bar",
 				"baz",
@@ -160,7 +160,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 			"$set": bson.M{
 				"foo.$[].$[]": "baz",
 			},
-		}, []bson.M{}, bsonkit.Convert(bson.M{
+		}, []bson.M{}, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{
 				bson.A{"baz", "baz", "baz"},
 				bson.A{"baz", "baz"},
@@ -197,7 +197,7 @@ func TestApplyPositionalOperators(t *testing.T) {
 			{"neg": bson.M{
 				"$lt": 0,
 			}},
-		}, bsonkit.Convert(bson.M{
+		}, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{
 				bson.M{
 					"val":  int32(10),
@@ -225,7 +225,7 @@ func TestApplySet(t *testing.T) {
 			"$set": bson.M{
 				"foo": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "baz",
 		}))
 
@@ -236,7 +236,7 @@ func TestApplySet(t *testing.T) {
 					"qux": int32(42),
 				},
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "bar",
 			"quz": bson.M{
 				"qux": int32(42),
@@ -245,9 +245,9 @@ func TestApplySet(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": "bar",
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$set": bson.M{
 			"foo": "baz",
 		},
@@ -271,7 +271,7 @@ func TestApplySetOnInsert(t *testing.T) {
 			"$setOnInsert": bson.M{
 				"foo": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "bar",
 		}))
 
@@ -282,7 +282,7 @@ func TestApplySetOnInsert(t *testing.T) {
 					"qux": int32(42),
 				},
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "bar",
 		}))
 	})
@@ -294,7 +294,7 @@ func TestApplySetOnInsert(t *testing.T) {
 			"$setOnInsert": bson.M{
 				"foo": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": "baz",
 		}))
 	})
@@ -308,7 +308,7 @@ func TestApplySetOnInsert(t *testing.T) {
 					"qux": int32(42),
 				},
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"quz": bson.M{
 				"qux": int32(42),
 			},
@@ -316,9 +316,9 @@ func TestApplySetOnInsert(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": "bar",
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$setOnInsert": bson.M{
 			"foo": "baz",
 		},
@@ -344,7 +344,7 @@ func TestApplyUnset(t *testing.T) {
 			"$unset": bson.M{
 				"foo.bar": nil,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{},
 		}))
 
@@ -353,15 +353,15 @@ func TestApplyUnset(t *testing.T) {
 			"$unset": bson.M{
 				"foo": nil,
 			},
-		}, nil, bsonkit.Convert(bson.M{}))
+		}, nil, bsonkit.MustConvert(bson.M{}))
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": "baz",
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$unset": bson.M{
 			"foo.bar": nil,
 		},
@@ -386,7 +386,7 @@ func TestApplyRename(t *testing.T) {
 			"$rename": bson.M{
 				"foo.bar": "foo.baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"baz": "baz",
 			},
@@ -397,7 +397,7 @@ func TestApplyRename(t *testing.T) {
 			"$rename": bson.M{
 				"foo": "bar",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"bar": bson.M{
 				"bar": "baz",
 			},
@@ -408,7 +408,7 @@ func TestApplyRename(t *testing.T) {
 			"$rename": bson.M{
 				"baz": "quz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": "baz",
 			},
@@ -425,7 +425,7 @@ func TestApplyRename(t *testing.T) {
 			"$rename": bson.M{
 				"foo.0.bar": "foo.0.baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{
 				bson.M{"bar": "baz"},
 			},
@@ -433,11 +433,11 @@ func TestApplyRename(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": "baz",
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$rename": bson.M{
 			"foo.bar": "foo.baz",
 		},
@@ -464,7 +464,7 @@ func TestApplyInc(t *testing.T) {
 			"$inc": bson.M{
 				"foo.bar": int64(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 44,
 			},
@@ -475,7 +475,7 @@ func TestApplyInc(t *testing.T) {
 			"$inc": bson.M{
 				"foo.baz": int32(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": int32(42),
 				"baz": int32(2),
@@ -487,7 +487,7 @@ func TestApplyInc(t *testing.T) {
 			"$inc": bson.M{
 				"foo.bar": 1.5,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 43.5,
 			},
@@ -495,11 +495,11 @@ func TestApplyInc(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$inc": bson.M{
 			"foo.bar": 2,
 		},
@@ -524,7 +524,7 @@ func TestApplyMul(t *testing.T) {
 			"$mul": bson.M{
 				"foo.bar": int64(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 84,
 			},
@@ -535,7 +535,7 @@ func TestApplyMul(t *testing.T) {
 			"$mul": bson.M{
 				"foo.baz": int32(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": int32(42),
 				"baz": int32(0),
@@ -547,7 +547,7 @@ func TestApplyMul(t *testing.T) {
 			"$mul": bson.M{
 				"foo.bar": 1.5,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 63.0,
 			},
@@ -555,11 +555,11 @@ func TestApplyMul(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": int32(42),
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$mul": bson.M{
 			"foo.bar": 2,
 		},
@@ -584,7 +584,7 @@ func TestApplyMax(t *testing.T) {
 			"$max": bson.M{
 				"foo.bar": int32(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 42,
 			},
@@ -595,7 +595,7 @@ func TestApplyMax(t *testing.T) {
 			"$max": bson.M{
 				"foo.bar": int32(44),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": int32(44),
 			},
@@ -606,7 +606,7 @@ func TestApplyMax(t *testing.T) {
 			"$max": bson.M{
 				"foo.baz": int32(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 42,
 				"baz": int32(2),
@@ -615,11 +615,11 @@ func TestApplyMax(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": int32(42),
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$max": bson.M{
 			"foo.bar": int32(44),
 		},
@@ -644,7 +644,7 @@ func TestApplyMin(t *testing.T) {
 			"$min": bson.M{
 				"foo.bar": int32(44),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 42,
 			},
@@ -655,7 +655,7 @@ func TestApplyMin(t *testing.T) {
 			"$min": bson.M{
 				"foo.bar": int32(21),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": int32(21),
 			},
@@ -666,7 +666,7 @@ func TestApplyMin(t *testing.T) {
 			"$min": bson.M{
 				"foo.baz": int32(2),
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.M{
 				"bar": 42,
 				"baz": int32(2),
@@ -675,11 +675,11 @@ func TestApplyMin(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": int32(42),
 		},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$min": bson.M{
 			"foo.bar": int32(21),
 		},
@@ -761,9 +761,9 @@ func TestApplyCurrentDate(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": "bar",
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$currentDate": bson.M{
 			"foo": true,
 		},
@@ -785,7 +785,7 @@ func TestApplyPush(t *testing.T) {
 			"$push": bson.M{
 				"foo": "bar",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar"},
 		}))
 	})
@@ -798,7 +798,7 @@ func TestApplyPush(t *testing.T) {
 			"$push": bson.M{
 				"foo": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar", "baz"},
 		}))
 	})
@@ -817,7 +817,7 @@ func TestApplyPush(t *testing.T) {
 				"nil": "baz",
 				"obj": "baz",
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"str": "bar",
 			"int": int32(42),
 			"nil": nil,
@@ -826,9 +826,9 @@ func TestApplyPush(t *testing.T) {
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.A{"bar"},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$push": bson.M{
 			"foo": "baz",
 		},
@@ -852,7 +852,7 @@ func TestApplyPop(t *testing.T) {
 			"$pop": bson.M{
 				"foo": 0,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar", "baz"},
 		}))
 	})
@@ -865,7 +865,7 @@ func TestApplyPop(t *testing.T) {
 			"$pop": bson.M{
 				"foo": -1,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"baz"},
 		}))
 	})
@@ -878,15 +878,15 @@ func TestApplyPop(t *testing.T) {
 			"$pop": bson.M{
 				"foo": 1,
 			},
-		}, nil, bsonkit.Convert(bson.M{
+		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar"},
 		}))
 	})
 
 	// changes
-	changes, err := Apply(bsonkit.Convert(bson.M{
+	changes, err := Apply(bsonkit.MustConvert(bson.M{
 		"foo": bson.A{"bar", "baz"},
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$pop": bson.M{
 			"foo": 1,
 		},

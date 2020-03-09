@@ -12,9 +12,9 @@ import (
 // TODO: Convert into compatibility test?
 
 func TestSort(t *testing.T) {
-	a1 := bsonkit.Convert(bson.M{"a": "1", "b": true})
-	a2 := bsonkit.Convert(bson.M{"a": "2", "b": false})
-	a3 := bsonkit.Convert(bson.M{"a": "3", "b": true})
+	a1 := bsonkit.MustConvert(bson.M{"a": "1", "b": true})
+	a2 := bsonkit.MustConvert(bson.M{"a": "2", "b": false})
+	a3 := bsonkit.MustConvert(bson.M{"a": "3", "b": true})
 
 	// invalid document
 	list, err := Sort(bsonkit.List{a3, a1, a2}, &bson.D{

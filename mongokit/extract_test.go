@@ -36,7 +36,7 @@ func extractTest(t *testing.T, fn func(fn func(bson.M, interface{}))) {
 
 	t.Run("Lungo", func(t *testing.T) {
 		fn(func(query bson.M, result interface{}) {
-			doc, err := Extract(bsonkit.Convert(query))
+			doc, err := Extract(bsonkit.MustConvert(query))
 			if str, ok := result.(string); ok {
 				assert.Error(t, err)
 				assert.Equal(t, str, err.Error())

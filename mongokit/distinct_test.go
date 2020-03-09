@@ -43,38 +43,38 @@ func distinctTest(t *testing.T, list bsonkit.List, fn func(fn func(string, bson.
 func TestDistinct(t *testing.T) {
 	// basic fields
 	distinctTest(t, bsonkit.List{
-		bsonkit.Convert(bson.M{"a": "1"}),
-		bsonkit.Convert(bson.M{"a": "2"}),
-		bsonkit.Convert(bson.M{"a": "2"}),
-		bsonkit.Convert(bson.M{"b": "3"}),
+		bsonkit.MustConvert(bson.M{"a": "1"}),
+		bsonkit.MustConvert(bson.M{"a": "2"}),
+		bsonkit.MustConvert(bson.M{"a": "2"}),
+		bsonkit.MustConvert(bson.M{"b": "3"}),
 	}, func(fn func(string, bson.A)) {
 		fn("a", bson.A{"1", "2"})
 	})
 
 	// array fields
 	distinctTest(t, bsonkit.List{
-		bsonkit.Convert(bson.M{"a": "1"}),
-		bsonkit.Convert(bson.M{"a": bson.A{"1", "2"}}),
-		bsonkit.Convert(bson.M{"a": "2"}),
+		bsonkit.MustConvert(bson.M{"a": "1"}),
+		bsonkit.MustConvert(bson.M{"a": bson.A{"1", "2"}}),
+		bsonkit.MustConvert(bson.M{"a": "2"}),
 	}, func(fn func(string, bson.A)) {
 		fn("a", bson.A{"1", "2"})
 	})
 
 	// embedded fields (with array fields)
 	distinctTest(t, bsonkit.List{
-		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": "1"}}}),
-		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}}),
-		bsonkit.Convert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}}),
+		bsonkit.MustConvert(bson.M{"a": bson.A{bson.M{"b": "1"}}}),
+		bsonkit.MustConvert(bson.M{"a": bson.A{bson.M{"b": bson.A{"1", "2"}}}}),
+		bsonkit.MustConvert(bson.M{"a": bson.A{bson.M{"b": "1"}, bson.M{"b": "2"}}}),
 	}, func(fn func(string, bson.A)) {
 		fn("a.b", bson.A{"1", "2"})
 	})
 
 	// numbers
 	distinctTest(t, bsonkit.List{
-		bsonkit.Convert(bson.M{"a": int32(1)}),
-		bsonkit.Convert(bson.M{"a": 1}),
-		bsonkit.Convert(bson.M{"a": float64(1)}),
-		bsonkit.Convert(bson.M{"a": "1"}),
+		bsonkit.MustConvert(bson.M{"a": int32(1)}),
+		bsonkit.MustConvert(bson.M{"a": 1}),
+		bsonkit.MustConvert(bson.M{"a": float64(1)}),
+		bsonkit.MustConvert(bson.M{"a": "1"}),
 	}, func(fn func(string, bson.A)) {
 		fn("a", bson.A{int32(1), "1"})
 	})

@@ -22,7 +22,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 
 	id1 := primitive.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id1,
 			"foo": "bar",
 		}),
@@ -33,7 +33,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": bson.M{
 				"ts": get(0, "_id.ts"),
 			},
@@ -55,9 +55,9 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 
 	txn = NewTransaction(catalog)
 
-	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.Convert(bson.M{
+	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
 		"_id": id1,
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$set": bson.M{
 			"foo": "baz",
 		},
@@ -68,7 +68,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": bson.M{
 				"ts": get(0, "_id.ts"),
 			},
@@ -106,7 +106,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 
 	id1 := primitive.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id1,
 			"foo": "bar",
 		}),
@@ -122,7 +122,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": bson.M{
 				"ts": get(0, "_id.ts"),
 			},
@@ -144,9 +144,9 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 
 	txn = NewTransaction(catalog)
 
-	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.Convert(bson.M{
+	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
 		"_id": id1,
-	}), nil, bsonkit.Convert(bson.M{
+	}), nil, bsonkit.MustConvert(bson.M{
 		"$set": bson.M{
 			"foo": "baz",
 		},
@@ -157,7 +157,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 
 	catalog = txn.Catalog()
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": bson.M{
 				"ts": get(0, "_id.ts"),
 			},

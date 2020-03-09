@@ -35,11 +35,11 @@ func TestFileStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	res, err := txn.Insert(handle, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id1,
 			"foo": "bar",
 		}),
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id2,
 			"bar": "baz",
 		}),
@@ -48,7 +48,7 @@ func TestFileStore(t *testing.T) {
 	assert.Equal(t, 2, len(res.Modified))
 
 	name, err := txn.CreateIndex(handle, "idx", mongokit.IndexConfig{
-		Key: bsonkit.Convert(bson.M{
+		Key: bsonkit.MustConvert(bson.M{
 			"foo": int32(-1),
 		}),
 	})
@@ -149,20 +149,20 @@ func TestFileStore(t *testing.T) {
 	txn, err = engine.Begin(nil, false)
 	assert.NoError(t, err)
 
-	res, err = txn.Find(handle, bsonkit.Convert(bson.M{}), nil, 0, 0)
+	res, err = txn.Find(handle, bsonkit.MustConvert(bson.M{}), nil, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id1,
 			"foo": "bar",
 		}),
-		bsonkit.Convert(bson.M{
+		bsonkit.MustConvert(bson.M{
 			"_id": id2,
 			"bar": "baz",
 		}),
 	}, res.Matched)
 
-	databases, err := txn.ListDatabases(bsonkit.Convert(bson.M{}))
+	databases, err := txn.ListDatabases(bsonkit.MustConvert(bson.M{}))
 	bsonkit.Sort(databases, []bsonkit.Column{{Path: "name"}}, true)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{
@@ -170,7 +170,7 @@ func TestFileStore(t *testing.T) {
 		"local",
 	}, bsonkit.Pick(databases, "name", false))
 
-	collections, err := txn.ListCollections(Handle{"foo"}, bsonkit.Convert(bson.M{}))
+	collections, err := txn.ListCollections(Handle{"foo"}, bsonkit.MustConvert(bson.M{}))
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{
 		"bar",

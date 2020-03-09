@@ -105,7 +105,7 @@ func TestTransformList(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, List{
-		Convert(bson.M{"foo": "bar"}),
-		Convert(bson.M{"bar": "baz"}),
+		MustConvert(bson.M{"foo": "bar"}),
+		MustConvert(bson.M{"bar": "baz"}),
 	}, list)
 }

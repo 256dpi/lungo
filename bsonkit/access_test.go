@@ -8,7 +8,7 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
@@ -18,7 +18,7 @@ func TestGet(t *testing.T) {
 
 	// basic field
 	res := Get(doc, "foo")
-	assert.Equal(t, *Convert(bson.M{
+	assert.Equal(t, *MustConvert(bson.M{
 		"bar": bson.M{
 			"baz": 42,
 		},
@@ -30,7 +30,7 @@ func TestGet(t *testing.T) {
 
 	// nested field
 	res = Get(doc, "foo.bar")
-	assert.Equal(t, *Convert(bson.M{
+	assert.Equal(t, *MustConvert(bson.M{
 		"baz": 42,
 	}), res)
 
@@ -52,7 +52,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestGetArray(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -71,7 +71,7 @@ func TestGetArray(t *testing.T) {
 
 	// second element
 	res = Get(doc, "foo.1")
-	assert.Equal(t, *Convert(bson.M{
+	assert.Equal(t, *MustConvert(bson.M{
 		"baz": 42,
 	}), res)
 
@@ -85,7 +85,7 @@ func TestGetArray(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -151,7 +151,7 @@ func TestAll(t *testing.T) {
 }
 
 func TestAllMerge(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			bson.M{
 				"quz": bson.A{
@@ -187,7 +187,7 @@ func TestAllMerge(t *testing.T) {
 }
 
 func TestPut(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": "bar",
 	})
 
@@ -195,7 +195,7 @@ func TestPut(t *testing.T) {
 	res, err := Put(doc, "foo", "baz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": "baz",
 	}), doc)
 
@@ -218,7 +218,7 @@ func TestPut(t *testing.T) {
 		bson.E{Key: "bar", Value: "baz"},
 	}, doc)
 
-	doc = Convert(bson.M{
+	doc = MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
@@ -230,7 +230,7 @@ func TestPut(t *testing.T) {
 	res, err = Put(doc, "foo.bar.baz", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(42), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 7,
@@ -242,7 +242,7 @@ func TestPut(t *testing.T) {
 	res, err = Put(doc, "foo.bar.quz", int64(42), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.D{
 				bson.E{Key: "baz", Value: 7},
@@ -255,7 +255,7 @@ func TestPut(t *testing.T) {
 	res, err = Put(doc, "foo.bar.qux", int64(42), true)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.D{
 				bson.E{Key: "qux", Value: 42},
@@ -273,7 +273,7 @@ func TestPut(t *testing.T) {
 		bson.E{Key: "baz", Value: int64(7)},
 		bson.E{Key: "quz", Value: int64(42)},
 	}, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
 		},
@@ -284,7 +284,7 @@ func TestPut(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
 	assert.Equal(t, "cannot put value at foo.bar.baz", err.Error())
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": 42,
 		},
@@ -295,7 +295,7 @@ func TestPut(t *testing.T) {
 	res, err = Put(doc, "baz.bar.foo", int64(42), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"baz": bson.M{
 			"bar": bson.M{
 				"foo": 42,
@@ -305,7 +305,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestPutArray(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -319,7 +319,7 @@ func TestPutArray(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
 	assert.Equal(t, "cannot put value at foo.-1", err.Error())
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -332,7 +332,7 @@ func TestPutArray(t *testing.T) {
 	res, err = Put(doc, "foo.0", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
 			bson.M{
@@ -342,14 +342,14 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 
 	// second element
-	res, err = Put(doc, "foo.1", *Convert(bson.M{
+	res, err = Put(doc, "foo.1", *MustConvert(bson.M{
 		"baz": 42,
 	}), false)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{
 		bson.E{Key: "baz", Value: int64(42)},
 	}, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
 			bson.M{
@@ -362,7 +362,7 @@ func TestPutArray(t *testing.T) {
 	res, err = Put(doc, "foo.5", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
 			bson.M{
@@ -379,7 +379,7 @@ func TestPutArray(t *testing.T) {
 	res, err = Put(doc, "foo.1.baz", int64(7), false)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(42), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
 			bson.M{
@@ -394,7 +394,7 @@ func TestPutArray(t *testing.T) {
 }
 
 func TestUnset(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
@@ -405,7 +405,7 @@ func TestUnset(t *testing.T) {
 	// missing field
 	res := Unset(doc, "foo.bar.baz.quz")
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
@@ -416,7 +416,7 @@ func TestUnset(t *testing.T) {
 	// leaf field
 	res = Unset(doc, "foo.bar.baz")
 	assert.Equal(t, int64(42), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
 		},
@@ -425,7 +425,7 @@ func TestUnset(t *testing.T) {
 	// missing field
 	res = Unset(doc, "foo.bar.baz")
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{},
 		},
@@ -436,11 +436,11 @@ func TestUnset(t *testing.T) {
 	assert.Equal(t, bson.D{
 		bson.E{Key: "bar", Value: bson.D{}},
 	}, res)
-	assert.Equal(t, Convert(bson.M{}), doc)
+	assert.Equal(t, MustConvert(bson.M{}), doc)
 }
 
 func TestUnsetArray(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -452,7 +452,7 @@ func TestUnsetArray(t *testing.T) {
 	// negative index
 	res := Unset(doc, "foo.-1")
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -464,7 +464,7 @@ func TestUnsetArray(t *testing.T) {
 	// first element
 	res = Unset(doc, "foo.0")
 	assert.Equal(t, "bar", res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			nil,
 			bson.M{
@@ -478,7 +478,7 @@ func TestUnsetArray(t *testing.T) {
 	assert.Equal(t, bson.D{
 		bson.E{Key: "baz", Value: int64(42)},
 	}, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			nil,
 			nil,
@@ -488,7 +488,7 @@ func TestUnsetArray(t *testing.T) {
 	// missing index
 	res = Unset(doc, "foo.5")
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			nil,
 			nil,
@@ -497,7 +497,7 @@ func TestUnsetArray(t *testing.T) {
 }
 
 func TestIncrement(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": 42,
 		"bar": "42",
 	})
@@ -518,7 +518,7 @@ func TestIncrement(t *testing.T) {
 	res, err = Increment(doc, "foo", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(44), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": 44,
 		"bar": "42",
 	}), doc)
@@ -527,7 +527,7 @@ func TestIncrement(t *testing.T) {
 	res, err = Increment(doc, "quz", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": 44,
 		"bar": "42",
 		"quz": 2,
@@ -535,7 +535,7 @@ func TestIncrement(t *testing.T) {
 }
 
 func TestMultiply(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": 42,
 		"bar": "42",
 	})
@@ -556,7 +556,7 @@ func TestMultiply(t *testing.T) {
 	res, err = Multiply(doc, "foo", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(84), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": 84,
 		"bar": "42",
 	}), doc)
@@ -565,7 +565,7 @@ func TestMultiply(t *testing.T) {
 	res, err = Multiply(doc, "quz", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": 84,
 		"bar": "42",
 		"quz": 0,
@@ -573,7 +573,7 @@ func TestMultiply(t *testing.T) {
 }
 
 func TestPush(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"bar": "42",
 	})
 
@@ -581,7 +581,7 @@ func TestPush(t *testing.T) {
 	res, err := Push(doc, "foo", int64(42))
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{int64(42)}, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{42},
 		"bar": "42",
 	}), doc)
@@ -590,7 +590,7 @@ func TestPush(t *testing.T) {
 	res, err = Push(doc, "foo", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{int64(42), int64(2)}, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{42, 2},
 		"bar": "42",
 	}), doc)
@@ -599,14 +599,14 @@ func TestPush(t *testing.T) {
 	res, err = Push(doc, "bar", int64(2))
 	assert.NoError(t, err)
 	assert.Equal(t, "42", res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{42, 2},
 		"bar": "42",
 	}), doc)
 }
 
 func TestPop(t *testing.T) {
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{7, 13, 42},
 	})
@@ -615,7 +615,7 @@ func TestPop(t *testing.T) {
 	res, err := Pop(doc, "foo", false)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(7), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{13, 42},
 	}), doc)
@@ -624,7 +624,7 @@ func TestPop(t *testing.T) {
 	res, err = Pop(doc, "foo", true)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(42), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{13},
 	}), doc)
@@ -633,7 +633,7 @@ func TestPop(t *testing.T) {
 	res, err = Pop(doc, "foo", false)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(13), res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{},
 	}), doc)
@@ -642,7 +642,7 @@ func TestPop(t *testing.T) {
 	res, err = Pop(doc, "bar", false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
-	assert.Equal(t, Convert(bson.M{
+	assert.Equal(t, MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{},
 	}), doc)
@@ -651,7 +651,7 @@ func TestPop(t *testing.T) {
 func BenchmarkGet(b *testing.B) {
 	b.ReportAllocs()
 
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
@@ -667,7 +667,7 @@ func BenchmarkGet(b *testing.B) {
 func BenchmarkAll(b *testing.B) {
 	b.ReportAllocs()
 
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
 			bson.M{
@@ -704,7 +704,7 @@ func BenchmarkAll(b *testing.B) {
 func BenchmarkPut(b *testing.B) {
 	b.ReportAllocs()
 
-	doc := Convert(bson.M{
+	doc := MustConvert(bson.M{
 		"foo": bson.M{
 			"bar": bson.M{
 				"baz": 42,
