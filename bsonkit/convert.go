@@ -9,41 +9,41 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Convert will convert a simple map to a document.
-func Convert(m bson.M) Doc {
-	d := convertMap(m)
-	return &d
-}
-
-// ConvertList will convert a simple array to a list.
-func ConvertList(a []bson.M) List {
-	// convert all elements
-	l := make(List, len(a))
-	for i, item := range a {
-		l[i] = Convert(item)
+// Convert will convert the provided value to a document. The value is expected
+// to be a bson.M or bson.D composed of standard types.
+func Convert(v interface{}) Doc {
+	// convert value
+	doc, ok := convertValue(v).(bson.D)
+	if !ok {
+		panic(`bsonkit: expected conversion to result in a "bson.D"`)
 	}
 
-	return l
+	return &doc
 }
 
-func convertMap(m bson.M) bson.D {
-	// prepare document
-	d := make(bson.D, 0, len(m))
+// ConvertList will convert an array to a list. The value is expected to be a
+// bson.A of bson.M or bson.D elements composed of standard types.
+func ConvertList(v interface{}) List {
+	// convert value
+	doc := convertValue(v)
 
-	// copy keys
-	for key, field := range m {
-		d = append(d, bson.E{
-			Key:   key,
-			Value: convertValue(field),
-		})
+	// get array
+	array, ok := doc.(bson.A)
+	if !ok {
+		panic(`bsonkit: expected array`)
 	}
 
-	// sort document
-	sort.Slice(d, func(i, j int) bool {
-		return d[i].Key < d[j].Key
-	})
+	// build list
+	list := make(List, 0, len(array))
+	for _, item := range array {
+		doc, ok := item.(bson.D)
+		if !ok {
+			panic(`bsonkit: expected array of documents`)
+		}
+		list = append(list, &doc)
+	}
 
-	return d
+	return list
 }
 
 func convertValue(v interface{}) interface{} {
@@ -120,4 +120,24 @@ func convertValue(v interface{}) interface{} {
 	default:
 		panic(fmt.Sprintf("bsonkit: unsupported type %T", v))
 	}
+}
+
+func convertMap(m bson.M) bson.D {
+	// prepare document
+	d := make(bson.D, 0, len(m))
+
+	// copy keys
+	for key, field := range m {
+		d = append(d, bson.E{
+			Key:   key,
+			Value: convertValue(field),
+		})
+	}
+
+	// sort document
+	sort.Slice(d, func(i, j int) bool {
+		return d[i].Key < d[j].Key
+	})
+
+	return d
 }
