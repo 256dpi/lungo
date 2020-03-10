@@ -9,37 +9,57 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// MustConvert will convert the provided value to a document. The value is expected
-// to be a bson.M or bson.D composed of standard types.
+// MustConvert will call Convert and panic on errors.
 func MustConvert(v interface{}) Doc {
+	doc, err := Convert(v)
+	if err != nil {
+		panic("bsonkit: " + err.Error())
+	}
+
+	return doc
+}
+
+// Convert will convert the provided value to a document. The value is expected
+// to be a bson.M or bson.D composed of standard types.
+func Convert(v interface{}) (Doc, error) {
 	// convert value
 	res, err := convertValue(v)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// convert value
+	// check value
 	doc, ok := res.(bson.D)
 	if !ok {
-		panic(`bsonkit: expected conversion to result in a "bson.D"`)
+		return nil, fmt.Errorf(`expected conversion to result in a "bson.D"`)
 	}
 
-	return &doc
+	return &doc, nil
 }
 
-// MustConvertList will convert an array to a list. The value is expected to be a
-// bson.A of bson.M or bson.D elements composed of standard types.
+// MustConvertList will call ConvertList and panic on errors.
 func MustConvertList(v interface{}) List {
+	list, err := ConvertList(v)
+	if err != nil {
+		panic("bsonkit: " + err.Error())
+	}
+
+	return list
+}
+
+// ConvertList will convert an array to a list. The value is expected to be a
+// bson.A of bson.M or bson.D elements composed of standard types.
+func ConvertList(v interface{}) (List, error) {
 	// convert value
 	doc, err := convertValue(v)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// get array
+	// check array
 	array, ok := doc.(bson.A)
 	if !ok {
-		panic(`bsonkit: expected array`)
+		return nil, fmt.Errorf(`expected array`)
 	}
 
 	// build list
@@ -47,12 +67,12 @@ func MustConvertList(v interface{}) List {
 	for _, item := range array {
 		doc, ok := item.(bson.D)
 		if !ok {
-			panic(`bsonkit: expected array of documents`)
+			return nil, fmt.Errorf(`expected array of documents`)
 		}
 		list = append(list, &doc)
 	}
 
-	return list
+	return list, nil
 }
 
 func convertValue(v interface{}) (interface{}, error) {

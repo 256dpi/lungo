@@ -35,6 +35,13 @@ func TestConvert(t *testing.T) {
 		bson.E{Key: "foo", Value: "bar"},
 	}, res)
 
+	doc, err := Convert(bson.M{
+		"foo": uint(1),
+	})
+	assert.Error(t, err)
+	assert.Nil(t, doc)
+	assert.Equal(t, "unsupported type uint", err.Error())
+
 	assert.Panics(t, func() {
 		MustConvert(bson.M{
 			"foo": uint(1),
