@@ -30,7 +30,7 @@ func IndexedPath(path string) bool {
 		}
 
 		// reduce path
-		path = bsonkit.PathReduce(path)
+		path = bsonkit.ReducePath(path)
 	}
 
 	return false
@@ -51,7 +51,7 @@ func SplitDynamicPath(path string) (string, string, string) {
 
 	// handle root operator
 	if index == 0 {
-		return bsonkit.PathEnd, bsonkit.PathSegment(path), bsonkit.PathReduce(path)
+		return bsonkit.PathEnd, bsonkit.PathSegment(path), bsonkit.ReducePath(path)
 	}
 
 	// get leading part
@@ -60,7 +60,7 @@ func SplitDynamicPath(path string) (string, string, string) {
 	// reduce path
 	path = path[index:]
 
-	return lead, bsonkit.PathSegment(path), bsonkit.PathReduce(path)
+	return lead, bsonkit.PathSegment(path), bsonkit.ReducePath(path)
 }
 
 // PathBuilder is a memory efficient builder for paths.

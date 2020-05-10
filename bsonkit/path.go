@@ -8,9 +8,9 @@ import (
 // PathEnd is returned by X if the end of the path has been reached.
 var PathEnd = "\x00"
 
-// PathReduce will reduce the path by one segment. It will return PathEnd if
+// ReducePath will reduce the path by one segment. It will return PathEnd if
 // there are no more segments.
-func PathReduce(path string) string {
+func ReducePath(path string) string {
 	// get next dot
 	i := strings.IndexByte(path, '.')
 	if i >= 0 {

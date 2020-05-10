@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPathReduce(t *testing.T) {
-	assert.Equal(t, "bar.baz", PathReduce("foo.bar.baz"))
-	assert.Equal(t, "baz", PathReduce("bar.baz"))
-	assert.Equal(t, PathEnd, PathReduce("baz"))
-	assert.Equal(t, PathEnd, PathReduce(""))
+func TestReducePath(t *testing.T) {
+	assert.Equal(t, "bar.baz", ReducePath("foo.bar.baz"))
+	assert.Equal(t, "baz", ReducePath("bar.baz"))
+	assert.Equal(t, PathEnd, ReducePath("baz"))
+	assert.Equal(t, PathEnd, ReducePath(""))
 }
 
 func TestPathSegment(t *testing.T) {

@@ -78,7 +78,7 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 	if doc, ok := v.(bson.D); ok {
 		for _, el := range doc {
 			if el.Key == key {
-				return get(el.Value, PathReduce(path), collect, compact)
+				return get(el.Value, ReducePath(path), collect, compact)
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 	if doc, ok := v.(*bson.D); ok {
 		for _, el := range *doc {
 			if el.Key == key {
-				return get(el.Value, PathReduce(path), collect, compact)
+				return get(el.Value, ReducePath(path), collect, compact)
 			}
 		}
 	}
@@ -97,7 +97,7 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 		// get indexed array element if number
 		if index, ok := ParseIndex(key); ok {
 			if index >= 0 && index < len(arr) {
-				return get(arr[index], PathReduce(path), collect, compact)
+				return get(arr[index], ReducePath(path), collect, compact)
 			}
 		}
 
@@ -171,7 +171,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 	if doc, ok := v.(bson.D); ok {
 		for i, el := range doc {
 			if el.Key == key {
-				return put(doc[i].Value, PathReduce(path), value, prepend, func(v interface{}) {
+				return put(doc[i].Value, ReducePath(path), value, prepend, func(v interface{}) {
 					if v == unsetValue {
 						set(append(doc[:i], doc[i+1:]...))
 					} else {
@@ -188,7 +188,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 		// capture value
 		e := bson.E{Key: key}
-		res, ok := put(Missing, PathReduce(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, ReducePath(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
@@ -214,7 +214,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 
 		// update existing element
 		if index < len(arr) {
-			return put(arr[index], PathReduce(path), value, prepend, func(v interface{}) {
+			return put(arr[index], ReducePath(path), value, prepend, func(v interface{}) {
 				if v == unsetValue {
 					arr[index] = nil
 				} else {
@@ -234,7 +234,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		}
 
 		// put in last element
-		res, ok := put(Missing, PathReduce(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, ReducePath(path), value, prepend, func(v interface{}) {
 			arr[index] = v
 		})
 		if !ok {
@@ -256,7 +256,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 	if v == Missing {
 		// capture value
 		e := bson.E{Key: key}
-		res, ok := put(Missing, PathReduce(path), value, prepend, func(v interface{}) {
+		res, ok := put(Missing, ReducePath(path), value, prepend, func(v interface{}) {
 			e.Value = v
 		})
 		if !ok {
