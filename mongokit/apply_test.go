@@ -293,10 +293,9 @@ func TestApplySet(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo": "baz",
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -365,10 +364,9 @@ func TestApplySetOnInsert(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
 		Upsert: true,
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo": "baz",
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -407,9 +405,8 @@ func TestApplyUnset(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{},
-		Removed: []string{
-			"foo.bar",
+		Changed: map[string]interface{}{
+			"foo.bar": bsonkit.Missing,
 		},
 	}, changes)
 }
@@ -479,11 +476,9 @@ func TestApplyRename(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
+			"foo.bar": bsonkit.Missing,
 			"foo.baz": "baz",
-		},
-		Removed: []string{
-			"foo.bar",
 		},
 	}, changes)
 }
@@ -541,10 +536,9 @@ func TestApplyInc(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo.bar": int64(44),
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -601,10 +595,9 @@ func TestApplyMul(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo.bar": int64(84),
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -661,10 +654,9 @@ func TestApplyMax(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo.bar": int32(44),
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -721,10 +713,9 @@ func TestApplyMin(t *testing.T) {
 	}), false, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo.bar": int32(21),
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -804,12 +795,11 @@ func TestApplyCurrentDate(t *testing.T) {
 		},
 	}), false, nil)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, changes.Updated["foo"])
+	assert.NotEmpty(t, changes.Changed["foo"])
 	assert.Equal(t, &Changes{
-		Updated: map[string]interface{}{
-			"foo": changes.Updated["foo"],
+		Changed: map[string]interface{}{
+			"foo": changes.Changed["foo"],
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -866,10 +856,9 @@ func TestApplyPush(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
 		Upsert: true,
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo.1": "baz",
 		},
-		Removed: []string{},
 	}, changes)
 }
 
@@ -959,9 +948,8 @@ func TestApplyPop(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, &Changes{
 		Upsert: false,
-		Updated: map[string]interface{}{
+		Changed: map[string]interface{}{
 			"foo": bson.A{"bar"},
 		},
-		Removed: []string{},
 	}, changes)
 }

@@ -34,49 +34,30 @@ type Changes struct {
 	// Whether the operation was an upsert.
 	Upsert bool
 
-	// The fields that have been added or changed in the document.
-	Updated map[string]interface{}
-
-	// The fields that have been removed from the document.
-	Removed []string
+	// The fields that have been added, changed or removed in the document.
+	// Added and updated fields are set to the final value while removed fields
+	// are set to bsonkit.Missing.
+	Changed map[string]interface{}
 }
 
 // Record will record a value change. If value is Missing it will record an
 // removal. It will return an error if a path is conflicting.
 func (c *Changes) Record(path string, val interface{}) error {
-	// TODO: As MongoDB, we should use a prefix tree (trie) to check for
-	//  conflicting updates.
-	//  https://github.com/mongodb/mongo/blob/master/src/mongo/db/update/update_node.h#L55
-
 	// check if path or path prefixes conflict with changes
 	var err error
 	YieldPathPrefixes(path, func(path string) bool {
-		// check updated
-		if _, ok := c.Updated[path]; ok {
+		if _, ok := c.Changed[path]; ok {
 			err = fmt.Errorf("conflicting key %q", path)
 			return false
 		}
-
-		// check removed
-		for _, p := range c.Removed {
-			if p == path {
-				err = fmt.Errorf("conflicting key %q", path)
-				return false
-			}
-		}
-
 		return true
 	})
 	if err != nil {
 		return err
 	}
 
-	// handle remove
-	if val == bsonkit.Missing {
-		c.Removed = append(c.Removed, path)
-	} else {
-		c.Updated[path] = val
-	}
+	// add change
+	c.Changed[path] = val
 
 	return nil
 }
@@ -93,8 +74,7 @@ func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.Lis
 	// prepare changes
 	changes := &Changes{
 		Upsert:  upsert,
-		Updated: map[string]interface{}{},
-		Removed: []string{},
+		Changed: map[string]interface{}{},
 	}
 
 	// update document according to update

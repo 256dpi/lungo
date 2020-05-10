@@ -680,9 +680,21 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 
 	// add changes
 	if changes != nil {
+		// collect updated and removed fields
+		updated := make(map[string]interface{}, len(changes.Changed))
+		removed := make([]string, 0, len(changes.Changed))
+		for path, val := range changes.Changed {
+			if val == bsonkit.Missing {
+				removed = append(removed, path)
+			} else {
+				updated[path] = val
+			}
+		}
+
+		// set description
 		event["updateDescription"] = bson.M{
-			"updatedFields": changes.Updated,
-			"removedFields": changes.Removed,
+			"updatedFields": updated,
+			"removedFields": removed,
 		}
 	}
 
