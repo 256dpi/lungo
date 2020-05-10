@@ -199,6 +199,41 @@ func TestApplyConflicts(t *testing.T) {
 			},
 		}))
 	})
+
+	applyTest(t, false, bson.M{
+		"foo": bson.M{},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		// conflicting index paths (same)
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.0": 2,
+			},
+			"$unset": bson.M{
+				"foo.0": nil,
+			},
+		}, nil, `conflicting key "foo.0"`)
+
+		// conflicting index paths (sub)
+		fn(bson.M{
+			"$set": bson.M{
+				"foo":   bson.M{},
+				"foo.1": bson.M{},
+			},
+		}, nil, `conflicting key "foo"`)
+
+		// co-existing index paths
+		fn(bson.M{
+			"$set": bson.M{
+				"foo.1": bson.M{},
+				"foo.2": bson.M{},
+			},
+		}, nil, bsonkit.MustConvert(bson.M{
+			"foo": bson.M{
+				"1": bson.M{},
+				"2": bson.M{},
+			},
+		}))
+	})
 }
 
 func TestApplyPositionalOperators(t *testing.T) {
