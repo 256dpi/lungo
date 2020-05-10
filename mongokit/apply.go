@@ -153,7 +153,7 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 	}
 
 	// TODO: We probably need to check whether indexes in the path are actually
-	//  and array. They might also reference an object.
+	//  arrays. They might also reference an object field.
 
 	// check path
 	if IndexedPath(path) || IndexedPath(newPath) {
