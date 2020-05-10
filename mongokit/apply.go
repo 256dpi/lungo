@@ -41,6 +41,31 @@ type Changes struct {
 	Removed []string
 }
 
+// Record will record a value change. If value is Missing it will record an
+// removal. It will return an error if a path is conflicting.
+func (c *Changes) Record(path string, val interface{}) error {
+	// check updated
+	if _, ok := c.Updated[path]; ok {
+		return fmt.Errorf("conflicting key %q", path)
+	}
+
+	// check removed
+	for _, p := range c.Removed {
+		if p == path {
+			return fmt.Errorf("conflicting key %q", path)
+		}
+	}
+
+	// handle remove
+	if val == bsonkit.Missing {
+		c.Removed = append(c.Removed, path)
+	} else {
+		c.Updated[path] = val
+	}
+
+	return nil
+}
+
 // Apply will apply a MongoDB update document on a document using the various
 // update operators. The document is updated in place. The changes to the
 // document are collected and returned.
@@ -80,7 +105,10 @@ func applySet(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = v
+	err = ctx.Value.(*Changes).Record(path, v)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -98,7 +126,10 @@ func applySetOnInsert(ctx Context, doc bsonkit.Doc, _, path string, v interface{
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = v
+	err = ctx.Value.(*Changes).Record(path, v)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -111,7 +142,10 @@ func applyUnset(ctx Context, doc bsonkit.Doc, _, path string, _ interface{}) err
 	}
 
 	// record change
-	ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
+	err := ctx.Value.(*Changes).Record(path, bsonkit.Missing)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -143,9 +177,17 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 		return err
 	}
 
-	// record changes
-	ctx.Value.(*Changes).Removed = append(ctx.Value.(*Changes).Removed, path)
-	ctx.Value.(*Changes).Updated[newPath] = value
+	// record remove
+	err = ctx.Value.(*Changes).Record(path, bsonkit.Missing)
+	if err != nil {
+		return err
+	}
+
+	// record update
+	err = ctx.Value.(*Changes).Record(newPath, value)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -158,7 +200,10 @@ func applyInc(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = res
+	err = ctx.Value.(*Changes).Record(path, res)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -171,7 +216,10 @@ func applyMul(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = res
+	err = ctx.Value.(*Changes).Record(path, res)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -187,7 +235,10 @@ func applyMax(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 		}
 
 		// record change
-		ctx.Value.(*Changes).Updated[path] = v
+		err = ctx.Value.(*Changes).Record(path, v)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
@@ -201,7 +252,10 @@ func applyMax(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 		}
 
 		// record change
-		ctx.Value.(*Changes).Updated[path] = v
+		err = ctx.Value.(*Changes).Record(path, v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -218,7 +272,10 @@ func applyMin(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 		}
 
 		// record change
-		ctx.Value.(*Changes).Updated[path] = v
+		err = ctx.Value.(*Changes).Record(path, v)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
@@ -232,7 +289,10 @@ func applyMin(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 		}
 
 		// record change
-		ctx.Value.(*Changes).Updated[path] = v
+		err = ctx.Value.(*Changes).Record(path, v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -254,7 +314,10 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 			}
 
 			// record change
-			ctx.Value.(*Changes).Updated[path] = now
+			err = ctx.Value.(*Changes).Record(path, now)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -289,7 +352,10 @@ func applyCurrentDate(ctx Context, doc bsonkit.Doc, name, path string, v interfa
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = now
+	err = ctx.Value.(*Changes).Record(path, now)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -306,7 +372,10 @@ func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 	// record change if result is an array
 	if array, ok := res.(bson.A); ok {
 		addedPath := path + "." + strconv.Itoa(len(array)-1)
-		ctx.Value.(*Changes).Updated[addedPath] = v
+		err = ctx.Value.(*Changes).Record(addedPath, v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -333,7 +402,10 @@ func applyPop(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	}
 
 	// record change
-	ctx.Value.(*Changes).Updated[path] = bsonkit.Get(doc, path)
+	err = ctx.Value.(*Changes).Record(path, bsonkit.Get(doc, path))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
