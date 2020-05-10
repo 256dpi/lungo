@@ -411,7 +411,7 @@ func TestApplyRename(t *testing.T) {
 		}))
 	})
 
-	// ignored array values
+	// array paths
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
 			bson.M{"bar": "baz"},
@@ -421,11 +421,7 @@ func TestApplyRename(t *testing.T) {
 			"$rename": bson.M{
 				"foo.0.bar": "foo.0.baz",
 			},
-		}, nil, bsonkit.MustConvert(bson.M{
-			"foo": bson.A{
-				bson.M{"bar": "baz"},
-			},
-		}))
+		}, nil, "$rename: path cannot be an array")
 	})
 
 	// changes

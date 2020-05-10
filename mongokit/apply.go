@@ -123,9 +123,12 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 		return fmt.Errorf("%s: expected string", name)
 	}
 
-	// ignore indexed paths
+	// TODO: We probably need to check whether indexes in the path are actually
+	//  and array. They might also reference an object.
+
+	// check path
 	if IndexedPath(path) || IndexedPath(newPath) {
-		return nil
+		return fmt.Errorf("%s: path cannot be an array", name)
 	}
 
 	// unset old value
