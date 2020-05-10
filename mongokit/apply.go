@@ -29,19 +29,20 @@ func init() {
 	FieldUpdateOperators["$pop"] = applyPop
 }
 
-// Changes describes the applied changes to a document.
+// Changes record the applied changes to a document.
 type Changes struct {
 	// Whether the operation was an upsert.
 	Upsert bool
 
-	// The fields that have been added, changed or removed in the document.
+	// The fields that have been added, updated or removed in the document.
 	// Added and updated fields are set to the final value while removed fields
 	// are set to bsonkit.Missing.
 	Changed map[string]interface{}
 }
 
-// Record will record a value change. If value is Missing it will record an
-// removal. It will return an error if a path is conflicting.
+// Record will record a field change. If the value is bsonkit.Missing it will
+// record an removal. It will return an error if a path is conflicting with a
+// previous recorded change.
 func (c *Changes) Record(path string, val interface{}) error {
 	// check if path or path prefixes conflict with changes
 	var err error
@@ -64,7 +65,7 @@ func (c *Changes) Record(path string, val interface{}) error {
 
 // Apply will apply a MongoDB update document on a document using the various
 // update operators. The document is updated in place. The changes to the
-// document are collected and returned.
+// document are recorded and returned.
 func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.List) (*Changes, error) {
 	// check update
 	if len(*update) == 0 {
