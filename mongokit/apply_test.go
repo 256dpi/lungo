@@ -36,14 +36,20 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				opts.SetArrayFilters(options.ArrayFilters{Filters: list})
 			}
 
-			n, err := coll.UpdateOne(nil, query, update, opts)
+			res, err := coll.UpdateOne(nil, query, update, opts)
 			if _, ok := result.(string); ok {
 				assert.Error(t, err, update)
-				assert.Nil(t, n, update)
+				assert.Nil(t, res, update)
 				return
 			}
 
 			assert.NoError(t, err)
+
+			if upsert {
+				query = bson.M{
+					"_id": res.UpsertedID,
+				}
+			}
 
 			var m bson.M
 			err = coll.FindOne(nil, query).Decode(&m)
