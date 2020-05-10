@@ -18,6 +18,15 @@ func TestIndexedPath(t *testing.T) {
 	assert.True(t, IndexedPath("foo.bar.2"))
 }
 
+func TestYieldPathPrefixes(t *testing.T) {
+	var prefixes []string
+	YieldPathPrefixes("foo.bar.baz", func(s string) bool {
+		prefixes = append(prefixes, s)
+		return true
+	})
+	assert.Equal(t, []string{"foo.bar.baz", "foo.bar", "foo"}, prefixes)
+}
+
 func TestSplitDynamicPath(t *testing.T) {
 	head, operator, tail := SplitDynamicPath("foo.bar.$[baz].quz")
 	assert.Equal(t, "foo.bar", head)

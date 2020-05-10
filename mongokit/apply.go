@@ -44,16 +44,31 @@ type Changes struct {
 // Record will record a value change. If value is Missing it will record an
 // removal. It will return an error if a path is conflicting.
 func (c *Changes) Record(path string, val interface{}) error {
-	// check updated
-	if _, ok := c.Updated[path]; ok {
-		return fmt.Errorf("conflicting key %q", path)
-	}
+	// TODO: As MongoDB, we should use a prefix tree (trie) to check for
+	//  conflicting updates.
+	//  https://github.com/mongodb/mongo/blob/master/src/mongo/db/update/update_node.h#L55
 
-	// check removed
-	for _, p := range c.Removed {
-		if p == path {
-			return fmt.Errorf("conflicting key %q", path)
+	// check if path or path prefixes conflict with changes
+	var err error
+	YieldPathPrefixes(path, func(path string) bool {
+		// check updated
+		if _, ok := c.Updated[path]; ok {
+			err = fmt.Errorf("conflicting key %q", path)
+			return false
 		}
+
+		// check removed
+		for _, p := range c.Removed {
+			if p == path {
+				err = fmt.Errorf("conflicting key %q", path)
+				return false
+			}
+		}
+
+		return true
+	})
+	if err != nil {
+		return err
 	}
 
 	// handle remove

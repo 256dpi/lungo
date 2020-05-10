@@ -36,6 +36,25 @@ func IndexedPath(path string) bool {
 	return false
 }
 
+// YieldPathPrefixes will yield all possible path prefixes including the full
+// path for the provided path.
+func YieldPathPrefixes(path string, fn func(string) bool) {
+	for {
+		// check if end
+		if path == bsonkit.PathEnd {
+			return
+		}
+
+		// yield path
+		if !fn(path) {
+			return
+		}
+
+		// reduce path
+		path = bsonkit.ReducePathReverse(path)
+	}
+}
+
 // SplitDynamicPath will split the provided path on the first positional
 // operator. It will return the leading path, the operator and the trailing path.
 // The segments may be set to bsonkit.PathEnd if there are not available in the
