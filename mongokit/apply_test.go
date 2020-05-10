@@ -126,7 +126,9 @@ func TestApply(t *testing.T) {
 			"foo": "baz",
 		}))
 	})
+}
 
+func TestApplyConflicts(t *testing.T) {
 	applyTest(t, false, bson.M{
 		"foo": bson.M{},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
