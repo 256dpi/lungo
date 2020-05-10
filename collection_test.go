@@ -1224,7 +1224,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
-		// assert.Nil(t, res)  // TODO: mongo returns all ids in any case, bug?
+		assert.Len(t, res.InsertedIDs, 0)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
@@ -1266,7 +1266,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
-		// assert.Nil(t, res) // TODO: mongo returns all ids in any case, bug?
+		assert.Len(t, res.InsertedIDs, 0)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
@@ -1280,7 +1280,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		_, err := c.InsertMany(nil, bson.A{
+		res, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -1295,7 +1295,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		})
 		assert.Error(t, err)
-		// assert.Len(t, res.InsertedIDs, 1) // TODO: mongo returns all ids in any case, bug?
+		assert.Len(t, res.InsertedIDs, 1)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
@@ -1309,7 +1309,7 @@ func TestCollectionInsertMany(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		_, err := c.InsertMany(nil, bson.A{
+		res, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
 				"foo": "bar",
@@ -1324,7 +1324,7 @@ func TestCollectionInsertMany(t *testing.T) {
 			},
 		}, options.InsertMany().SetOrdered(false))
 		assert.Error(t, err)
-		// assert.Len(t, res.InsertedIDs, 1) // TODO: mongo returns all ids in any case, bug?
+		assert.Len(t, res.InsertedIDs, 2)
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
