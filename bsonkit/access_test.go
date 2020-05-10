@@ -597,12 +597,8 @@ func TestPush(t *testing.T) {
 
 	// non-array field
 	res, err = Push(doc, "bar", int64(2))
-	assert.NoError(t, err)
-	assert.Equal(t, "42", res)
-	assert.Equal(t, MustConvert(bson.M{
-		"foo": bson.A{42, 2},
-		"bar": "42",
-	}), doc)
+	assert.Error(t, err)
+	assert.Equal(t, `value at path "bar" is not an array`, err.Error())
 }
 
 func TestPop(t *testing.T) {
@@ -611,8 +607,17 @@ func TestPop(t *testing.T) {
 		"foo": bson.A{7, 13, 42},
 	})
 
+	// missing array
+	res, err := Pop(doc, "baz", false)
+	assert.NoError(t, err)
+	assert.Equal(t, Missing, res)
+	assert.Equal(t, MustConvert(bson.M{
+		"bar": "42",
+		"foo": bson.A{7, 13, 42},
+	}), doc)
+
 	// pop first element
-	res, err := Pop(doc, "foo", false)
+	res, err = Pop(doc, "foo", false)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(7), res)
 	assert.Equal(t, MustConvert(bson.M{
@@ -638,14 +643,19 @@ func TestPop(t *testing.T) {
 		"foo": bson.A{},
 	}), doc)
 
-	// non-array field
-	res, err = Pop(doc, "bar", false)
+	// empty array
+	res, err = Pop(doc, "foo", false)
 	assert.NoError(t, err)
 	assert.Equal(t, Missing, res)
 	assert.Equal(t, MustConvert(bson.M{
 		"bar": "42",
 		"foo": bson.A{},
 	}), doc)
+
+	// non-array field
+	res, err = Pop(doc, "bar", false)
+	assert.Error(t, err)
+	assert.Equal(t, `value at path "bar" is not an array`, err.Error())
 }
 
 func BenchmarkGet(b *testing.B) {

@@ -310,7 +310,7 @@ func applyPop(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	if bsonkit.Compare(v, int64(1)) == 0 {
 		last = true
 	} else if bsonkit.Compare(v, int64(-1)) != 0 {
-		return nil
+		return fmt.Errorf("%s: expected 1 or -1", name)
 	}
 
 	// pop element

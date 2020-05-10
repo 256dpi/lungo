@@ -817,12 +817,7 @@ func TestApplyPush(t *testing.T) {
 				"nil": "baz",
 				"obj": "baz",
 			},
-		}, nil, bsonkit.MustConvert(bson.M{
-			"str": "bar",
-			"int": int32(42),
-			"nil": nil,
-			"obj": bson.D{},
-		}))
+		}, nil, `value at path "int" is not an array`)
 	})
 
 	// changes
@@ -851,6 +846,17 @@ func TestApplyPop(t *testing.T) {
 		fn(bson.M{
 			"$pop": bson.M{
 				"foo": 0,
+			},
+		}, nil, "$pop: expected 1 or -1")
+	})
+
+	// missing value
+	applyTest(t, false, bson.M{
+		"foo": bson.A{"bar", "baz"},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"bar": -1,
 			},
 		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar", "baz"},
@@ -881,6 +887,30 @@ func TestApplyPop(t *testing.T) {
 		}, nil, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{"bar"},
 		}))
+	})
+
+	// empty array
+	applyTest(t, false, bson.M{
+		"foo": bson.A{},
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"foo": 1,
+			},
+		}, nil, bsonkit.MustConvert(bson.M{
+			"foo": bson.A{},
+		}))
+	})
+
+	// non-array
+	applyTest(t, false, bson.M{
+		"foo": "bar",
+	}, func(fn func(bson.M, []bson.M, interface{})) {
+		fn(bson.M{
+			"$pop": bson.M{
+				"foo": 1,
+			},
+		}, nil, `value at path "foo" is not an array`)
 	})
 
 	// changes
