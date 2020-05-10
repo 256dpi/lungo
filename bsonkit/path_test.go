@@ -13,11 +13,25 @@ func TestReducePath(t *testing.T) {
 	assert.Equal(t, PathEnd, ReducePath(""))
 }
 
+func TestReducePathReverse(t *testing.T) {
+	assert.Equal(t, "foo.bar", ReducePathReverse("foo.bar.baz"))
+	assert.Equal(t, "bar", ReducePathReverse("bar.baz"))
+	assert.Equal(t, PathEnd, ReducePathReverse("baz"))
+	assert.Equal(t, PathEnd, ReducePathReverse(""))
+}
+
 func TestPathSegment(t *testing.T) {
 	assert.Equal(t, "foo", PathSegment("foo.bar.baz"))
 	assert.Equal(t, "bar", PathSegment("bar.baz"))
 	assert.Equal(t, "baz", PathSegment("baz"))
 	assert.Equal(t, "", PathSegment(""))
+}
+
+func TestPathSegmentReverse(t *testing.T) {
+	assert.Equal(t, "foo", PathSegmentReverse("baz.bar.foo"))
+	assert.Equal(t, "bar", PathSegmentReverse("baz.bar"))
+	assert.Equal(t, "baz", PathSegmentReverse("baz"))
+	assert.Equal(t, "", PathSegmentReverse(""))
 }
 
 func TestParseIndex(t *testing.T) {

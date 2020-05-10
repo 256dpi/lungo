@@ -20,12 +20,35 @@ func ReducePath(path string) string {
 	return PathEnd
 }
 
+// ReducePathReverse will reduce the path by one segment from the back. It will
+// return PathEnd if there are no more segments.
+func ReducePathReverse(path string) string {
+	// get last dot
+	i := strings.LastIndexByte(path, '.')
+	if i >= 0 {
+		return path[:i]
+	}
+
+	return PathEnd
+}
+
 // PathSegment will return the first segment of the path.
 func PathSegment(path string) string {
 	// get first dot
 	i := strings.IndexByte(path, '.')
 	if i >= 0 {
 		return path[:i]
+	}
+
+	return path
+}
+
+// PathSegmentReverse will return the last segment of the path.
+func PathSegmentReverse(path string) string {
+	// get first dot
+	i := strings.LastIndexByte(path, '.')
+	if i >= 0 {
+		return path[i+1:]
 	}
 
 	return path
