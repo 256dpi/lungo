@@ -25,7 +25,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				}
 			}
 
-			opts := options.Update().SetUpsert(true)
+			opts := options.Update().SetUpsert(upsert)
 
 			if arrayFilters != nil {
 				list := make([]interface{}, 0, len(arrayFilters))
@@ -42,6 +42,8 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				assert.Nil(t, n, update)
 				return
 			}
+
+			assert.NoError(t, err)
 
 			var m bson.M
 			err = coll.FindOne(nil, query).Decode(&m)
