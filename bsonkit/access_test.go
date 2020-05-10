@@ -308,9 +308,6 @@ func TestPutArray(t *testing.T) {
 	doc := MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
-			bson.M{
-				"baz": 42,
-			},
 		},
 	})
 
@@ -322,9 +319,6 @@ func TestPutArray(t *testing.T) {
 	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			"bar",
-			bson.M{
-				"baz": 42,
-			},
 		},
 	}), doc)
 
@@ -335,9 +329,6 @@ func TestPutArray(t *testing.T) {
 	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
-			bson.M{
-				"baz": 42,
-			},
 		},
 	}), doc)
 
@@ -346,9 +337,7 @@ func TestPutArray(t *testing.T) {
 		"baz": 42,
 	}), false)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{
-		bson.E{Key: "baz", Value: int64(42)},
-	}, res)
+	assert.Equal(t, Missing, res)
 	assert.Equal(t, MustConvert(bson.M{
 		"foo": bson.A{
 			7,
