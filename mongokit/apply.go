@@ -45,6 +45,11 @@ type Changes struct {
 // update operators. The document is updated in place. The changes to the
 // document are collected and returned.
 func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.List) (*Changes, error) {
+	// check update
+	if len(*update) == 0 {
+		return nil, fmt.Errorf("empty update document")
+	}
+
 	// prepare changes
 	changes := &Changes{
 		Upsert:  upsert,

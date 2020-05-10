@@ -87,9 +87,7 @@ func TestApply(t *testing.T) {
 		"foo": "bar",
 	}, func(fn func(bson.M, []bson.M, interface{})) {
 		// empty update
-		fn(bson.M{}, nil, bsonkit.MustConvert(bson.M{
-			"foo": "bar",
-		}))
+		fn(bson.M{}, nil, "empty update document")
 
 		// not an operator
 		fn(bson.M{
@@ -109,9 +107,7 @@ func TestApply(t *testing.T) {
 		// empty document
 		fn(bson.M{
 			"$set": bson.M{},
-		}, nil, bsonkit.MustConvert(bson.M{
-			"foo": "bar",
-		}))
+		}, nil, "$set: empty document")
 
 		// valid update
 		fn(bson.M{

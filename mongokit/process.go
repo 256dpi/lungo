@@ -88,6 +88,11 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 			return fmt.Errorf("%s: expected document", pair.Key)
 		}
 
+		// check document
+		if len(update) == 0 {
+			return fmt.Errorf("%s: empty document", pair.Key)
+		}
+
 		// call operator for each pair
 		for _, cond := range update {
 			err := Resolve(cond.Key, ctx.TopLevelQuery, doc, ctx.TopLevelArrayFilters, func(path string) error {
