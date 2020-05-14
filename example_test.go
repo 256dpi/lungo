@@ -1,7 +1,8 @@
 package lungo
 
 import (
-	"github.com/kr/pretty"
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -52,10 +53,8 @@ func Example() {
 	}
 
 	// print documents
-	pretty.Println(posts)
+	fmt.Printf("%+v", posts)
 
 	// Output:
-	// []lungo.post{
-	//     {Title:"Hello World!"},
-	// }
+	// [{Title:Hello World!}]
 }
