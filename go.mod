@@ -3,7 +3,7 @@ module github.com/256dpi/lungo
 go 1.13
 
 require (
-	github.com/256dpi/btree v0.0.0-20191029155653-36fa32f443ba
+	github.com/256dpi/btree v0.0.0-20200517182607-63d76dfb3721
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/xdg/stringprep v1.0.0 // indirect
