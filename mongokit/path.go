@@ -7,35 +7,6 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// IndexedPath returns true if the specified path contains array indices.
-func IndexedPath(path string) bool {
-	// preliminary check
-	hasNumber := false
-	for _, s := range path {
-		if s >= '0' && s <= '9' {
-			hasNumber = true
-			break
-		}
-	}
-	if !hasNumber {
-		return false
-	}
-
-	// check all segments
-	for path != bsonkit.PathEnd {
-		// check segment
-		_, ok := bsonkit.ParseIndex(bsonkit.PathSegment(path))
-		if ok {
-			return true
-		}
-
-		// reduce path
-		path = bsonkit.ReducePath(path)
-	}
-
-	return false
-}
-
 // SplitDynamicPath will split the provided path on the first positional
 // operator. It will return the leading path, the operator and the trailing path.
 // The segments may be set to bsonkit.PathEnd if there are not available in the

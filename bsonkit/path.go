@@ -71,6 +71,35 @@ func ParseIndex(str string) (int, bool) {
 	return index, true
 }
 
+// IndexedPath returns true if the specified path contains array indices.
+func IndexedPath(path string) bool {
+	// preliminary check
+	hasNumber := false
+	for _, s := range path {
+		if s >= '0' && s <= '9' {
+			hasNumber = true
+			break
+		}
+	}
+	if !hasNumber {
+		return false
+	}
+
+	// check all segments
+	for path != PathEnd {
+		// check segment
+		_, ok := ParseIndex(PathSegment(path))
+		if ok {
+			return true
+		}
+
+		// reduce path
+		path = ReducePath(path)
+	}
+
+	return false
+}
+
 var pathNodePool = sync.Pool{
 	New: func() interface{} {
 		return PathNode{}

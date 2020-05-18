@@ -161,7 +161,7 @@ func applyRename(ctx Context, doc bsonkit.Doc, name, path string, v interface{})
 	//  arrays. They might also reference an object field.
 
 	// check path
-	if IndexedPath(path) || IndexedPath(newPath) {
+	if bsonkit.IndexedPath(path) || bsonkit.IndexedPath(newPath) {
 		return fmt.Errorf("%s: path cannot be an array", name)
 	}
 

@@ -56,6 +56,16 @@ func TestParseIndex(t *testing.T) {
 	assert.Equal(t, 0, index)
 }
 
+func TestIndexedPath(t *testing.T) {
+	assert.False(t, IndexedPath(""))
+	assert.False(t, IndexedPath(PathEnd))
+	assert.False(t, IndexedPath("foo.bar"))
+	assert.False(t, IndexedPath("foo1.2bar"))
+	assert.True(t, IndexedPath("0.foo.bar"))
+	assert.True(t, IndexedPath("foo.1.bar"))
+	assert.True(t, IndexedPath("foo.bar.2"))
+}
+
 func TestPathNode(t *testing.T) {
 	root := PathNode{}
 
