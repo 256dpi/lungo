@@ -138,6 +138,20 @@ func TestPathNode(t *testing.T) {
 	assert.Equal(t, root, node)
 }
 
+func TestPathBuilder(t *testing.T) {
+	pb := NewPathBuilder(200)
+	assert.Equal(t, "", pb.String())
+
+	pb.AddSegment("foo")
+	assert.Equal(t, "foo", pb.String())
+
+	pb.AddIndex(42)
+	assert.Equal(t, "foo.42", pb.String())
+
+	pb.AddSegment("bar")
+	assert.Equal(t, "foo.42.bar", pb.String())
+}
+
 func BenchmarkPathNode(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -150,5 +164,16 @@ func BenchmarkPathNode(b *testing.B) {
 			panic("error")
 		}
 		node.Recycle()
+	}
+}
+
+func BenchmarkPathBuilder(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		pb := NewPathBuilder(6)
+		pb.AddSegment("foo")
+		pb.AddIndex(42)
+		_ = pb.String()
 	}
 }

@@ -1,7 +1,6 @@
 package mongokit
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/256dpi/lungo/bsonkit"
@@ -32,59 +31,4 @@ func SplitDynamicPath(path string) (string, string, string) {
 	path = path[index:]
 
 	return lead, bsonkit.PathSegment(path), bsonkit.ReducePath(path)
-}
-
-// PathBuilder is a memory efficient builder for paths.
-type PathBuilder struct {
-	buf []byte
-	len int
-}
-
-// NewPathBuilder creates a new path builder with the provided allocated memory.
-func NewPathBuilder(buffer int) *PathBuilder {
-	return &PathBuilder{
-		buf: make([]byte, buffer),
-	}
-}
-
-// AddSegment will add the specified segment.
-func (b *PathBuilder) AddSegment(seg string) int {
-	// add separator
-	if b.len > 0 {
-		b.buf[b.len] = '.'
-		b.len++
-	}
-
-	// copy segment
-	b.len += copy(b.buf[b.len:], seg)
-
-	return b.len
-}
-
-// AddIndex will add the specified index.
-func (b *PathBuilder) AddIndex(idx int) int {
-	// add separator
-	if b.len > 0 {
-		b.buf[b.len] = '.'
-		b.len++
-	}
-
-	// append number
-	ret := strconv.AppendInt(b.buf[b.len:b.len], int64(idx), 10)
-	b.len += len(ret)
-
-	return b.len
-}
-
-// Truncate will shrink the buffer to the provided length.
-func (b *PathBuilder) Truncate(len int) {
-	// set length
-	if len < b.len {
-		b.len = len
-	}
-}
-
-// String will return the built path.
-func (b *PathBuilder) String() string {
-	return string(b.buf[:b.len])
 }

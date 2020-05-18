@@ -54,7 +54,7 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	// handle "all" positional operator "$[]"
 	if identifier == "" {
 		// prepare builder
-		builder := NewPathBuilder(len(head) + 22 + len(tail))
+		builder := bsonkit.NewPathBuilder(len(head) + 22 + len(tail))
 
 		// add head
 		fixed := builder.AddSegment(head)
@@ -83,7 +83,7 @@ func resolve(path string, query bsonkit.Doc, doc bson.D, arrayFilters bsonkit.Li
 	}
 
 	// prepare builder
-	builder := NewPathBuilder(len(head) + 22 + len(tail))
+	builder := bsonkit.NewPathBuilder(len(head) + 22 + len(tail))
 
 	// add head
 	fixed := builder.AddSegment(head)
