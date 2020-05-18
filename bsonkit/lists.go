@@ -10,7 +10,10 @@ import (
 // Limit may be specified to break early if the the list reached the limit.
 func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
-	result := make(List, 0, len(list))
+	var result List
+	if limit > 0 {
+		result = make(List, 0, limit)
+	}
 
 	// select documents
 	for _, doc := range list {
@@ -51,7 +54,7 @@ func Pick(list List, path string, compact bool) bson.A {
 	// add values
 	for _, doc := range list {
 		v := Get(doc, path)
-		if v == Missing && compact {
+		if compact && v == Missing {
 			continue
 		} else {
 			result = append(result, v)
@@ -76,7 +79,7 @@ func Collect(list List, path string, compact, merge, flatten, distinct bool) bso
 	for _, doc := range list {
 		// get value
 		v, _ := All(doc, path, compact, merge)
-		if v == Missing && compact {
+		if compact && v == Missing {
 			continue
 		}
 
@@ -101,19 +104,17 @@ func Collect(list List, path string, compact, merge, flatten, distinct bool) bso
 	// prepare distincts
 	distincts := make(bson.A, 0, len(result))
 
-	// keep last value
-	var lastValue interface{}
-
 	// add distinct values
+	var prevValue interface{}
 	for _, value := range result {
 		// check if same as previous value
-		if len(distincts) > 0 && Compare(lastValue, value) == 0 {
+		if len(distincts) > 0 && Compare(prevValue, value) == 0 {
 			continue
 		}
 
 		// add value
 		distincts = append(distincts, value)
-		lastValue = value
+		prevValue = value
 	}
 
 	return distincts
