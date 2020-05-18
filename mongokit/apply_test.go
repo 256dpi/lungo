@@ -74,7 +74,9 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 			_, err := Apply(d, nil, bsonkit.MustConvert(update), upsert, l)
 			if str, ok := result.(string); ok {
 				assert.Error(t, err)
-				assert.Equal(t, str, err.Error())
+				if err != nil {
+					assert.Equal(t, str, err.Error())
+				}
 				return
 			}
 
@@ -148,6 +150,14 @@ func TestApplyConflicts(t *testing.T) {
 				"foo":     bson.M{},
 				"foo.bar": bson.M{},
 			},
+		}, nil, `conflicting key "foo.bar"`)
+
+		// conflicting paths (sub) reverse
+		fn(bson.M{
+			"$set": bson.D{
+				{Key: "foo.bar", Value: bson.M{}},
+				{Key: "foo", Value: bson.M{}},
+			},
 		}, nil, `conflicting key "foo"`)
 
 		// co-existing paths
@@ -182,6 +192,14 @@ func TestApplyConflicts(t *testing.T) {
 			"$set": bson.M{
 				"foo":   bson.M{},
 				"foo.1": bson.M{},
+			},
+		}, nil, `conflicting key "foo.1"`)
+
+		// conflicting array paths (sub) reverse
+		fn(bson.M{
+			"$set": bson.D{
+				{Key: "foo.1", Value: bson.M{}},
+				{Key: "foo", Value: bson.M{}},
 			},
 		}, nil, `conflicting key "foo"`)
 
@@ -218,6 +236,14 @@ func TestApplyConflicts(t *testing.T) {
 			"$set": bson.M{
 				"foo":   bson.M{},
 				"foo.1": bson.M{},
+			},
+		}, nil, `conflicting key "foo.1"`)
+
+		// conflicting index paths (sub) reverse
+		fn(bson.M{
+			"$set": bson.D{
+				{Key: "foo.1", Value: bson.M{}},
+				{Key: "foo", Value: bson.M{}},
 			},
 		}, nil, `conflicting key "foo"`)
 

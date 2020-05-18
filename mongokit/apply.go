@@ -38,24 +38,23 @@ type Changes struct {
 	// Added and updated fields are set to the final value while removed fields
 	// are set to bsonkit.Missing.
 	Changed map[string]interface{}
+
+	// the temporary tree to track key conflicts
+	pathTree bsonkit.PathNode
 }
 
 // Record will record a field change. If the value is bsonkit.Missing it will
 // record an removal. It will return an error if a path is conflicting with a
 // previous recorded change.
 func (c *Changes) Record(path string, val interface{}) error {
-	// check if path or path prefixes conflict with changes
-	var err error
-	YieldPathPrefixes(path, func(path string) bool {
-		if _, ok := c.Changed[path]; ok {
-			err = fmt.Errorf("conflicting key %q", path)
-			return false
-		}
-		return true
-	})
-	if err != nil {
-		return err
+	// check if path conflicts with another recorded change
+	node, rest := c.pathTree.Lookup(path)
+	if node.Load() == true || rest == bsonkit.PathEnd {
+		return fmt.Errorf("conflicting key %q", path)
 	}
+
+	// add path to tree
+	c.pathTree.Append(path).Store(true)
 
 	// add change
 	c.Changed[path] = val
@@ -74,8 +73,9 @@ func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.Lis
 
 	// prepare changes
 	changes := &Changes{
-		Upsert:  upsert,
-		Changed: map[string]interface{}{},
+		Upsert:   upsert,
+		Changed:  map[string]interface{}{},
+		pathTree: bsonkit.NewPathNode(),
 	}
 
 	// update document according to update
@@ -89,6 +89,10 @@ func Apply(doc, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.Lis
 	if err != nil {
 		return nil, err
 	}
+
+	// recycle tree
+	changes.pathTree.Recycle()
+	changes.pathTree = nil
 
 	return changes, nil
 }
