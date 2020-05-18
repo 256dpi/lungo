@@ -216,7 +216,7 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
-		"BatchSIze": ignored,
+		"BatchSize": ignored,
 		"MaxTime":   ignored,
 	})
 
