@@ -3,6 +3,7 @@ package bsonkit
 import (
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // PathEnd is returned by X if the end of the path has been reached.
@@ -68,4 +69,87 @@ func ParseIndex(str string) (int, bool) {
 	}
 
 	return index, true
+}
+
+var pathNodePool = sync.Pool{
+	New: func() interface{} {
+		return PathNode{}
+	},
+}
+
+// PathNode is a node of a path tree.
+type PathNode map[string]interface{}
+
+// NewPathNode will return a new path node.
+func NewPathNode() PathNode {
+	return pathNodePool.Get().(PathNode)
+}
+
+// Store will set the specified value and return the previous stored value.
+func (n PathNode) Store(value interface{}) interface{} {
+	prev := n[PathEnd]
+	n[PathEnd] = value
+	return prev
+}
+
+// Load will return the currently stored value.
+func (n PathNode) Load() interface{} {
+	return n[PathEnd]
+}
+
+// Append will traverse the path and append missing nodes.
+func (n PathNode) Append(path string) PathNode {
+	// set value on leaf
+	if path == PathEnd {
+		return n
+	}
+
+	// get segment
+	segment := PathSegment(path)
+
+	// get child
+	child, ok := n[segment].(PathNode)
+	if !ok {
+		child = NewPathNode()
+		n[segment] = child
+	}
+
+	// descend
+	return child.Append(ReducePath(path))
+}
+
+// Lookup will traverse the path and return the last node. If the returned path
+// is PathEnd the returned node is the final node.
+func (n PathNode) Lookup(path string) (PathNode, string) {
+	// return value from leaf
+	if path == PathEnd {
+		return n, PathEnd
+	}
+
+	// get child
+	child, ok := n[PathSegment(path)]
+	if !ok {
+		return n, path
+	}
+
+	// descend
+	return child.(PathNode).Lookup(ReducePath(path))
+}
+
+// Recycle will clear the node and its children.
+func (n PathNode) Recycle() {
+	// descend
+	for key, value := range n {
+		if key != PathEnd {
+			value.(PathNode).Recycle()
+		}
+	}
+
+	// clear
+	for key := range n {
+		delete(n, key)
+	}
+
+	// recycle
+	pathNodePool.Put(n)
 }
