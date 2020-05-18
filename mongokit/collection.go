@@ -43,12 +43,16 @@ func NewCollection(idIndex bool) *Collection {
 
 	// add default index if requested
 	if idIndex {
-		coll.Indexes["_id_"], _ = CreateIndex(IndexConfig{
+		var err error
+		coll.Indexes["_id_"], err = CreateIndex(IndexConfig{
 			Key: bsonkit.MustConvert(bson.M{
 				"_id": int32(1),
 			}),
 			Unique: true,
 		})
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return coll
