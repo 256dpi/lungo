@@ -1060,7 +1060,9 @@ func (s *DownloadStream) Skip(skip int64) (int64, error) {
 	return s.Seek(skip, io.SeekCurrent)
 }
 
-// Seek will reposition the read head using the specified values.
+// Seek will reposition the read head using the specified values. A resulting
+// position below zero will yield and error while a position beyond the file
+// length will yield EOF on subsequent reads.
 func (s *DownloadStream) Seek(offset int64, whence int) (int64, error) {
 	// acquire mutex
 	s.mutex.Lock()
