@@ -449,6 +449,12 @@ func TestBucketSeekDownload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 3, n2)
 		assert.Equal(t, []byte{245, 246, 247}, buf)
+
+		/* underflow */
+
+		n1, err = stream.Seek(-10, io.SeekStart)
+		assert.Error(t, err)
+		assert.Equal(t, ErrInvalidPosition, err)
 	})
 }
 

@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -20,6 +21,10 @@ import (
 // ErrFileNotFound is returned if the specified file was not found in the bucket.
 // The value is the same as gridfs.ErrFileNotFound and can be used interchangeably.
 var ErrFileNotFound = gridfs.ErrFileNotFound
+
+// ErrInvalidPosition is returned if the resulting position after a seek
+// operation is invalid.
+var ErrInvalidPosition = errors.New("invalid position")
 
 // The bucket marker states.
 const (
@@ -1228,6 +1233,11 @@ func (s *DownloadStream) load() error {
 }
 
 func (s *DownloadStream) seek(position int) error {
+	// check underflow
+	if position < 0 {
+		return ErrInvalidPosition
+	}
+
 	// check position
 	if position >= s.file.Length {
 		s.cursor = nil
