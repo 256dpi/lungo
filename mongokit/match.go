@@ -251,6 +251,16 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 	// check value type
 	switch value := v.(type) {
 	case string:
+		// handle number
+		if value == "number" {
+			class, _ := bsonkit.Inspect(bsonkit.Get(doc, path))
+			if class == bsonkit.Number {
+				return nil
+			} else {
+				return ErrNotMatched
+			}
+		}
+
 		// check type string
 		vt, ok := bsonkit.Alias2Type[value]
 		if !ok {

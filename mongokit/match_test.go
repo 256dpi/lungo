@@ -819,6 +819,7 @@ func TestMatchExists(t *testing.T) {
 func TestMatchType(t *testing.T) {
 	matchTest(t, bson.M{
 		"foo": "bar",
+		"bar": 7.0,
 	}, func(fn func(bson.M, interface{})) {
 		// invalid argument
 		fn(bson.M{
@@ -838,6 +839,15 @@ func TestMatchType(t *testing.T) {
 		fn(bson.M{
 			"foo": bson.M{"$type": "double"},
 		}, false)
+		fn(bson.M{
+			"bar": bson.M{"$type": "string"},
+		}, false)
+		fn(bson.M{
+			"bar": bson.M{"$type": "double"},
+		}, true)
+		fn(bson.M{
+			"bar": bson.M{"$type": "number"},
+		}, true)
 
 		// number
 		fn(bson.M{
@@ -855,10 +865,10 @@ func TestMatchType(t *testing.T) {
 
 		// missing field
 		fn(bson.M{
-			"bar": bson.M{"type": "string"},
+			"baz": bson.M{"type": "string"},
 		}, false)
 		fn(bson.M{
-			"bar": bson.M{"type": "null"},
+			"baz": bson.M{"type": "null"},
 		}, false)
 	})
 }
