@@ -326,7 +326,7 @@ func compareInt64ToFloat64(l int64, r float64) int {
 		return compareFloat64s(float64(l), r)
 	}
 
-	// large doubles (including +/- Inf) are strictly > or < all Longs.
+	// large doubles (including +/- Inf) are strictly > or < all longs
 	if r >= boundOfLongRange {
 		return -1
 	} else if r < -boundOfLongRange {
