@@ -252,7 +252,7 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 	switch value := v.(type) {
 	case string:
 		// check type string
-		vt, ok := bsonkit.TypeString[value]
+		vt, ok := bsonkit.Alias2Type[value]
 		if !ok {
 			return fmt.Errorf("%s: unknown type string", name)
 		}
@@ -275,7 +275,7 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 		}
 
 		// check type number
-		vt, ok := bsonkit.TypeNumber[num]
+		vt, ok := bsonkit.Number2Type[num]
 		if !ok {
 			return fmt.Errorf("%s: unknown type number", name)
 		}

@@ -26,42 +26,42 @@ const (
 	Regex
 )
 
-// TypeString is a map from BSON type strings to BSON types.
-var TypeString = map[string]bsontype.Type{}
+// Type2Alias is a map from BSON types to their alias.
+var Type2Alias = map[bsontype.Type]string{
+	bsontype.Double:           "double",
+	bsontype.String:           "string",
+	bsontype.EmbeddedDocument: "object",
+	bsontype.Array:            "array",
+	bsontype.Binary:           "binData",
+	bsontype.Undefined:        "undefined",
+	bsontype.ObjectID:         "objectId",
+	bsontype.Boolean:          "bool",
+	bsontype.DateTime:         "date",
+	bsontype.Null:             "null",
+	bsontype.Regex:            "regex",
+	bsontype.DBPointer:        "dbPointer",
+	bsontype.JavaScript:       "javascript",
+	bsontype.Symbol:           "symbol",
+	bsontype.CodeWithScope:    "javascriptWithScope",
+	bsontype.Int32:            "int",
+	bsontype.Timestamp:        "timestamp",
+	bsontype.Int64:            "long",
+	bsontype.Decimal128:       "decimal",
+	bsontype.MinKey:           "minKey",
+	bsontype.MaxKey:           "maxKey",
+}
 
-// TypeNumber is a map from BSON type numbers to BSON types.
-var TypeNumber = map[byte]bsontype.Type{}
+// Alias2Type is a map from BSON type aliases to BSON types.
+var Alias2Type = map[string]bsontype.Type{}
+
+// Number2Type is a map from BSON type numbers to BSON types.
+var Number2Type = map[byte]bsontype.Type{}
 
 func init() {
-	// prepare types
-	types := []bsontype.Type{
-		bsontype.Double,
-		bsontype.String,
-		bsontype.EmbeddedDocument,
-		bsontype.Array,
-		bsontype.Binary,
-		bsontype.Undefined,
-		bsontype.ObjectID,
-		bsontype.Boolean,
-		bsontype.DateTime,
-		bsontype.Null,
-		bsontype.Regex,
-		bsontype.DBPointer,
-		bsontype.JavaScript,
-		bsontype.Symbol,
-		bsontype.CodeWithScope,
-		bsontype.Int32,
-		bsontype.Timestamp,
-		bsontype.Int64,
-		bsontype.Decimal128,
-		bsontype.MinKey,
-		bsontype.MaxKey,
-	}
-
-	// fill maps
-	for _, t := range types {
-		TypeString[t.String()] = t
-		TypeNumber[byte(t)] = t
+	// fill aliases and number maps
+	for t, a := range Type2Alias {
+		Alias2Type[a] = t
+		Number2Type[byte(t)] = t
 	}
 }
 
