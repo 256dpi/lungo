@@ -248,6 +248,9 @@ func matchExists(_ Context, doc bsonkit.Doc, name, path string, v interface{}) e
 }
 
 func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+	// TODO: Support type arrays.
+	// TODO: Support array values.
+
 	// check value type
 	switch value := v.(type) {
 	case string:
