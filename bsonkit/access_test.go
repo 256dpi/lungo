@@ -491,17 +491,17 @@ func TestIncrement(t *testing.T) {
 		"bar": "42",
 	})
 
-	// invalid field
+	// invalid incrementee
 	res, err := Increment(doc, "bar", int64(2))
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
-	assert.Equal(t, `incrementee "bar" is not a number`, err.Error())
+	assert.Equal(t, `incrementee or increment is not a number`, err.Error())
 
 	// invalid increment
 	res, err = Increment(doc, "foo", "2")
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
-	assert.Equal(t, "increment is not a number", err.Error())
+	assert.Equal(t, "incrementee or increment is not a number", err.Error())
 
 	// increment existing field
 	res, err = Increment(doc, "foo", int64(2))
@@ -529,17 +529,17 @@ func TestMultiply(t *testing.T) {
 		"bar": "42",
 	})
 
-	// invalid field
+	// invalid multiplicand
 	res, err := Multiply(doc, "bar", int64(2))
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
-	assert.Equal(t, `multiplicand "bar" is not a number`, err.Error())
+	assert.Equal(t, `multiplicand or multiplier is not a number`, err.Error())
 
-	// invalid multiplicand
-	res, err = Multiply(doc, "foo", 2)
+	// invalid multiplier
+	res, err = Multiply(doc, "foo", "2")
 	assert.Error(t, err)
 	assert.Equal(t, nil, res)
-	assert.Equal(t, "multiplier is not a number", err.Error())
+	assert.Equal(t, "multiplicand or multiplier is not a number", err.Error())
 
 	// multiply existing field
 	res, err = Multiply(doc, "foo", int64(2))

@@ -280,50 +280,15 @@ func Increment(doc Doc, path string, increment interface{}) (interface{}, error)
 	// get field
 	field := Get(doc, path)
 
+	// ensure zero
+	if field == Missing {
+		field = int32(0)
+	}
+
 	// increment field
-	switch num := field.(type) {
-	case int32:
-		switch inc := increment.(type) {
-		case int32:
-			field = num + inc
-		case int64:
-			field = int64(num) + inc
-		case float64:
-			field = float64(num) + inc
-		default:
-			return nil, fmt.Errorf("increment is not a number")
-		}
-	case int64:
-		switch inc := increment.(type) {
-		case int32:
-			field = num + int64(inc)
-		case int64:
-			field = num + inc
-		case float64:
-			field = float64(num) + inc
-		default:
-			return nil, fmt.Errorf("increment is not a number")
-		}
-	case float64:
-		switch inc := increment.(type) {
-		case int32:
-			field = num + float64(inc)
-		case int64:
-			field = num + float64(inc)
-		case float64:
-			field = num + inc
-		default:
-			return nil, fmt.Errorf("increment is not a number")
-		}
-	case MissingType:
-		switch inc := increment.(type) {
-		case int32, int64, float64:
-			field = inc
-		default:
-			return nil, fmt.Errorf("increment is not a number")
-		}
-	default:
-		return nil, fmt.Errorf("incrementee %q is not a number", path)
+	field = Add(field, increment)
+	if field == Missing {
+		return nil, fmt.Errorf("incrementee or increment is not a number")
 	}
 
 	// update field
@@ -343,54 +308,15 @@ func Multiply(doc Doc, path string, multiplier interface{}) (interface{}, error)
 	// get field
 	field := Get(doc, path)
 
-	// multiply field
-	switch num := field.(type) {
-	case int32:
-		switch mul := multiplier.(type) {
-		case int32:
-			field = num * mul
-		case int64:
-			field = int64(num) * mul
-		case float64:
-			field = float64(num) * mul
-		default:
-			return nil, fmt.Errorf("multiplier is not a number")
-		}
-	case int64:
-		switch mul := multiplier.(type) {
-		case int32:
-			field = num * int64(mul)
-		case int64:
-			field = num * mul
-		case float64:
-			field = float64(num) * mul
-		default:
-			return nil, fmt.Errorf("multiplier is not a number")
-		}
-	case float64:
-		switch mul := multiplier.(type) {
-		case int32:
-			field = num * float64(mul)
-		case int64:
-			field = num * float64(mul)
-		case float64:
-			field = num * mul
-		default:
-			return nil, fmt.Errorf("multiplier is not a number")
-		}
-	case MissingType:
-		switch multiplier.(type) {
-		case int32:
-			field = int32(0)
-		case int64:
-			field = int64(0)
-		case float64:
-			field = float64(0)
-		default:
-			return nil, fmt.Errorf("multiplier is not a number")
-		}
-	default:
-		return nil, fmt.Errorf("multiplicand %q is not a number", path)
+	// ensure zero
+	if field == Missing {
+		field = int32(0)
+	}
+
+	// multiply
+	field = Mul(field, multiplier)
+	if field == Missing {
+		return nil, fmt.Errorf("multiplicand or multiplier is not a number")
 	}
 
 	// update field
