@@ -127,12 +127,18 @@ func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType 
 		case "bsonType":
 			switch kv := keyword.Value.(type) {
 			case string:
-				typ, ok := Alias2Type[kv]
-				if !ok {
-					return fmt.Errorf("invalid bsonType alias: %s", kv)
-				}
-				if valueType != typ {
-					return ErrValidationFailed
+				if kv == "number" {
+					if valueClass != Number {
+						return ErrValidationFailed
+					}
+				} else {
+					typ, ok := Alias2Type[kv]
+					if !ok {
+						return fmt.Errorf("invalid bsonType alias: %s", kv)
+					}
+					if valueType != typ {
+						return ErrValidationFailed
+					}
 				}
 			case bson.A:
 				if len(kv) == 0 {
@@ -142,12 +148,18 @@ func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType 
 				for _, t := range kv {
 					switch t := t.(type) {
 					case string:
-						typ, ok := Alias2Type[t]
-						if !ok {
-							return fmt.Errorf("invalid bsonType alias: %s", t)
-						}
-						if valueType == typ {
-							valid = true
+						if t == "number" {
+							if valueClass == Number {
+								valid = true
+							}
+						} else {
+							typ, ok := Alias2Type[t]
+							if !ok {
+								return fmt.Errorf("invalid bsonType alias: %s", t)
+							}
+							if valueType == typ {
+								valid = true
+							}
 						}
 					default:
 						return fmt.Errorf("invalid bsonType element: %v", t)
