@@ -25,6 +25,7 @@ func init() {
 	TopLevelQueryOperators["$and"] = matchAnd
 	TopLevelQueryOperators["$or"] = matchOr
 	TopLevelQueryOperators["$nor"] = matchNor
+	TopLevelQueryOperators["$jsonSchema"] = matchJSONSchema
 
 	// register expression query operators
 	ExpressionQueryOperators[""] = matchComp
@@ -302,6 +303,24 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 	}
 
 	return ErrNotMatched
+}
+
+func matchJSONSchema(_ Context, doc bsonkit.Doc, name, _ string, v interface{}) error {
+	// get doc
+	d, ok := v.(bson.D)
+	if !ok {
+		return fmt.Errorf("%s: expected document", name)
+	}
+
+	// evaluate schema
+	err := bsonkit.NewSchema(d).Evaluate(*doc)
+	if err == bsonkit.ErrValidationFailed {
+		return ErrNotMatched
+	} else if err != nil {
+		return fmt.Errorf("%s: %s", name, err.Error())
+	}
+
+	return nil
 }
 
 func matchAll(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {

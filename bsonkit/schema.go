@@ -85,6 +85,11 @@ func (s *Schema) Evaluate(value interface{}) error {
 }
 
 func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType bsontype.Type) error {
+	// pre-check exclusion
+	if Get(&s.Doc, "type") != Missing && Get(&s.Doc, "bsonType") != Missing {
+		return fmt.Errorf("schema cannot contain type and bsonType")
+	}
+
 	// evaluate generic keywords
 	for _, keyword := range s.Doc {
 		switch keyword.Key {

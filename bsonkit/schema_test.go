@@ -91,6 +91,9 @@ func TestSchemaEvaluateGeneric(t *testing.T) {
 	evaluateSchema(t, schema, true, int32(2))
 	evaluateSchema(t, schema, false, false)
 
+	// invalid type and bson type
+	validateSchema(t, bson.M{"type": "string", "bsonType": "string"}, "", "schema cannot contain type and bsonType")
+
 	// invalid enum
 	validateSchema(t, bson.M{"enum": 2}, "", "invalid enum value: 2")
 	validateSchema(t, bson.M{"enum": bson.A{}}, "", "invalid enum value: []")

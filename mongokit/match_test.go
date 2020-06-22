@@ -2,9 +2,11 @@ package mongokit
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -870,6 +872,105 @@ func TestMatchType(t *testing.T) {
 		fn(bson.M{
 			"baz": bson.M{"type": "null"},
 		}, false)
+	})
+}
+
+func TestMatchJSONSchema(t *testing.T) {
+	matchTest(t, bson.M{
+		"foo": "bar",
+		"bar": "foo",
+	}, func(fn func(bson.M, interface{})) {
+		// invalid argument
+		fn(bson.M{
+			"$jsonSchema": true,
+		}, "$jsonSchema: expected document")
+
+		// invalid schema
+		fn(bson.M{
+			"$jsonSchema": bson.M{
+				"type": true,
+			},
+		}, "$jsonSchema: invalid type value: true")
+
+		// invalid expression
+		fn(bson.M{
+			"foo": bson.M{"$jsonSchema": true},
+		}, `unknown expression operator "$jsonSchema"`)
+
+		// simple schema
+		fn(bson.M{
+			"$jsonSchema": bson.M{
+				"properties": bson.M{
+					"foo": bson.M{
+						"enum": bson.A{"foo"},
+					},
+				},
+			},
+		}, false)
+		fn(bson.M{
+			"$jsonSchema": bson.M{
+				"properties": bson.M{
+					"foo": bson.M{
+						"enum": bson.A{"bar"},
+					},
+				},
+			},
+		}, true)
+	})
+
+	matchTest(t, bson.M{
+		"nil":      nil,
+		"null":     primitive.Null{},
+		"bool":     true,
+		"int":      int32(7),
+		"long":     int64(42),
+		"double":   99.9,
+		"string":   "Hello World!",
+		"object":   bson.M{"foo": "bar"},
+		"array":    bson.A{"foo", "bar"},
+		"binary":   primitive.Binary{},
+		"objectId": primitive.NewObjectID(),
+		"date":     primitive.NewDateTimeFromTime(time.Now()),
+	}, func(fn func(bson.M, interface{})) {
+		// json types
+		fn(bson.M{
+			"$jsonSchema": bson.M{
+				"properties": bson.M{
+					"nil":      bson.M{"type": "null"},
+					"null":     bson.M{"type": "null"},
+					"bool":     bson.M{"type": "boolean"},
+					"int":      bson.M{"type": "number"},
+					"long":     bson.M{"type": "number"},
+					"double":   bson.M{"type": "number"},
+					"string":   bson.M{"type": "string"},
+					"object":   bson.M{"type": "object"},
+					"array":    bson.M{"type": "array"},
+					"binary":   bson.M{},
+					"objectId": bson.M{},
+					"date":     bson.M{},
+				},
+			},
+		}, true)
+
+		// bson types
+		fn(bson.M{
+			"$jsonSchema": bson.M{
+				"properties": bson.M{
+					"nil":      bson.M{"bsonType": "null"},
+					"null":     bson.M{"bsonType": "null"},
+					"bool":     bson.M{"bsonType": "bool"},
+					"int":      bson.M{"bsonType": "int"},
+					"long":     bson.M{"bsonType": "long"},
+					"double":   bson.M{"bsonType": "double"},
+					"string":   bson.M{"bsonType": "string"},
+					"object":   bson.M{"bsonType": "object"},
+					"array":    bson.M{"bsonType": "array"},
+					"binary":   bson.M{"bsonType": "binData"},
+					"objectId": bson.M{"bsonType": "objectId"},
+					"date":     bson.M{"bsonType": "date"},
+				},
+			},
+		}, true)
 	})
 }
 
