@@ -10,10 +10,8 @@ import (
 // MissingType is the type of the Missing value.
 type MissingType struct{}
 
-// Missing is returned by Get if the value cannot be found in the document.
+// Missing represents the absence of a value in a document.
 var Missing = MissingType{}
-
-var unsetValue interface{} = struct{}{}
 
 // Get returns the value in the document specified by path. It returns Missing
 // if the value has not been found. Dots may be used to descend into nested
@@ -130,6 +128,12 @@ func get(v interface{}, path string, collect, compact bool) (interface{}, bool) 
 // or document. If the path contains a number e.g. "foo.1.bar" and no array
 // exists at that levels, a document with the key "1" is created.
 func Put(doc Doc, path string, value interface{}, prepend bool) (interface{}, error) {
+	// check value
+	if value == Missing {
+		return nil, fmt.Errorf("cannot put missing value at %s", path)
+	}
+
+	// put value
 	res, ok := put(*doc, path, value, prepend, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
@@ -145,7 +149,8 @@ func Put(doc Doc, path string, value interface{}, prepend bool) (interface{}, er
 // e.g. "foo.2" the element is nilled, but not removed from the array. This
 // prevents unintentional effects through position shifts in the array.
 func Unset(doc Doc, path string) interface{} {
-	res, _ := put(*doc, path, unsetValue, false, func(v interface{}) {
+	// unset value
+	res, _ := put(*doc, path, Missing, false, func(v interface{}) {
 		*doc = v.(bson.D)
 	})
 
@@ -172,7 +177,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		for i, el := range doc {
 			if el.Key == key {
 				return put(doc[i].Value, ReducePath(path), value, prepend, func(v interface{}) {
-					if v == unsetValue {
+					if v == Missing {
 						set(append(doc[:i], doc[i+1:]...))
 					} else {
 						doc[i].Value = v
@@ -182,7 +187,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		}
 
 		// check if unset
-		if value == unsetValue {
+		if value == Missing {
 			return Missing, false
 		}
 
@@ -215,7 +220,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		// update existing element
 		if index < len(arr) {
 			return put(arr[index], ReducePath(path), value, prepend, func(v interface{}) {
-				if v == unsetValue {
+				if v == Missing {
 					arr[index] = nil
 				} else {
 					arr[index] = v
@@ -224,7 +229,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 		}
 
 		// check if unset
-		if value == unsetValue {
+		if value == Missing {
 			return Missing, false
 		}
 
@@ -248,7 +253,7 @@ func put(v interface{}, path string, value interface{}, prepend bool, set func(i
 	}
 
 	// check if unset
-	if value == unsetValue {
+	if value == Missing {
 		return Missing, false
 	}
 
@@ -332,6 +337,11 @@ func Multiply(doc Doc, path string, multiplier interface{}) (interface{}, error)
 // specified by path and return the new value. If the value is missing, the
 // value is added to a new array.
 func Push(doc Doc, path string, value interface{}) (interface{}, error) {
+	// check value
+	if value == Missing {
+		return nil, fmt.Errorf("cannot push missing value at %s", path)
+	}
+
 	// get field
 	field := Get(doc, path)
 

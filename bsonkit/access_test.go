@@ -191,8 +191,13 @@ func TestPut(t *testing.T) {
 		"foo": "bar",
 	})
 
+	// invalid
+	res, err := Put(doc, "foo", Missing, false)
+	assert.Error(t, err)
+	assert.Equal(t, "cannot put missing value at foo", err.Error())
+
 	// replace final value
-	res, err := Put(doc, "foo", "baz", false)
+	res, err = Put(doc, "foo", "baz", false)
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", res)
 	assert.Equal(t, MustConvert(bson.M{
@@ -566,8 +571,13 @@ func TestPush(t *testing.T) {
 		"bar": "42",
 	})
 
+	// invalid
+	res, err := Push(doc, "foo", Missing)
+	assert.Error(t, err)
+	assert.Equal(t, "cannot push missing value at foo", err.Error())
+
 	// create array
-	res, err := Push(doc, "foo", int64(42))
+	res, err = Push(doc, "foo", int64(42))
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{int64(42)}, res)
 	assert.Equal(t, MustConvert(bson.M{
