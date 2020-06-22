@@ -118,7 +118,7 @@ operators:
 - `$and`, `$or`, `$nor`, (`$not`)
 - `$eq`, `$gt`, `$lt`, `$gte`, `$lte`, `$ne`
 - (`$in`), (`$nin`), `$exist`, `$type`
-- `$all`, `$size`, `$elemMatch`
+- `$jsonSchema`, `$all`, `$size`, `$elemMatch`
 
 And the `mongokit.Apply` function currently supports the following update
 operators:
