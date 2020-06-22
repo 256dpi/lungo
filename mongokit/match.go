@@ -259,9 +259,8 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 			class, _ := bsonkit.Inspect(bsonkit.Get(doc, path))
 			if class == bsonkit.Number {
 				return nil
-			} else {
-				return ErrNotMatched
 			}
+			return ErrNotMatched
 		}
 
 		// check type string
