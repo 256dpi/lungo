@@ -64,7 +64,7 @@ func cloneValue(v interface{}) interface{} {
 
 		// copy all elements and convert values
 		for _, e := range value {
-			v, err := convertValue(e.Value)
+			v, err := ConvertValue(e.Value)
 			if err != nil {
 				panic(err)
 			}
@@ -82,7 +82,7 @@ func cloneValue(v interface{}) interface{} {
 
 		// copy all elements and convert them
 		for _, e := range value {
-			v, err := convertValue(e)
+			v, err := ConvertValue(e)
 			if err != nil {
 				panic(err)
 			}

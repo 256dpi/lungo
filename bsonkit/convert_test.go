@@ -2,9 +2,11 @@ package bsonkit
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestConvert(t *testing.T) {
@@ -74,4 +76,10 @@ func TestConvertList(t *testing.T) {
 			}},
 		},
 	}, res)
+}
+
+func TestConvertValue(t *testing.T) {
+	now := time.Now()
+	res := MustConvertValue(now)
+	assert.Equal(t, primitive.NewDateTimeFromTime(now), res)
 }
