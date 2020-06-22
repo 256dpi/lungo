@@ -539,8 +539,8 @@ func (s *Schema) evaluateDocument(doc bson.D) error {
 		var schemas []*Schema
 
 		// check properties
-		if p := properties[member.Key]; p != nil {
-			schemas = append(schemas, p)
+		if schema := properties[member.Key]; schema != nil {
+			schemas = append(schemas, schema)
 		}
 
 		// check pattern properties
