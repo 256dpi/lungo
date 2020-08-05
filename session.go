@@ -199,7 +199,7 @@ func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) 
 
 	// yield transaction
 	res, err := fn(&SessionContext{
-		Context: context.WithValue(ctx, sessionKey{}, s),
+		Context: context.WithValue(ensureContext(ctx), sessionKey{}, s),
 		Session: s,
 	})
 	if err != nil {

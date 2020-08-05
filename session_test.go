@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -13,8 +12,6 @@ import (
 func TestSessionManual(t *testing.T) {
 	// commit
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ctx := context.Background()
-
 		id1 := primitive.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
@@ -30,7 +27,7 @@ func TestSessionManual(t *testing.T) {
 		assert.NoError(t, err)
 
 		id2 := primitive.NewObjectID()
-		err = WithSession(ctx, sess, func(sc ISessionContext) error {
+		err = WithSession(nil, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
 				"foo": "bar",
@@ -54,7 +51,7 @@ func TestSessionManual(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		csr, err := c.Find(ctx, bson.M{})
+		csr, err := c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -63,10 +60,10 @@ func TestSessionManual(t *testing.T) {
 			},
 		}, readAll(csr))
 
-		err = sess.CommitTransaction(ctx)
+		err = sess.CommitTransaction(nil)
 		assert.NoError(t, err)
 
-		csr, err = c.Find(ctx, bson.M{})
+		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -82,8 +79,6 @@ func TestSessionManual(t *testing.T) {
 
 	// abort
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ctx := context.Background()
-
 		id1 := primitive.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
@@ -99,7 +94,7 @@ func TestSessionManual(t *testing.T) {
 		assert.NoError(t, err)
 
 		id2 := primitive.NewObjectID()
-		err = WithSession(ctx, sess, func(sc ISessionContext) error {
+		err = WithSession(nil, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
 				"foo": "bar",
@@ -123,7 +118,7 @@ func TestSessionManual(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		csr, err := c.Find(ctx, bson.M{})
+		csr, err := c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -132,10 +127,10 @@ func TestSessionManual(t *testing.T) {
 			},
 		}, readAll(csr))
 
-		err = sess.AbortTransaction(ctx)
+		err = sess.AbortTransaction(nil)
 		assert.NoError(t, err)
 
-		csr, err = c.Find(ctx, bson.M{})
+		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -149,8 +144,6 @@ func TestSessionManual(t *testing.T) {
 func TestSessionAutomatic(t *testing.T) {
 	// commit
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ctx := context.Background()
-
 		id1 := primitive.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
@@ -159,7 +152,7 @@ func TestSessionAutomatic(t *testing.T) {
 
 		id2 := primitive.NewObjectID()
 
-		err = c.Database().Client().UseSession(ctx, func(sc ISessionContext) error {
+		err = c.Database().Client().UseSession(nil, func(sc ISessionContext) error {
 			_, err = sc.WithTransaction(sc, func(sc ISessionContext) (interface{}, error) {
 				_, err := c.InsertOne(sc, bson.M{
 					"_id": id2,
@@ -187,7 +180,7 @@ func TestSessionAutomatic(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		csr, err := c.Find(ctx, bson.M{})
+		csr, err := c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -203,8 +196,6 @@ func TestSessionAutomatic(t *testing.T) {
 
 	// abort
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ctx := context.Background()
-
 		id1 := primitive.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
@@ -213,7 +204,7 @@ func TestSessionAutomatic(t *testing.T) {
 
 		id2 := primitive.NewObjectID()
 
-		err = c.Database().Client().UseSession(ctx, func(sc ISessionContext) error {
+		err = c.Database().Client().UseSession(nil, func(sc ISessionContext) error {
 			_, err = sc.WithTransaction(sc, func(sc ISessionContext) (interface{}, error) {
 				_, err := c.InsertOne(sc, bson.M{
 					"_id": id2,
@@ -241,7 +232,7 @@ func TestSessionAutomatic(t *testing.T) {
 		})
 		assert.Error(t, err)
 
-		csr, err := c.Find(ctx, bson.M{})
+		csr, err := c.Find(nil, bson.M{})
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{

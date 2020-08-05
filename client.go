@@ -183,7 +183,7 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.Session
 
 	// prepare session context
 	sc := SessionContext{
-		Context: context.WithValue(ctx, sessionKey{}, session),
+		Context: context.WithValue(ensureContext(ctx), sessionKey{}, session),
 		Session: session,
 	}
 

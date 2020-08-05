@@ -139,7 +139,7 @@ type ISessionContext interface {
 func WithSession(ctx context.Context, session ISession, fn func(ISessionContext) error) error {
 	switch ses := session.(type) {
 	case *MongoSession:
-		return mongo.WithSession(ctx, ses.Session, func(sc mongo.SessionContext) error {
+		return mongo.WithSession(ensureContext(ctx), ses.Session, func(sc mongo.SessionContext) error {
 			return fn(&MongoSessionContext{
 				Context: sc,
 				MongoSession: &MongoSession{
@@ -150,7 +150,7 @@ func WithSession(ctx context.Context, session ISession, fn func(ISessionContext)
 		})
 	case *Session:
 		return fn(&SessionContext{
-			Context: context.WithValue(ctx, sessionKey{}, ses),
+			Context: context.WithValue(ensureContext(ctx), sessionKey{}, ses),
 			Session: ses,
 		})
 	default:

@@ -44,9 +44,7 @@ func assertOptions(opts interface{}, fields map[string]string) {
 
 func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Transaction) (interface{}, error)) (interface{}, error) {
 	// ensure context
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	// use active transaction from session in context
 	sess, ok := ctx.Value(sessionKey{}).(*Session)

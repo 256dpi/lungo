@@ -23,7 +23,7 @@ func TestDatabaseCollection(t *testing.T) {
 
 func TestDatabaseCreate(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
-		assert.NoError(t, d.CreateCollection(nil, "foo"))
+		assert.NoError(t, d.CreateCollection(nil, "bar"))
 	})
 }
 

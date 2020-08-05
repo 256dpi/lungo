@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"reflect"
 	"strings"
@@ -583,8 +582,7 @@ func TestBucketTransaction(t *testing.T) {
 		err = b.EnsureIndexes(nil, true)
 		assert.NoError(t, err)
 
-		res, err := sess.WithTransaction(context.Background(), func(ctx ISessionContext) (interface{}, error) {
-
+		res, err := sess.WithTransaction(nil, func(ctx ISessionContext) (interface{}, error) {
 			id, err := b.UploadFromStream(ctx, "foo", strings.NewReader("Hello World!"))
 			if err != nil {
 				return nil, err
@@ -610,7 +608,7 @@ func TestBucketTransactionError(t *testing.T) {
 
 		b := NewBucket(c.Database(), options.GridFSBucket().SetName(c.Name()))
 
-		res, err := sess.WithTransaction(context.Background(), func(ctx ISessionContext) (interface{}, error) {
+		res, err := sess.WithTransaction(nil, func(ctx ISessionContext) (interface{}, error) {
 			id, err := b.UploadFromStream(ctx, "foo", strings.NewReader("Hello World!"))
 			if err != nil {
 				return nil, err
