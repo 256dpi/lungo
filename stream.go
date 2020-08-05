@@ -101,9 +101,7 @@ func (s *Stream) Next(ctx context.Context) bool {
 	}
 
 	// ensure context
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	for {
 		// get oplog

@@ -582,11 +582,6 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 		}
 	}
 
-	// ensure context
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
 	// prepare files index
 	filesIndex := mongo.IndexModel{
 		Keys: bson.D{

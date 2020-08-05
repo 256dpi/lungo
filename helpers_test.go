@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 
 func TestIsUniquenessError(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		_, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		_, err := c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys:    bson.M{"title": 1},
 			Options: options.Index().SetUnique(true),
 		})

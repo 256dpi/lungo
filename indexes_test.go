@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func TestIndexViewCreateMany(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		// invalid index
-		names, err := c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+		names, err := c.Indexes().CreateMany(nil, []mongo.IndexModel{
 			{
 				Keys: bson.M{
 					"bar": false,
@@ -33,7 +32,7 @@ func TestIndexViewCreateMany(t *testing.T) {
 		assert.Nil(t, names)
 
 		// compound and partial index
-		names, err = c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+		names, err = c.Indexes().CreateMany(nil, []mongo.IndexModel{
 			{
 				Keys: bson.D{
 					bson.E{Key: "bar", Value: -1},
@@ -93,7 +92,7 @@ func TestIndexViewCreateMany(t *testing.T) {
 		}, readAll(csr))
 
 		// ensure indexes
-		names, err = c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+		names, err = c.Indexes().CreateMany(nil, []mongo.IndexModel{
 			{
 				Keys: bson.D{
 					bson.E{Key: "bar", Value: -1},
@@ -127,7 +126,7 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		// invalid index
-		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err := c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"bar": false,
 			},
@@ -143,7 +142,7 @@ func TestIndexViewCreateOne(t *testing.T) {
 			SetExpireAfterSeconds(10)
 
 		// single unique index
-		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
@@ -182,7 +181,7 @@ func TestIndexViewCreateOne(t *testing.T) {
 		}, readAll(csr))
 
 		// ensure same index again
-		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
@@ -192,7 +191,7 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.Equal(t, "foo", name)
 
 		// duplicate index (same key)
-		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
@@ -212,7 +211,7 @@ func TestIndexViewDropAll(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		// unique and normal index
-		names, err := c.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+		names, err := c.Indexes().CreateMany(nil, []mongo.IndexModel{
 			{
 				Keys: bson.D{
 					bson.E{Key: "bar", Value: -1},
@@ -267,7 +266,7 @@ func TestIndexViewDropAll(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropAll(context.Background())
+		_, err = c.Indexes().DropAll(nil)
 		assert.NoError(t, err)
 
 		// list
@@ -296,7 +295,7 @@ func TestIndexViewDropOne(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		// unique and normal index
-		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err := c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
@@ -331,7 +330,7 @@ func TestIndexViewDropOne(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropOne(context.Background(), "foo")
+		_, err = c.Indexes().DropOne(nil, "foo")
 		assert.NoError(t, err)
 
 		// list
@@ -364,7 +363,7 @@ func TestIndexExpiry(t *testing.T) {
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
 		// invalid index
-		name, err := c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err := c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 				"bar": -1,
@@ -375,7 +374,7 @@ func TestIndexExpiry(t *testing.T) {
 		assert.Empty(t, name)
 
 		// ttl index
-		name, err = c.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},

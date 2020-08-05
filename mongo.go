@@ -3,6 +3,7 @@ package lungo
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -183,6 +184,26 @@ var _ IIndexView = &MongoIndexView{}
 // MongoIndexView wraps a mongo.IndexView to be lungo compatible.
 type MongoIndexView struct {
 	*mongo.IndexView
+}
+
+// CreateMany implements the IIndexView.List method.
+func (m *MongoIndexView) CreateMany(ctx context.Context, models []mongo.IndexModel, opts ...*options.CreateIndexesOptions) ([]string, error) {
+	return m.IndexView.CreateMany(ensureContext(ctx), models, opts...)
+}
+
+// CreateOne implements the IIndexView.List method.
+func (m *MongoIndexView) CreateOne(ctx context.Context, model mongo.IndexModel, opts ...*options.CreateIndexesOptions) (string, error) {
+	return m.IndexView.CreateOne(ensureContext(ctx), model, opts...)
+}
+
+// DropAll implements the IIndexView.List method.
+func (m *MongoIndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
+	return m.IndexView.DropAll(ensureContext(ctx), opts...)
+}
+
+// DropOne implements the IIndexView.List method.
+func (m *MongoIndexView) DropOne(ctx context.Context, name string, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
+	return m.IndexView.DropOne(ensureContext(ctx), name, opts...)
 }
 
 // List implements the IIndexView.List method.

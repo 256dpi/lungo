@@ -125,9 +125,7 @@ func (e *Engine) Begin(ctx context.Context, lock bool) (*Transaction, error) {
 	}
 
 	// ensure context
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	// check for transaction
 	sess, ok := ctx.Value(sessionKey{}).(*Session)
