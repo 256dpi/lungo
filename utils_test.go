@@ -88,7 +88,7 @@ func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket)) {
 	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
 	assert.NoError(t, err)
 
-	t.Run("GridFs", func(t *testing.T) {
+	t.Run("GridFS", func(t *testing.T) {
 		fn(t, b)
 	})
 }
