@@ -33,6 +33,8 @@ type IDatabase interface {
 	Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error)
 	Client() IClient
 	Collection(string, ...*options.CollectionOptions) ICollection
+	CreateCollection(context.Context, string, ...*options.CreateCollectionOptions) error
+	CreateView(context.Context, string, string, interface{}, ...*options.CreateViewOptions) error
 	Drop(context.Context) error
 	ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error)
 	ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error)
@@ -80,6 +82,7 @@ type ICursor interface {
 	Err() error
 	ID() int64
 	Next(context.Context) bool
+	RemainingBatchLength() int
 	TryNext(context.Context) bool
 }
 
@@ -112,6 +115,7 @@ type IChangeStream interface {
 
 // ISession defines a generic session.
 type ISession interface {
+	ID() bson.Raw
 	AbortTransaction(context.Context) error
 	AdvanceClusterTime(bson.Raw) error
 	AdvanceOperationTime(*primitive.Timestamp) error

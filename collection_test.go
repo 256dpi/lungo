@@ -490,6 +490,7 @@ func TestCollectionFind(t *testing.T) {
 		var m bson.M
 		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
+		assert.Equal(t, 2, csr.RemainingBatchLength())
 		err = csr.Decode(&m)
 		assert.Equal(t, io.EOF, err)
 		assert.Nil(t, m)
@@ -503,6 +504,7 @@ func TestCollectionFind(t *testing.T) {
 			i++
 		}
 		assert.Equal(t, 2, i)
+		assert.Equal(t, 0, csr.RemainingBatchLength())
 		err = csr.Decode(&m)
 		assert.NoError(t, err)
 		assert.NotEqual(t, bson.M{}, m)

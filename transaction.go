@@ -94,6 +94,36 @@ func NewTransaction(catalog *Catalog) *Transaction {
 	}
 }
 
+// Create will ensure that a namespace for the provided handle exists.
+func (t *Transaction) Create(handle Handle) error {
+	// acquire write lock
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	// validate handle
+	err := handle.Validate(true)
+	if err != nil {
+		return err
+	}
+
+	// check access
+	if handle[0] == Local {
+		return fmt.Errorf("namespace local.* is read only")
+	}
+
+	// check catalog
+	if t.catalog.Namespaces[handle] != nil {
+		return nil
+	}
+
+	// create collection
+	t.catalog = t.catalog.Clone()
+	t.catalog.Namespaces[handle] = mongokit.NewCollection(true)
+	t.dirty = true
+
+	return nil
+}
+
 // Find will query documents from a namespace. Sort, skip and limit may be
 // supplied to modify the result. The returned results will contain the matched
 // list of documents.

@@ -86,6 +86,11 @@ func (d *MongoDatabase) Collection(name string, opts ...*options.CollectionOptio
 	return &MongoCollection{Collection: d.Database.Collection(name, opts...), db: d}
 }
 
+// CreateCollection implements the IDatabase.CreateCollection method.
+func (d *MongoDatabase) CreateCollection(ctx context.Context, name string, opts ...*options.CreateCollectionOptions) error {
+	return d.Database.CreateCollection(ensureContext(ctx), name, opts...)
+}
+
 // ListCollections implements the IDatabase.ListCollections method.
 func (d *MongoDatabase) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
 	return d.Database.ListCollections(ctx, filter, opts...)

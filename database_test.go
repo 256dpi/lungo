@@ -21,6 +21,12 @@ func TestDatabaseCollection(t *testing.T) {
 	})
 }
 
+func TestDatabaseCreate(t *testing.T) {
+	databaseTest(t, func(t *testing.T, d IDatabase) {
+		assert.NoError(t, d.CreateCollection(nil, "foo"))
+	})
+}
+
 func TestDatabaseDrop(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		_, err := c.InsertOne(nil, bson.M{

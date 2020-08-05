@@ -119,6 +119,21 @@ func NewBucket(db IDatabase, opts ...*options.BucketOptions) *Bucket {
 	}
 }
 
+// GetFilesCollection returns the collection used for storing files.
+func (b *Bucket) GetFilesCollection(context.Context) ICollection {
+	return b.files
+}
+
+// GetChunksCollection returns the collection used for storing chunks.
+func (b *Bucket) GetChunksCollection(context.Context) ICollection {
+	return b.chunks
+}
+
+// GetMarkersCollection returns the collection used for storing markers.
+func (b *Bucket) GetMarkersCollection(context.Context) ICollection {
+	return b.markers
+}
+
 // EnableTracking will enable a non-standard mode in which in-progress uploads
 // and deletions are tracked by storing a document in an additional "markers"
 // collection. If enabled, uploads can be suspended and resumed later and must
@@ -1053,6 +1068,11 @@ func newDownloadStream(ctx context.Context, bucket *Bucket, id interface{}, name
 		name:     name,
 		revision: revision,
 	}
+}
+
+// GetFile will return the file that is stream is downloading from.
+func (s *DownloadStream) GetFile() *BucketFile {
+	return s.file
 }
 
 // Skip will advance the read head by the specified amount of bytes.

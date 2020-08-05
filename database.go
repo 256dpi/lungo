@@ -49,6 +49,43 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 	}
 }
 
+// CreateCollection implements the IDatabase.CreateCollection method.
+func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*options.CreateCollectionOptions) error {
+	// merge options
+	opt := options.MergeCreateCollectionOptions(opts...)
+
+	// assert supported options
+	assertOptions(opt, map[string]string{})
+
+	// begin transaction
+	txn, err := d.engine.Begin(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	// ensure abortion
+	defer d.engine.Abort(txn)
+
+	// create collection
+	err = txn.Create(Handle{d.name, name})
+	if err != nil {
+		return err
+	}
+
+	// commit transaction
+	err = d.engine.Commit(txn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateView implements the IDatabase.CreateView method.
+func (d *Database) CreateView(ctx context.Context, viewName, viewOn string, pipeline interface{}, opts ...*options.CreateViewOptions) error {
+	panic("lungo: not implemented")
+}
+
 // Drop implements the IDatabase.Drop method.
 func (d *Database) Drop(ctx context.Context) error {
 	// begin transaction

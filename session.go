@@ -30,6 +30,11 @@ type Session struct {
 	mutex  sync.Mutex
 }
 
+// ID implements the ISession.ID method.
+func (s *Session) ID() bson.Raw {
+	return nil
+}
+
 // AbortTransaction implements the ISession.AbortTransaction method.
 func (s *Session) AbortTransaction(context.Context) error {
 	// acquire lock

@@ -11,6 +11,15 @@ const (
 	ignored   = "ignored"
 )
 
+func ensureContext(ctx context.Context) context.Context {
+	// check context
+	if ctx != nil {
+		return ctx
+	}
+
+	return context.Background()
+}
+
 func assertOptions(opts interface{}, fields map[string]string) {
 	// get value
 	value := reflect.ValueOf(opts).Elem()

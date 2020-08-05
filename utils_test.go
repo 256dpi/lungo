@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -83,14 +82,14 @@ func bucketTest(t *testing.T, fn func(t *testing.T, b *Bucket)) {
 	})
 }
 
-func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket, chunks *mongo.Collection)) {
+func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket)) {
 	db := testMongoClient.Database(testDB).(*MongoDatabase).Database
 	name := collectionName()
 	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
 	assert.NoError(t, err)
 
 	t.Run("GridFs", func(t *testing.T) {
-		fn(t, b, db.Collection(name+".chunks"))
+		fn(t, b)
 	})
 }
 

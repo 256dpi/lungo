@@ -104,6 +104,11 @@ func (c *Cursor) Next(context.Context) bool {
 	return false
 }
 
+// RemainingBatchLength implements the ICursor.RemainingBatchLength method.
+func (c *Cursor) RemainingBatchLength() int {
+	return len(c.list) - c.pos
+}
+
 // TryNext implements the ICursor.TryNext method.
 func (c *Cursor) TryNext(ctx context.Context) bool {
 	return c.Next(ctx)
