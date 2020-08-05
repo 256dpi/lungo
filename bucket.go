@@ -547,6 +547,12 @@ func (b *Bucket) Cleanup(ctx context.Context, age time.Duration) error {
 		}
 	}
 
+	// check error
+	err = csr.Err()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -775,6 +781,12 @@ func (s *UploadStream) Resume() (int64, error) {
 		// increment
 		number = chunk.Num
 		length += len(chunk.Data)
+	}
+
+	// check error
+	err = csr.Err()
+	if err != nil {
+		return 0, err
 	}
 
 	// set state
@@ -1278,6 +1290,11 @@ func (s *DownloadStream) seek(position int) error {
 
 	// load first chunk
 	if !cursor.Next(s.context) {
+		// check error
+		if cursor.Err() != nil {
+			return cursor.Err()
+		}
+
 		return fmt.Errorf("expected chunk")
 	}
 
@@ -1313,6 +1330,11 @@ func (s *DownloadStream) seek(position int) error {
 func (s *DownloadStream) next() error {
 	// advance cursor
 	if s.cursor == nil || !s.cursor.Next(s.context) {
+		// check error
+		if s.cursor.Err() != nil {
+			return s.cursor.Err()
+		}
+
 		return io.EOF
 	}
 
