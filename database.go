@@ -82,7 +82,7 @@ func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*o
 }
 
 // CreateView implements the IDatabase.CreateView method.
-func (d *Database) CreateView(ctx context.Context, viewName, viewOn string, pipeline interface{}, opts ...*options.CreateViewOptions) error {
+func (d *Database) CreateView(_ context.Context, _, _ string, _ interface{}, _ ...*options.CreateViewOptions) error {
 	panic("lungo: not implemented")
 }
 

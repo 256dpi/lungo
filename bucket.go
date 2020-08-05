@@ -120,17 +120,17 @@ func NewBucket(db IDatabase, opts ...*options.BucketOptions) *Bucket {
 }
 
 // GetFilesCollection returns the collection used for storing files.
-func (b *Bucket) GetFilesCollection(context.Context) ICollection {
+func (b *Bucket) GetFilesCollection(_ context.Context) ICollection {
 	return b.files
 }
 
 // GetChunksCollection returns the collection used for storing chunks.
-func (b *Bucket) GetChunksCollection(context.Context) ICollection {
+func (b *Bucket) GetChunksCollection(_ context.Context) ICollection {
 	return b.chunks
 }
 
 // GetMarkersCollection returns the collection used for storing markers.
-func (b *Bucket) GetMarkersCollection(context.Context) ICollection {
+func (b *Bucket) GetMarkersCollection(_ context.Context) ICollection {
 	return b.markers
 }
 
