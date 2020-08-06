@@ -359,7 +359,9 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		// get transaction
 		txn, err := e.Begin(nil, true)
 		if err != nil {
-			reporter(err)
+			if reporter != nil {
+				reporter(err)
+			}
 			continue
 		}
 
@@ -367,14 +369,18 @@ func (e *Engine) expire(interval time.Duration, reporter func(error)) {
 		err = txn.Expire()
 		if err != nil {
 			e.Abort(txn)
-			reporter(err)
+			if reporter != nil {
+				reporter(err)
+			}
 			continue
 		}
 
 		// commit transaction
 		err = e.Commit(txn)
 		if err != nil {
-			reporter(err)
+			if reporter != nil {
+				reporter(err)
+			}
 			continue
 		}
 	}
