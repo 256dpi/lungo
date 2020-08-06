@@ -22,6 +22,7 @@ type Stream struct {
 	token    interface{}
 	dropped  bool
 	closed   bool
+	error    error
 	mutex    sync.Mutex
 }
 
@@ -34,6 +35,7 @@ func (s *Stream) Close(context.Context) error {
 	// close stream
 	s.cancel()
 	s.closed = true
+	s.error = nil
 
 	return nil
 }
@@ -64,7 +66,7 @@ func (s *Stream) Err() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	return nil
+	return s.error
 }
 
 // ID implements the IChangeStream.ID method.
@@ -78,9 +80,40 @@ func (s *Stream) ID() int64 {
 
 // Next implements the IChangeStream.Next method.
 func (s *Stream) Next(ctx context.Context) bool {
+	return s.next(ctx, true)
+}
+
+// ResumeToken implements the IChangeStream.ResumeToken method.
+func (s *Stream) ResumeToken() bson.Raw {
 	// acquire mutex
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	// check token
+	if s.token == nil {
+		return nil
+	}
+
+	// encode token
+	bytes, _ := bson.Marshal(s.token)
+
+	return bytes
+}
+
+// TryNext implements the ICursor.TryNext method.
+func (s *Stream) TryNext(ctx context.Context) bool {
+	return s.next(ctx, false)
+}
+
+func (s *Stream) next(ctx context.Context, block bool) bool {
+	// acquire mutex
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// check error
+	if s.error != nil {
+		return false
+	}
 
 	// check if closed
 	if s.closed {
@@ -156,6 +189,19 @@ func (s *Stream) Next(ctx context.Context) bool {
 			return true
 		}
 
+		// handle non blocking
+		if !block {
+			select {
+			case <-ctx.Done():
+				// set error
+				s.error = ctx.Err()
+
+				return false
+			default:
+				return false
+			}
+		}
+
 		// await next event
 		select {
 		case _, ok := <-s.signal:
@@ -167,29 +213,10 @@ func (s *Stream) Next(ctx context.Context) bool {
 				return false
 			}
 		case <-ctx.Done():
+			// set error
+			s.error = ctx.Err()
+
 			return false
 		}
 	}
-}
-
-// ResumeToken implements the IChangeStream.ResumeToken method.
-func (s *Stream) ResumeToken() bson.Raw {
-	// acquire mutex
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// check token
-	if s.token == nil {
-		return nil
-	}
-
-	// encode token
-	bytes, _ := bson.Marshal(s.token)
-
-	return bytes
-}
-
-// TryNext implements the ICursor.TryNext method.
-func (s *Stream) TryNext(ctx context.Context) bool {
-	return s.Next(ctx)
 }

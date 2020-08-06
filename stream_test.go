@@ -1,6 +1,8 @@
 package lungo
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -19,7 +21,7 @@ func TestStream(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
-		ret := stream.TryNext(timeout(50))
+		ret := stream.TryNext(nil)
 		assert.False(t, ret)
 
 		id1 := primitive.NewObjectID()
@@ -61,7 +63,7 @@ func TestStream(t *testing.T) {
 			"operationType": "insert",
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* replace */
@@ -76,7 +78,9 @@ func TestStream(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		ret = stream.Next(nil)
+		time.Sleep(50 * time.Millisecond)
+
+		ret = stream.TryNext(nil)
 		assert.True(t, ret)
 
 		event = nil
@@ -103,7 +107,7 @@ func TestStream(t *testing.T) {
 			"operationType": "replace",
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* update (change field) */
@@ -150,7 +154,7 @@ func TestStream(t *testing.T) {
 			},
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* update (remove field) */
@@ -164,7 +168,9 @@ func TestStream(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		ret = stream.Next(nil)
+		time.Sleep(50 * time.Millisecond)
+
+		ret = stream.TryNext(nil)
 		assert.True(t, ret)
 
 		event = nil
@@ -195,7 +201,7 @@ func TestStream(t *testing.T) {
 			},
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* delete */
@@ -226,7 +232,7 @@ func TestStream(t *testing.T) {
 			"operationType": "delete",
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* close */
@@ -234,7 +240,83 @@ func TestStream(t *testing.T) {
 		err = stream.Close(nil)
 		assert.NoError(t, err)
 
-		ret = stream.Next(timeout(50))
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+
+		ret = stream.TryNext(nil)
+		assert.False(t, ret)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+	})
+}
+
+func TestStreamTimeout(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		stream, err := c.Watch(nil, bson.A{})
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		ret := stream.Next(timeout(50))
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.DeadlineExceeded))
+
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.DeadlineExceeded))
+
+		ret = stream.TryNext(nil)
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.DeadlineExceeded))
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+
+		ret = stream.TryNext(nil)
+		assert.False(t, ret)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+	})
+
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		_, err := c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
+
+		stream, err := c.Watch(nil, bson.A{})
+		assert.NoError(t, err)
+		assert.NotNil(t, stream)
+
+		// trigger async load of first batch in mongo
+		stream.TryNext(nil)
+
+		time.Sleep(50 * time.Millisecond)
+
+		ret := stream.TryNext(timeout(-10))
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.Canceled))
+
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.Canceled))
+
+		ret = stream.TryNext(nil)
+		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.Canceled))
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		err = stream.Err()
@@ -251,7 +333,7 @@ func TestStreamArrayChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
-		ret := stream.TryNext(timeout(50))
+		ret := stream.TryNext(nil)
 		assert.False(t, ret)
 
 		id1 := primitive.NewObjectID()
@@ -297,7 +379,7 @@ func TestStreamArrayChanges(t *testing.T) {
 			"operationType": "insert",
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* update (change field) */
@@ -353,7 +435,7 @@ func TestStreamArrayChanges(t *testing.T) {
 			},
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* update (remove field) */
@@ -406,7 +488,7 @@ func TestStreamArrayChanges(t *testing.T) {
 			},
 		}, event)
 
-		ret = stream.TryNext(timeout(50))
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		/* close */
@@ -414,7 +496,10 @@ func TestStreamArrayChanges(t *testing.T) {
 		err = stream.Close(nil)
 		assert.NoError(t, err)
 
-		ret = stream.Next(timeout(50))
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+
+		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
 		err = stream.Err()
@@ -445,6 +530,9 @@ func TestStreamAsync(t *testing.T) {
 
 		ret = stream.Next(nil)
 		assert.True(t, ret)
+
+		ret = stream.TryNext(nil)
+		assert.False(t, ret)
 
 		err = stream.Close(nil)
 		assert.NoError(t, err)
@@ -649,6 +737,10 @@ func TestStreamInvalidationCollection(t *testing.T) {
 			"operationType": "invalidate",
 		}, event)
 
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+		assert.NoError(t, stream.Err())
+
 		/* close */
 
 		err = stream.Close(nil)
@@ -726,6 +818,10 @@ func TestStreamInvalidationDatabase(t *testing.T) {
 			"operationType": "invalidate",
 		}, event)
 
+		ret = stream.Next(nil)
+		assert.False(t, ret)
+		assert.NoError(t, stream.Err())
+
 		/* close */
 
 		err = stream.Close(nil)
@@ -787,10 +883,9 @@ func TestStreamInvalidationClient(t *testing.T) {
 			"operationType": "dropDatabase",
 		}, event)
 
-		/* invalidate */
-
 		ret = stream.Next(timeout(50))
 		assert.False(t, ret)
+		assert.True(t, errors.Is(stream.Err(), context.DeadlineExceeded))
 
 		/* close */
 

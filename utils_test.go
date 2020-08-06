@@ -125,11 +125,20 @@ func dumpCollection(c ICollection, clean bool) []bson.M {
 }
 
 func timeout(ms time.Duration) context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
+	// return cancelled context if negative
+	if ms <= 0 {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		return ctx
+	}
+
+	// return context with deadline
+	ctx, cancel := context.WithTimeout(context.Background(), ms*time.Millisecond)
 	go func() {
-		time.Sleep(ms * time.Millisecond)
+		time.Sleep(10 * ms * time.Millisecond)
 		cancel()
 	}()
+
 	return ctx
 }
 
