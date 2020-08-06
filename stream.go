@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 
@@ -10,6 +11,11 @@ import (
 
 	"github.com/256dpi/lungo/bsonkit"
 )
+
+// ErrLostOplogPosition may be returned by a stream when the oplog position has
+// been lost. This can happen if a consumer is slower than the expiration of
+// oplog entries.
+var ErrLostOplogPosition = errors.New("lost oplog position")
 
 // Stream provides a mongo compatible way to read oplog events.
 type Stream struct {
@@ -147,7 +153,7 @@ func (s *Stream) next(ctx context.Context, block bool) bool {
 			if !ok {
 				s.cancel()
 				s.closed = true
-				// TODO: Set error?
+				s.error = ErrLostOplogPosition
 				return false
 			}
 			index = i

@@ -19,6 +19,7 @@ const testDB = "test-lungo"
 
 var testMongoClient IClient
 var testLungoClient IClient
+var testLungoEngine *Engine
 
 var testCollCounter = 0
 
@@ -35,7 +36,7 @@ func init() {
 
 	testMongoClient = mongoClient
 
-	lungoClient, _, err := Open(nil, Options{
+	lungoClient, lungoEngine, err := Open(nil, Options{
 		Store:          NewMemoryStore(),
 		ExpireInterval: 100 * time.Millisecond,
 		ExpireErrors: func(err error) {
@@ -47,6 +48,7 @@ func init() {
 	}
 
 	testLungoClient = lungoClient
+	testLungoEngine = lungoEngine
 }
 
 func clientTest(t *testing.T, fn func(t *testing.T, c IClient)) {

@@ -1059,3 +1059,28 @@ func TestStreamIsolationDatabase(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestStreamLostOplogPosition(t *testing.T) {
+	c := testLungoClient.Database(testDB).Collection(collectionName())
+
+	_, err := c.InsertOne(nil, bson.M{})
+	assert.NoError(t, err)
+
+	stream, err := c.Watch(nil, bson.A{})
+	assert.NoError(t, err)
+	assert.NotNil(t, stream)
+
+	txn, err := testLungoEngine.Begin(nil, true)
+	assert.NoError(t, err)
+
+	txn.Clean(0, time.Hour)
+
+	err = testLungoEngine.Commit(txn)
+	assert.NoError(t, err)
+
+	ret := stream.TryNext(nil)
+	assert.False(t, ret)
+
+	err = stream.Err()
+	assert.True(t, errors.Is(ErrLostOplogPosition, err))
+}
