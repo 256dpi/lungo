@@ -159,18 +159,16 @@ func (s *Stream) Next(ctx context.Context) bool {
 		// await next event
 		select {
 		case _, ok := <-s.signal:
-			if ok {
-				continue
+			if !ok {
+				// close stream
+				s.cancel()
+				s.closed = true
+
+				return false
 			}
 		case <-ctx.Done():
 			return false
 		}
-
-		// close stream
-		s.cancel()
-		s.closed = true
-
-		return false
 	}
 }
 
