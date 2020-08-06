@@ -580,9 +580,11 @@ func TestStreamAsync(t *testing.T) {
 
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
+		assert.NoError(t, stream.Err())
 
 		err = stream.Close(nil)
 		assert.NoError(t, err)
+		assert.NoError(t, stream.Err())
 	})
 }
 
@@ -601,6 +603,9 @@ func TestStreamResumption(t *testing.T) {
 		assert.Nil(t, stream)
 
 		/* prepare */
+
+		_, err = c.InsertOne(nil, bson.M{})
+		assert.NoError(t, err)
 
 		stream, err = c.Watch(nil, bson.A{})
 		assert.NoError(t, err)
@@ -631,6 +636,10 @@ func TestStreamResumption(t *testing.T) {
 		timestamp := event["clusterTime"].(primitive.Timestamp)
 		assert.NotEmpty(t, token)
 		assert.NotEmpty(t, timestamp)
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
+		assert.NoError(t, stream.Err())
 
 		/* resume after */
 
@@ -665,6 +674,7 @@ func TestStreamResumption(t *testing.T) {
 
 		err = stream.Close(nil)
 		assert.NoError(t, err)
+		assert.NoError(t, stream.Err())
 
 		/* start after */
 
@@ -699,6 +709,7 @@ func TestStreamResumption(t *testing.T) {
 
 		err = stream.Close(nil)
 		assert.NoError(t, err)
+		assert.NoError(t, stream.Err())
 
 		/* start at */
 
@@ -733,6 +744,7 @@ func TestStreamResumption(t *testing.T) {
 
 		err = stream.Close(nil)
 		assert.NoError(t, err)
+		assert.NoError(t, stream.Err())
 	})
 }
 
