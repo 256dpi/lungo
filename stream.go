@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"io"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,6 +35,7 @@ func (s *Stream) Close(context.Context) error {
 
 	// close stream
 	s.cancel()
+	s.event = nil
 	s.closed = true
 	s.error = nil
 
@@ -46,9 +48,12 @@ func (s *Stream) Decode(out interface{}) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// check event
+	// check validity
 	if s.event == nil {
-		return mongo.ErrNilCursor
+		if s.closed {
+			return mongo.ErrNilCursor
+		}
+		return io.EOF
 	}
 
 	// decode event
@@ -147,6 +152,7 @@ func (s *Stream) next(ctx context.Context, block bool) bool {
 			if !ok {
 				s.cancel()
 				s.closed = true
+				// TODO: Set error?
 				return false
 			}
 			index = i

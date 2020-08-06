@@ -3,12 +3,14 @@ package lungo
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -23,6 +25,13 @@ func TestStream(t *testing.T) {
 
 		ret := stream.TryNext(nil)
 		assert.False(t, ret)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		var event bson.M
+		err = stream.Decode(&event)
+		assert.True(t, errors.Is(io.EOF, err))
 
 		id1 := primitive.NewObjectID()
 
@@ -39,7 +48,6 @@ func TestStream(t *testing.T) {
 		ret = stream.Next(nil)
 		assert.True(t, ret)
 
-		var event bson.M
 		err = stream.Decode(&event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
@@ -65,6 +73,13 @@ func TestStream(t *testing.T) {
 
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
+		assert.NoError(t, stream.Err())
+
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
 
 		/* replace */
 
@@ -109,6 +124,12 @@ func TestStream(t *testing.T) {
 
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
+
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
 
 		/* update (change field) */
 
@@ -157,6 +178,12 @@ func TestStream(t *testing.T) {
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+
 		/* update (remove field) */
 
 		_, err = c.UpdateOne(nil, bson.M{
@@ -204,6 +231,12 @@ func TestStream(t *testing.T) {
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+
 		/* delete */
 
 		_, err = c.DeleteOne(nil, bson.M{
@@ -235,6 +268,12 @@ func TestStream(t *testing.T) {
 		ret = stream.TryNext(nil)
 		assert.False(t, ret)
 
+		err = stream.Err()
+		assert.NoError(t, err)
+
+		err = stream.Decode(&event)
+		assert.NoError(t, err)
+
 		/* close */
 
 		err = stream.Close(nil)
@@ -248,6 +287,9 @@ func TestStream(t *testing.T) {
 
 		err = stream.Err()
 		assert.NoError(t, err)
+
+		err = stream.Decode(nil)
+		assert.True(t, errors.Is(err, mongo.ErrNilCursor))
 	})
 }
 
