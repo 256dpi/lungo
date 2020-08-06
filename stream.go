@@ -115,13 +115,8 @@ func (s *Stream) next(ctx context.Context, block bool) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// check error
-	if s.error != nil {
-		return false
-	}
-
-	// check if closed
-	if s.closed {
+	// check validity
+	if s.error != nil || s.closed {
 		return false
 	}
 
