@@ -93,6 +93,11 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 			},
 		}),
 	}, catalog.Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, time.Hour)
+
+	catalog = txn.Catalog()
+	assert.Empty(t, catalog.Namespaces[Oplog].Documents.List)
 }
 
 func TestTransactionOplogCleaningByTime(t *testing.T) {
