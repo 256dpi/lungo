@@ -65,8 +65,8 @@ func CreateEngine(opts Options) (*Engine, error) {
 	}
 
 	// set default min and max oplog size
-	if opts.MinOplogAge == 0 {
-		opts.MinOplogAge = 100
+	if opts.MinOplogSize == 0 {
+		opts.MinOplogSize = 100
 	}
 	if opts.MaxOplogSize == 0 {
 		opts.MaxOplogSize = 1000
