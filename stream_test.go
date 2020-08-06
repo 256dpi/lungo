@@ -279,6 +279,8 @@ func TestStream(t *testing.T) {
 		err = stream.Close(nil)
 		assert.NoError(t, err)
 
+		/* use after close */
+
 		ret = stream.Next(nil)
 		assert.False(t, ret)
 
@@ -288,8 +290,11 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(nil)
+		err = stream.Decode(&event)
 		assert.True(t, errors.Is(err, mongo.ErrNilCursor))
+
+		err = stream.Close(nil)
+		assert.NoError(t, err)
 	})
 }
 
