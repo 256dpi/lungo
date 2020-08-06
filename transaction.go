@@ -1019,8 +1019,12 @@ func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) 
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	// get oplog
-	oplog := t.catalog.Namespaces[Oplog]
+	// clone catalog
+	clone := t.catalog.Clone()
+
+	// clone oplog
+	oplog := clone.Namespaces[Oplog].Clone()
+	clone.Namespaces[Oplog] = oplog
 
 	// get timestamps
 	minTimestamp := bsonkit.Now()
@@ -1056,6 +1060,7 @@ func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) 
 
 	// set flag
 	if dropped > 0 {
+		t.catalog = clone
 		t.dirty = true
 	}
 }
