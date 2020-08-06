@@ -1073,7 +1073,7 @@ func TestStreamLostOplogPosition(t *testing.T) {
 	txn, err := testLungoEngine.Begin(nil, true)
 	assert.NoError(t, err)
 
-	txn.Clean(0, time.Hour)
+	txn.Clean(0, 0, 0, time.Hour)
 
 	err = testLungoEngine.Commit(txn)
 	assert.NoError(t, err)

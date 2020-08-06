@@ -12,13 +12,9 @@ import (
 )
 
 func TestTransactionOplogCleaningBySize(t *testing.T) {
-	catalog := NewCatalog()
+	txn := NewTransaction(NewCatalog())
 
-	get := func(i int, name string) primitive.Timestamp {
-		return bsonkit.Get(catalog.Namespaces[Oplog].Documents.List[i], name).(primitive.Timestamp)
-	}
-
-	txn := NewTransaction(catalog)
+	/* prepare */
 
 	id1 := primitive.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
@@ -29,32 +25,6 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 	}, true)
 	assert.NoError(t, err)
 
-	txn.Clean(1, time.Hour)
-
-	catalog = txn.Catalog()
-	assert.Equal(t, bsonkit.List{
-		bsonkit.MustConvert(bson.M{
-			"_id": bson.M{
-				"ts": get(0, "_id.ts"),
-			},
-			"clusterTime": get(0, "clusterTime"),
-			"documentKey": bson.M{
-				"_id": id1,
-			},
-			"fullDocument": bson.M{
-				"_id": id1,
-				"foo": "bar",
-			},
-			"ns": bson.M{
-				"db":   "foo",
-				"coll": "bar",
-			},
-			"operationType": "insert",
-		}),
-	}, catalog.Namespaces[Oplog].Documents.List)
-
-	txn = NewTransaction(catalog)
-
 	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
 		"_id": id1,
 	}), nil, bsonkit.MustConvert(bson.M{
@@ -64,50 +34,36 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 	}), 0, 0, false, nil)
 	assert.NoError(t, err)
 
-	txn.Clean(1, time.Hour)
+	_, err = txn.Delete(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
+		"_id": id1,
+	}), nil, 0, 0)
+	assert.NoError(t, err)
 
-	catalog = txn.Catalog()
-	assert.Equal(t, bsonkit.List{
-		bsonkit.MustConvert(bson.M{
-			"_id": bson.M{
-				"ts": get(0, "_id.ts"),
-			},
-			"clusterTime": get(0, "clusterTime"),
-			"documentKey": bson.M{
-				"_id": id1,
-			},
-			"fullDocument": bson.M{
-				"_id": id1,
-				"foo": "baz",
-			},
-			"ns": bson.M{
-				"db":   "foo",
-				"coll": "bar",
-			},
-			"operationType": "update",
-			"updateDescription": bson.M{
-				"updatedFields": bson.M{
-					"foo": "baz",
-				},
-				"removedFields": bson.A{},
-			},
-		}),
-	}, catalog.Namespaces[Oplog].Documents.List)
+	assert.Len(t, txn.Catalog().Namespaces[Oplog].Documents.List, 3)
 
-	txn.Clean(0, time.Hour)
+	insert := txn.Catalog().Namespaces[Oplog].Documents.List[0]
+	update := txn.Catalog().Namespaces[Oplog].Documents.List[1]
+	delete := txn.Catalog().Namespaces[Oplog].Documents.List[2]
 
-	catalog = txn.Catalog()
-	assert.Empty(t, catalog.Namespaces[Oplog].Documents.List)
+	/* clean */
+
+	txn.Clean(3, 0, 0, time.Hour)
+	assert.Equal(t, bsonkit.List{insert, update, delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(2, 0, 0, time.Hour)
+	assert.Equal(t, bsonkit.List{update, delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, 1, 0, time.Hour)
+	assert.Equal(t, bsonkit.List{delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, 0, 0, time.Hour)
+	assert.Empty(t, txn.Catalog().Namespaces[Oplog].Documents.List)
 }
 
 func TestTransactionOplogCleaningByTime(t *testing.T) {
-	catalog := NewCatalog()
+	txn := NewTransaction(NewCatalog())
 
-	get := func(i int, name string) primitive.Timestamp {
-		return bsonkit.Get(catalog.Namespaces[Oplog].Documents.List[i], name).(primitive.Timestamp)
-	}
-
-	txn := NewTransaction(catalog)
+	/* prepare */
 
 	id1 := primitive.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
@@ -118,36 +74,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 	}, true)
 	assert.NoError(t, err)
 
-	txn.Clean(10, time.Second)
-
-	// wait at least 2s to ensure the clean threshold is always smaller than the
-	// timestamp. if we only wait a second the ordinal number might cause the
-	// $lte to not include the event
-	time.Sleep(2200 * time.Millisecond)
-
-	catalog = txn.Catalog()
-	assert.Equal(t, bsonkit.List{
-		bsonkit.MustConvert(bson.M{
-			"_id": bson.M{
-				"ts": get(0, "_id.ts"),
-			},
-			"clusterTime": get(0, "clusterTime"),
-			"documentKey": bson.M{
-				"_id": id1,
-			},
-			"fullDocument": bson.M{
-				"_id": id1,
-				"foo": "bar",
-			},
-			"ns": bson.M{
-				"db":   "foo",
-				"coll": "bar",
-			},
-			"operationType": "insert",
-		}),
-	}, catalog.Namespaces[Oplog].Documents.List)
-
-	txn = NewTransaction(catalog)
+	time.Sleep(time.Second)
 
 	_, err = txn.Update(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
 		"_id": id1,
@@ -158,33 +85,33 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 	}), 0, 0, false, nil)
 	assert.NoError(t, err)
 
-	txn.Clean(10, time.Second)
+	time.Sleep(time.Second)
 
-	catalog = txn.Catalog()
-	assert.Equal(t, bsonkit.List{
-		bsonkit.MustConvert(bson.M{
-			"_id": bson.M{
-				"ts": get(0, "_id.ts"),
-			},
-			"clusterTime": get(0, "clusterTime"),
-			"documentKey": bson.M{
-				"_id": id1,
-			},
-			"fullDocument": bson.M{
-				"_id": id1,
-				"foo": "baz",
-			},
-			"ns": bson.M{
-				"db":   "foo",
-				"coll": "bar",
-			},
-			"operationType": "update",
-			"updateDescription": bson.M{
-				"updatedFields": bson.M{
-					"foo": "baz",
-				},
-				"removedFields": bson.A{},
-			},
-		}),
-	}, catalog.Namespaces[Oplog].Documents.List)
+	_, err = txn.Delete(Handle{"foo", "bar"}, bsonkit.MustConvert(bson.M{
+		"_id": id1,
+	}), nil, 0, 0)
+	assert.NoError(t, err)
+
+	time.Sleep(time.Second)
+
+	assert.Len(t, txn.Catalog().Namespaces[Oplog].Documents.List, 3)
+
+	insert := txn.Catalog().Namespaces[Oplog].Documents.List[0]
+	update := txn.Catalog().Namespaces[Oplog].Documents.List[1]
+	delete := txn.Catalog().Namespaces[Oplog].Documents.List[2]
+
+	/* clean */
+
+	txn.Clean(0, 100, 3*time.Second, 0)
+	assert.Equal(t, bsonkit.List{insert, update, delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, 100, 2*time.Second, 0)
+	assert.Equal(t, bsonkit.List{update, delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, 100, 0, 2*time.Second)
+	assert.Equal(t, bsonkit.List{delete}, txn.Catalog().Namespaces[Oplog].Documents.List)
+
+	txn.Clean(0, 100, 0, 0)
+	assert.Empty(t, txn.Catalog().Namespaces[Oplog].Documents.List)
+
 }

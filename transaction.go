@@ -1014,7 +1014,7 @@ func (t *Transaction) Catalog() *Catalog {
 
 // Clean will clean the oplog and only keep up to the specified amount of events
 // and delete events that are older than the specified age.
-func (t *Transaction) Clean(maxSize int, maxAge time.Duration) {
+func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) {
 	// acquire write lock
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
@@ -1022,15 +1022,15 @@ func (t *Transaction) Clean(maxSize int, maxAge time.Duration) {
 	// get oplog
 	oplog := t.catalog.Namespaces[Oplog]
 
-	// get time
-	now := bsonkit.Now()
-	now.T -= uint32(maxAge / time.Second)
+	// get timestamps
+	minTimestamp := bsonkit.Now()
+	maxTimestamp := bsonkit.Now()
+	minTimestamp.T -= uint32(minAge / time.Second)
+	maxTimestamp.T -= uint32(maxAge / time.Second)
 
-	// determine threshold
-	threshold := -1
-	if len(oplog.Documents.List) > maxSize {
-		threshold = len(oplog.Documents.List) - maxSize
-	}
+	// determine indexes
+	minIndex := len(oplog.Documents.List) - minSize
+	maxIndex := len(oplog.Documents.List) - maxSize
 
 	// prepare counter
 	dropped := 0
@@ -1041,8 +1041,12 @@ func (t *Transaction) Clean(maxSize int, maxAge time.Duration) {
 		// get timestamp
 		ts := bsonkit.Get(doc, "_id.ts")
 
+		// determine inclusion
+		afterMin := i < minIndex && bsonkit.Compare(ts, minTimestamp) < 0
+		beyondMax := i < maxIndex || bsonkit.Compare(ts, maxTimestamp) < 0
+
 		// remove event if below threshold or timestamp
-		if i < threshold || bsonkit.Compare(ts, now) < 0 {
+		if afterMin && beyondMax {
 			oplog.Documents.Remove(doc)
 			dropped++
 		} else {

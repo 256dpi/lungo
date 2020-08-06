@@ -29,14 +29,16 @@ type Options struct {
 	// The function that is called with errors from the expiry goroutine.
 	ExpireErrors func(error)
 
-	// The maximum size of the oplog.
+	// The minimum and maximum size of the oplog.
 	//
-	// Default: 1000.
+	// Default: 100, 1000.
+	MinOplogSize int
 	MaxOplogSize int
 
-	// The maximum age of any oplog entry.
+	// The minimum and maximum age of oplog entries.
 	//
-	// Default: 1h.
+	// Default: 5m, 1h.
+	MinOplogAge time.Duration
 	MaxOplogAge time.Duration
 }
 
@@ -62,12 +64,18 @@ func CreateEngine(opts Options) (*Engine, error) {
 		opts.ExpireInterval = 60 * time.Second
 	}
 
-	// set default max oplog size
+	// set default min and max oplog size
+	if opts.MinOplogAge == 0 {
+		opts.MinOplogAge = 100
+	}
 	if opts.MaxOplogSize == 0 {
 		opts.MaxOplogSize = 1000
 	}
 
-	// set default max oplog age
+	// set default min and max oplog age
+	if opts.MinOplogAge == 0 {
+		opts.MinOplogAge = 5 * time.Minute
+	}
 	if opts.MaxOplogAge == 0 {
 		opts.MaxOplogAge = time.Hour
 	}
@@ -186,7 +194,7 @@ func (e *Engine) Commit(txn *Transaction) error {
 	}
 
 	// clean oplog
-	txn.Clean(e.opts.MaxOplogSize, e.opts.MaxOplogAge)
+	txn.Clean(e.opts.MinOplogSize, e.opts.MaxOplogSize, e.opts.MinOplogAge, e.opts.MaxOplogAge)
 
 	// write catalog
 	err := e.store.Store(txn.Catalog())
