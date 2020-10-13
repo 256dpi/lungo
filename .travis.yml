@@ -1,10 +1,10 @@
 language: go
 go:
-  - '1.13'
+  - '1.15'
   - tip
 env:
   global:
-    - MONGODB=4.2.1
+    - MONGODB=4.2.10
 install: true
 before_script:
   - wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1604-${MONGODB}.tgz -O /tmp/mongodb.tgz
