@@ -52,7 +52,7 @@ func cloneValue(v interface{}) interface{} {
 	case nil, int32, int64, float64, string, bool:
 		// primitives do not need cloning
 		return value
-	case primitive.Null, primitive.ObjectID, primitive.DateTime, primitive.Timestamp, primitive.Regex:
+	case primitive.Null, primitive.ObjectID, primitive.DateTime, primitive.Timestamp, primitive.Regex, primitive.Decimal128:
 		// structures of primitives do not need cloning
 		return value
 	case primitive.Binary:

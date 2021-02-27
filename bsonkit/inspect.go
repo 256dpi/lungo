@@ -77,6 +77,8 @@ func Inspect(v interface{}) (Class, bsontype.Type) {
 		return Number, bsontype.Int64
 	case float64:
 		return Number, bsontype.Double
+	case primitive.Decimal128:
+		return Number, bsontype.Decimal128
 	case string:
 		return String, bsontype.String
 	case bson.D:

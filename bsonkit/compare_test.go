@@ -5,18 +5,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestCompare(t *testing.T) {
 	// equality
-	ret := Compare(bson.D{}, bson.D{})
-	assert.Equal(t, 0, ret)
+	assert.Equal(t, 0, Compare(bson.D{}, bson.D{}))
 
 	// less than
-	ret = Compare("foo", false)
-	assert.Equal(t, -1, ret)
+	assert.Equal(t, -1, Compare("foo", false))
 
 	// greater than
-	ret = Compare(false, "foo")
-	assert.Equal(t, 1, ret)
+	assert.Equal(t, 1, Compare(false, "foo"))
+
+	// decimal
+	dec, err := primitive.ParseDecimal128("3.14")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, Compare(5.0, dec))
 }

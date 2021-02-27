@@ -158,7 +158,8 @@ func ConvertValue(v interface{}) (interface{}, error) {
 	case int:
 		return int64(value), nil
 	case primitive.Null, primitive.ObjectID, primitive.DateTime,
-		primitive.Timestamp, primitive.Regex, primitive.Binary:
+		primitive.Timestamp, primitive.Regex, primitive.Decimal128,
+		primitive.Binary:
 		return value, nil
 	case *primitive.ObjectID:
 		if value != nil {

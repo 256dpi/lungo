@@ -47,6 +47,12 @@ func TestInspect(t *testing.T) {
 			al: "double",
 		},
 		{
+			in: primitive.NewDecimal128(1, 1),
+			vc: Number,
+			vt: bsontype.Decimal128,
+			al: "decimal",
+		},
+		{
 			in: "",
 			vc: String,
 			vt: bsontype.String,

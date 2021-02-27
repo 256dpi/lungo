@@ -5,9 +5,15 @@ import (
 	"math"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func d128ToDec(d primitive.Decimal128) decimal.Decimal {
+	big, exp, _ := d.BigInt()
+	return decimal.NewFromBigInt(big, int32(exp))
+}
 
 // Compare will compare two bson values and return their order according to the
 // BSON type comparison order specification:
@@ -63,6 +69,8 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareFloat64s(l, float64(r))
 		case int64:
 			return compareFloat64ToInt64(l, r)
+		case primitive.Decimal128:
+			return decimal.NewFromFloat(l).Cmp(d128ToDec(r))
 		}
 	case int32:
 		switch r := rv.(type) {
@@ -72,6 +80,8 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareInt32s(l, r)
 		case int64:
 			return compareInt64s(int64(l), r)
+		case primitive.Decimal128:
+			return decimal.NewFromInt32(l).Cmp(d128ToDec(r))
 		}
 	case int64:
 		switch r := rv.(type) {
@@ -81,6 +91,19 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareInt64s(l, int64(r))
 		case int64:
 			return compareInt64s(l, r)
+		case primitive.Decimal128:
+			return decimal.NewFromInt(l).Cmp(d128ToDec(r))
+		}
+	case primitive.Decimal128:
+		switch r := rv.(type) {
+		case float64:
+			return d128ToDec(l).Cmp(decimal.NewFromFloat(r))
+		case int32:
+			return d128ToDec(l).Cmp(decimal.NewFromInt32(r))
+		case int64:
+			return d128ToDec(l).Cmp(decimal.NewFromInt(r))
+		case primitive.Decimal128:
+			return d128ToDec(l).Cmp(d128ToDec(r))
 		}
 	}
 
