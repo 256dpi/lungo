@@ -6,6 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var jsonTypeClass = map[string]Class{
@@ -316,7 +317,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 		switch keyword.Key {
 		case "multipleOf":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64:
+			case int32, int64, float64, primitive.Decimal128:
 				if Compare(kv, int32(0)) <= 0 {
 					return fmt.Errorf("invalid multipleOf value: %v", kv)
 				}
@@ -328,7 +329,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 			}
 		case "minimum":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64:
+			case int32, int64, float64, primitive.Decimal128:
 				res := Compare(num, kv)
 				if exclusiveMinimum && res <= 0 {
 					return ErrValidationFailed
@@ -340,7 +341,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 			}
 		case "maximum":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64:
+			case int32, int64, float64, primitive.Decimal128:
 				res := Compare(num, kv)
 				if exclusiveMaximum && res >= 0 {
 					return ErrValidationFailed

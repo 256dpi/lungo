@@ -10,11 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func d128ToDec(d primitive.Decimal128) decimal.Decimal {
-	big, exp, _ := d.BigInt()
-	return decimal.NewFromBigInt(big, int32(exp))
-}
-
 // Compare will compare two bson values and return their order according to the
 // BSON type comparison order specification:
 // https://docs.mongodb.com/manual/reference/bson-type-comparison-order.

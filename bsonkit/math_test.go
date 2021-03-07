@@ -4,7 +4,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func d128(str string) primitive.Decimal128 {
+	d, err := primitive.ParseDecimal128(str)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
 
 func TestAdd(t *testing.T) {
 	assert.Equal(t, Missing, Add("x", "y"))
@@ -14,12 +23,22 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, int32(4), Add(int32(2), int32(2)))
 	assert.Equal(t, int64(4), Add(int32(2), int64(2)))
 	assert.Equal(t, float64(4), Add(int32(2), float64(2)))
+	assert.Equal(t, d128("4"), Add(int32(2), d128("2")))
+
 	assert.Equal(t, int64(4), Add(int64(2), int32(2)))
 	assert.Equal(t, int64(4), Add(int64(2), int64(2)))
 	assert.Equal(t, float64(4), Add(int64(2), float64(2)))
+	assert.Equal(t, d128("4"), Add(int64(2), d128("2")))
+
 	assert.Equal(t, float64(4), Add(float64(2), int32(2)))
 	assert.Equal(t, float64(4), Add(float64(2), int64(2)))
 	assert.Equal(t, float64(4), Add(float64(2), float64(2)))
+	assert.Equal(t, d128("4"), Add(float64(2), d128("2")))
+
+	assert.Equal(t, d128("4"), Add(d128("2"), int32(2)))
+	assert.Equal(t, d128("4"), Add(d128("2"), int64(2)))
+	assert.Equal(t, d128("4"), Add(d128("2"), float64(2)))
+	assert.Equal(t, d128("4"), Add(d128("2"), d128("2")))
 }
 
 func TestMul(t *testing.T) {
@@ -30,12 +49,22 @@ func TestMul(t *testing.T) {
 	assert.Equal(t, int32(4), Mul(int32(2), int32(2)))
 	assert.Equal(t, int64(4), Mul(int32(2), int64(2)))
 	assert.Equal(t, float64(4), Mul(int32(2), float64(2)))
+	assert.Equal(t, d128("4"), Mul(int32(2), d128("2")))
+
 	assert.Equal(t, int64(4), Mul(int64(2), int32(2)))
 	assert.Equal(t, int64(4), Mul(int64(2), int64(2)))
 	assert.Equal(t, float64(4), Mul(int64(2), float64(2)))
+	assert.Equal(t, d128("4"), Mul(int64(2), d128("2")))
+
 	assert.Equal(t, float64(4), Mul(float64(2), int32(2)))
 	assert.Equal(t, float64(4), Mul(float64(2), int64(2)))
 	assert.Equal(t, float64(4), Mul(float64(2), float64(2)))
+	assert.Equal(t, d128("4"), Mul(float64(2), d128("2")))
+
+	assert.Equal(t, d128("4"), Mul(d128("2"), int32(2)))
+	assert.Equal(t, d128("4"), Mul(d128("2"), int64(2)))
+	assert.Equal(t, d128("4"), Mul(d128("2"), float64(2)))
+	assert.Equal(t, d128("4"), Mul(d128("2"), d128("2")))
 }
 
 func TestMod(t *testing.T) {
@@ -46,10 +75,20 @@ func TestMod(t *testing.T) {
 	assert.Equal(t, int32(0), Mod(int32(2), int32(2)))
 	assert.Equal(t, int64(0), Mod(int32(2), int64(2)))
 	assert.Equal(t, float64(0), Mod(int32(2), float64(2)))
+	assert.Equal(t, d128("0"), Mod(int32(2), d128("2")))
+
 	assert.Equal(t, int64(0), Mod(int64(2), int32(2)))
 	assert.Equal(t, int64(0), Mod(int64(2), int64(2)))
 	assert.Equal(t, float64(0), Mod(int64(2), float64(2)))
+	assert.Equal(t, d128("0"), Mod(int64(2), d128("2")))
+
 	assert.Equal(t, float64(0), Mod(float64(2), int32(2)))
 	assert.Equal(t, float64(0), Mod(float64(2), int64(2)))
 	assert.Equal(t, float64(0), Mod(float64(2), float64(2)))
+	assert.Equal(t, d128("0"), Mod(float64(2), d128("2")))
+
+	assert.Equal(t, d128("0"), Mod(d128("2"), int32(2)))
+	assert.Equal(t, d128("0"), Mod(d128("2"), int64(2)))
+	assert.Equal(t, d128("0"), Mod(d128("2"), float64(2)))
+	assert.Equal(t, d128("0"), Mod(d128("2"), d128("2")))
 }
