@@ -1049,6 +1049,11 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}, nil
 }
 
+// UpdateByID implements the ICollection.UpdateByID method.
+func (c *Collection) UpdateByID (context.Context, interface {}, interface {}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	panic("lungo: not implemented")
+}
+
 // UpdateMany implements the ICollection.UpdateMany method.
 func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// merge options

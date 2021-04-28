@@ -3,6 +3,7 @@ package lungo
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -130,6 +131,12 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 	}
 
 	return names, nil
+}
+
+// ListCollectionSpecifications implements the
+// IDatabase.ListCollectionSpecifications method.
+func (d *Database) ListCollectionSpecifications(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error) {
+	panic("lungo: not implemented")
 }
 
 // ListCollections implements the IDatabase.ListCollections method.

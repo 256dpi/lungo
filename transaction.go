@@ -876,7 +876,6 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 			bson.E{Key: "v", Value: 2},
 			bson.E{Key: "key", Value: *config.Key},
 			bson.E{Key: "name", Value: name},
-			bson.E{Key: "ns", Value: handle.String()},
 		}
 
 		// add unique

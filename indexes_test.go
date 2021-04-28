@@ -13,8 +13,6 @@ import (
 
 func TestIndexViewCreateMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ns := c.Database().Name() + "." + c.Name()
-
 		// list
 		csr, err := c.Indexes().List(nil)
 		assert.NoError(t, err)
@@ -65,7 +63,6 @@ func TestIndexViewCreateMany(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -74,7 +71,6 @@ func TestIndexViewCreateMany(t *testing.T) {
 					"baz": int32(1),
 				},
 				"name": "bar_-1_baz_1",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -82,7 +78,6 @@ func TestIndexViewCreateMany(t *testing.T) {
 					"foo": int32(1),
 				},
 				"name":   "foo",
-				"ns":     ns,
 				"unique": true,
 				"partialFilterExpression": bson.M{
 					"bar": "baz",
@@ -118,8 +113,6 @@ func TestIndexViewCreateMany(t *testing.T) {
 
 func TestIndexViewCreateOne(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ns := c.Database().Name() + "." + c.Name()
-
 		// list
 		csr, err := c.Indexes().List(nil)
 		assert.NoError(t, err)
@@ -162,7 +155,6 @@ func TestIndexViewCreateOne(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -174,7 +166,6 @@ func TestIndexViewCreateOne(t *testing.T) {
 					"foo": "bar",
 				},
 				"name":   "foo",
-				"ns":     ns,
 				"unique": true,
 				"v":      int32(2),
 			},
@@ -203,8 +194,6 @@ func TestIndexViewCreateOne(t *testing.T) {
 
 func TestIndexViewDropAll(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ns := c.Database().Name() + "." + c.Name()
-
 		// list
 		csr, err := c.Indexes().List(nil)
 		assert.NoError(t, err)
@@ -242,7 +231,6 @@ func TestIndexViewDropAll(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -251,7 +239,6 @@ func TestIndexViewDropAll(t *testing.T) {
 					"baz": int32(1),
 				},
 				"name": "bar_-1_baz_1",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -259,7 +246,6 @@ func TestIndexViewDropAll(t *testing.T) {
 					"foo": int32(1),
 				},
 				"name":   "foo",
-				"ns":     ns,
 				"unique": true,
 				"v":      int32(2),
 			},
@@ -278,7 +264,6 @@ func TestIndexViewDropAll(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 		}, readAll(csr))
@@ -287,8 +272,6 @@ func TestIndexViewDropAll(t *testing.T) {
 
 func TestIndexViewDropOne(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ns := c.Database().Name() + "." + c.Name()
-
 		// list
 		csr, err := c.Indexes().List(nil)
 		assert.NoError(t, err)
@@ -315,7 +298,6 @@ func TestIndexViewDropOne(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -323,7 +305,6 @@ func TestIndexViewDropOne(t *testing.T) {
 					"foo": int32(1),
 				},
 				"name":   "foo",
-				"ns":     ns,
 				"unique": true,
 				"v":      int32(2),
 			},
@@ -342,7 +323,6 @@ func TestIndexViewDropOne(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 		}, readAll(csr))
@@ -355,8 +335,6 @@ func TestIndexViewList(t *testing.T) {
 
 func TestIndexExpiry(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		ns := c.Database().Name() + "." + c.Name()
-
 		// list
 		csr, err := c.Indexes().List(nil)
 		assert.NoError(t, err)
@@ -394,7 +372,6 @@ func TestIndexExpiry(t *testing.T) {
 					"_id": int32(1),
 				},
 				"name": "_id_",
-				"ns":   ns,
 				"v":    int32(2),
 			},
 			{
@@ -402,7 +379,6 @@ func TestIndexExpiry(t *testing.T) {
 					"foo": int32(1),
 				},
 				"name":               "foo_1",
-				"ns":                 ns,
 				"expireAfterSeconds": int32(0),
 				"v":                  int32(2),
 			},

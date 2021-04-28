@@ -234,3 +234,8 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 
 	return &Cursor{list: list}, nil
 }
+
+// ListSpecifications implements the IIndexView.ListSpecifications method.
+func (v *IndexView) ListSpecifications(context.Context, ...*options.ListIndexesOptions) ([]*mongo.IndexSpecification, error) {
+	panic("lungo: not implemented")
+}
