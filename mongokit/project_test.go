@@ -119,6 +119,8 @@ func TestProject(t *testing.T) {
 		})
 	})
 
+	// TODO: Test allowed mixing with _id.
+
 	// mixed projection
 	projectTest(t, bson.M{
 		"_id": id,
@@ -126,8 +128,8 @@ func TestProject(t *testing.T) {
 		"bar": "baz",
 	}, func(fn func(bson.M, interface{})) {
 		fn(bson.M{
-			"_id": 1,
 			"foo": 0,
+			"bar": 1,
 		}, "cannot have a mix of inclusion and exclusion")
 	})
 }
