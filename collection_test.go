@@ -1519,6 +1519,56 @@ func TestCollectionReplaceOneUpsert(t *testing.T) {
 	})
 }
 
+func TestCollectionUpdateByID(t *testing.T) {
+	collectionTest(t, func(t *testing.T, c ICollection) {
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
+
+		res1, err := c.InsertMany(nil, bson.A{
+			bson.M{
+				"_id": id1,
+				"foo": "bar",
+			},
+			bson.M{
+				"_id": id2,
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+
+		// update specific document
+		res2, err := c.UpdateByID(nil, id1, bson.M{
+			"$set": bson.M{
+				"foo": "baz",
+			},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), res2.MatchedCount)
+		assert.Equal(t, int64(1), res2.ModifiedCount)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id1,
+				"foo": "baz",
+			},
+			{
+				"_id": id2,
+				"foo": "baz",
+			},
+		}, dumpCollection(c, false))
+	})
+}
+
 func TestCollectionUpdateMany(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()

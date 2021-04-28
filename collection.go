@@ -3,6 +3,7 @@ package lungo
 import (
 	"context"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -1050,8 +1051,13 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 }
 
 // UpdateByID implements the ICollection.UpdateByID method.
-func (c *Collection) UpdateByID(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
-	panic("lungo: not implemented")
+func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	// check id
+	if id == nil {
+		return nil, mongo.ErrNilValue
+	}
+
+	return c.UpdateOne(ctx, bson.D{{Key: "_id", Value: id}}, update, opts...)
 }
 
 // UpdateMany implements the ICollection.UpdateMany method.
