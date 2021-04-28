@@ -1050,7 +1050,7 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 }
 
 // UpdateByID implements the ICollection.UpdateByID method.
-func (c *Collection) UpdateByID (context.Context, interface {}, interface {}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateByID(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	panic("lungo: not implemented")
 }
 

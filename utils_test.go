@@ -186,7 +186,7 @@ func methods(t reflect.Type, replacements map[string]string, skip ...string) []s
 
 		// replace types
 		for a, b := range replacements {
-			r := regexp.MustCompile("([\\(\\s])"+regexp.QuoteMeta(a)+"([\\,\\)]|$)")
+			r := regexp.MustCompile("([\\(\\s])" + regexp.QuoteMeta(a) + "([\\,\\)]|$)")
 			f = r.ReplaceAllString(f, "${1}"+b+"${2}")
 		}
 

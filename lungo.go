@@ -37,7 +37,7 @@ type IDatabase interface {
 	CreateView(context.Context, string, string, interface{}, ...*options.CreateViewOptions) error
 	Drop(context.Context) error
 	ListCollectionNames(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]string, error)
-	ListCollectionSpecifications (context.Context, interface {}, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error)
+	ListCollectionSpecifications(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error)
 	ListCollections(context.Context, interface{}, ...*options.ListCollectionsOptions) (ICursor, error)
 	Name() string
 	ReadConcern() *readconcern.ReadConcern
@@ -70,7 +70,7 @@ type ICollection interface {
 	InsertOne(context.Context, interface{}, ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	Name() string
 	ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error)
-	UpdateByID (context.Context, interface {}, interface {}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
+	UpdateByID(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
@@ -102,7 +102,7 @@ type IIndexView interface {
 	DropAll(context.Context, ...*options.DropIndexesOptions) (bson.Raw, error)
 	DropOne(context.Context, string, ...*options.DropIndexesOptions) (bson.Raw, error)
 	List(context.Context, ...*options.ListIndexesOptions) (ICursor, error)
-	ListSpecifications (context.Context, ...*options.ListIndexesOptions) ([]*mongo.IndexSpecification, error)
+	ListSpecifications(context.Context, ...*options.ListIndexesOptions) ([]*mongo.IndexSpecification, error)
 }
 
 // IChangeStream defines a generic change stream.
