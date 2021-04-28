@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -185,7 +186,8 @@ func methods(t reflect.Type, replacements map[string]string, skip ...string) []s
 
 		// replace types
 		for a, b := range replacements {
-			f = strings.ReplaceAll(f, a, b)
+			r := regexp.MustCompile("([\\(\\s])"+regexp.QuoteMeta(a)+"([\\,\\)]|$)")
+			f = r.ReplaceAllString(f, "${1}"+b+"${2}")
 		}
 
 		// add method
