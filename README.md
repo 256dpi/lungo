@@ -2,11 +2,9 @@
 
 # lungo
 
-[![Build Status](https://travis-ci.org/256dpi/lungo.svg?branch=master)](https://travis-ci.org/256dpi/lungo)
-[![Coverage Status](https://coveralls.io/repos/github/256dpi/lungo/badge.svg?branch=master)](https://coveralls.io/github/256dpi/lungo?branch=master)
+[![Test](https://github.com/256dpi/lungo/actions/workflows/test.yml/badge.svg)](https://github.com/256dpi/lungo/actions/workflows/test.yml)
 [![GoDoc](https://godoc.org/github.com/256dpi/lungo?status.svg)](https://godoc.org/github.com/256dpi/lungo)
 [![Release](https://img.shields.io/github/release/256dpi/lungo.svg)](https://github.com/256dpi/lungo/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/256dpi/lungo)](https://goreportcard.com/report/256dpi/lungo)
 
 **A MongoDB compatible embeddable database and toolkit for Go.**
 
