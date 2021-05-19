@@ -1,49 +1,27 @@
 package bsonkit
 
-import (
-	"github.com/256dpi/btree"
-)
-
-type entry struct {
-	doc Doc
-}
-
-func (i *entry) Less(item btree.Item, ctx interface{}) bool {
-	// coerce item
-	j := item.(*entry)
-
-	// coerce index
-	index := ctx.(*Index)
-
-	// get order
-	order := Order(i.doc, j.doc, index.columns, !index.unique)
-	if order != 0 {
-		return order < 0
-	}
-
-	return false
-}
+import "github.com/tidwall/btree"
 
 // Index is a basic btree based index for documents. The index is not safe from
 // concurrent access.
 type Index struct {
-	unique   bool
-	columns  []Column
-	btree    *btree.BTree
-	sentinel *entry
+	unique  bool
+	columns []Column
+	btree   *btree.BTree
 }
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
 	// create index
 	index := &Index{
-		unique:   unique,
-		columns:  columns,
-		sentinel: &entry{},
+		unique:  unique,
+		columns: columns,
 	}
 
 	// create btree
-	index.btree = btree.New(64, index)
+	index.btree = btree.New(func(a, b interface{}) bool {
+		return index.less(a.(Doc), b.(Doc))
+	})
 
 	return index
 }
@@ -65,28 +43,22 @@ func (i *Index) Build(list List) bool {
 // Add will add the document to index. May return false if the document has
 // already been added to the index.
 func (i *Index) Add(doc Doc) bool {
-	// prepare sentinel
-	i.sentinel.doc = doc
-
 	// check if index already has an entry
-	item := i.btree.Get(i.sentinel)
+	item := i.btree.Get(doc)
 	if item != nil {
 		return false
 	}
 
 	// otherwise add entry
-	i.btree.ReplaceOrInsert(&entry{doc: doc})
+	i.btree.Set(doc)
 
 	return true
 }
 
 // Has returns whether the specified document has been added to the index.
 func (i *Index) Has(doc Doc) bool {
-	// prepare sentinel
-	i.sentinel.doc = doc
-
 	// check if index already has an item
-	item := i.btree.Get(i.sentinel)
+	item := i.btree.Get(doc)
 	if item != nil {
 		return true
 	}
@@ -97,11 +69,8 @@ func (i *Index) Has(doc Doc) bool {
 // Remove will remove a document from the index. May return false if the document
 // has not yet been added to the index.
 func (i *Index) Remove(doc Doc) bool {
-	// prepare sentinel
-	i.sentinel.doc = doc
-
 	// remove entry
-	item := i.btree.Delete(i.sentinel)
+	item := i.btree.Delete(doc)
 	if item == nil {
 		return false
 	}
@@ -115,8 +84,8 @@ func (i *Index) List() List {
 	list := make(List, 0, i.btree.Len())
 
 	// walk index
-	i.btree.Ascend(func(item btree.Item) bool {
-		list = append(list, item.(*entry).doc)
+	i.btree.Ascend(nil, func(item interface{}) bool {
+		list = append(list, item.(Doc))
 		return true
 	})
 
@@ -128,14 +97,19 @@ func (i *Index) List() List {
 func (i *Index) Clone() *Index {
 	// create clone
 	clone := &Index{
-		unique:   i.unique,
-		columns:  i.columns,
-		btree:    i.btree.Clone(),
-		sentinel: &entry{},
+		unique:  i.unique,
+		columns: i.columns,
+		btree:   i.btree.Copy(),
 	}
 
-	// update context
-	clone.btree.SetContext(clone)
+	// update less
+	clone.btree.SetLess(func(a, b interface{}) bool {
+		return clone.less(a.(Doc), b.(Doc))
+	})
 
 	return clone
+}
+
+func (i *Index) less(a, b Doc) bool {
+	return Order(a, b, i.columns, !i.unique) < 0
 }
