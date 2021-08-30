@@ -96,7 +96,7 @@ planned to be implemented):
 - [x] GridFS
 
 While the goal is to implement all MongoDB features in a compatible way, the
-architectural difference has implications on some of the features. Furthermore,
+architectural difference has implications on some features. Furthermore,
 the goal is to build an open and accessible codebase that favors simplicity.
 Check out the following sections for details on the implementation.
 
@@ -107,7 +107,7 @@ methods that are also exposed by the official driver. However, to this date, the
 driver does not yet support any of the MongoDB commands that can be issued using
 the `Database.RunCommand` method. Most unexported commands are related to query
 planning, replication, sharding, and user and role management features that we
-do not plan to support. However, we eventually will support some of the
+do not plan to support. However, we eventually will support some
 administrative and diagnostics commands e.g. `renameCollection` and `explain`.
 
 Leveraging the `mongokit.Match` function, lungo supports the following query

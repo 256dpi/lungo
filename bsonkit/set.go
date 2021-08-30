@@ -21,7 +21,7 @@ func NewSet(list List) *Set {
 	return set
 }
 
-// Add will add the document to set if has not already been added. It may return
+// Add will add the document to set, if has not already been added. It may return
 // false if the document has already been added.
 func (s *Set) Add(doc Doc) bool {
 	// check if already added

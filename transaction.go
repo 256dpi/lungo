@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/lungo/mongokit"
 )
 
-// Opcode defines the type of an operation.
+// Opcode defines the type of operation.
 type Opcode int
 
 // The available opcodes.

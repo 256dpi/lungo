@@ -102,7 +102,7 @@ func TestMatch(t *testing.T) {
 			},
 		}, true)
 
-		// top level operator and field expresion
+		// top level operator and field expression
 		fn(bson.M{
 			"foo": bson.M{"$eq": "bar"},
 			"$and": bson.A{

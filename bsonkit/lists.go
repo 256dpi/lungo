@@ -7,7 +7,7 @@ import (
 )
 
 // Select will return a list of documents selected by the specified selector.
-// Limit may be specified to break early if the the list reached the limit.
+// Limit may be specified to break early if the list reached the limit.
 func Select(list List, limit int, selector func(Doc) (bool, bool)) List {
 	// prepare result
 	var result List

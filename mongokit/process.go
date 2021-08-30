@@ -82,7 +82,7 @@ func ProcessExpression(ctx Context, doc bsonkit.Doc, prefix string, pair bson.E,
 			return operator(ctx, doc, pair.Key, prefix, pair.Value)
 		}
 
-		// otherwise get document
+		// otherwise, get document
 		update, ok := pair.Value.(bson.D)
 		if !ok {
 			return fmt.Errorf("%s: expected document", pair.Key)

@@ -44,7 +44,7 @@ type Options struct {
 
 // Engine manages the catalog loaded from a store and provides access to it
 // through transactions. Additionally, it also manages streams that subscribe
-// to changes to the catalog.
+// to catalog changes.
 type Engine struct {
 	opts    Options
 	store   Store

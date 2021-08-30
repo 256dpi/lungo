@@ -35,7 +35,7 @@ func assertOptions(opts interface{}, fields map[string]string) {
 			continue
 		}
 
-		// otherwise assert field is nil
+		// otherwise, assert field is nil
 		if !value.Field(i).IsNil() {
 			panic(fmt.Sprintf("lungo: unsupported option: %s", name))
 		}

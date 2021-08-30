@@ -224,7 +224,7 @@ func matchNin(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) er
 	})
 }
 
-func matchExists(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error {
+func matchExists(_ Context, doc bsonkit.Doc, _, path string, v interface{}) error {
 	// get boolean
 	exists := true
 	if b, ok := v.(bool); ok {

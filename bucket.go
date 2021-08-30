@@ -65,9 +65,9 @@ type BucketChunk struct {
 
 // Bucket provides access to a GridFS bucket. The type is generally compatible
 // with gridfs.Bucket from the official driver but allows the passing in of a
-// context on all methods. This ways the bucket theoretically supports multi-
+// context on all methods. This way the bucket theoretically supports multi-
 // document transactions. However, it is not recommended to use transactions for
-// large uploads and instead enable the the tracking mode and claim the uploads
+// large uploads and instead enable the tracking mode and claim the uploads
 // to ensure operational safety.
 type Bucket struct {
 	tracked      bool
@@ -222,7 +222,7 @@ func (b *Bucket) DownloadToStreamByName(ctx context.Context, name string, w io.W
 }
 
 // Drop will drop the files and chunks collection. If the bucket is tracked, the
-// markers collection is also dropped.
+// marker collection is also dropped.
 func (b *Bucket) Drop(ctx context.Context) error {
 	// drop files
 	err := b.files.Drop(ctx)
@@ -252,7 +252,7 @@ func (b *Bucket) Drop(ctx context.Context) error {
 	return nil
 }
 
-// Find will perform a query on the underlying files collection.
+// Find will perform a query on the underlying file collection.
 func (b *Bucket) Find(ctx context.Context, filter interface{}, opts ...*options.GridFSFindOptions) (ICursor, error) {
 	// merge options
 	opt := options.MergeGridFSFindOptions(opts...)
@@ -837,7 +837,7 @@ func (s *UploadStream) Abort() error {
 
 // Suspend will upload fully buffered chunks and close the stream. The stream
 // may be reopened and resumed later to finish the upload. Until that happens
-// the upload my be cleaned up.
+// the upload may be cleaned up.
 func (s *UploadStream) Suspend() (int64, error) {
 	// acquire mutex
 	s.mutex.Lock()
@@ -868,7 +868,7 @@ func (s *UploadStream) Suspend() (int64, error) {
 }
 
 // Close will finish the upload and close the stream. If the bucket is tracked
-// the method will not finalize the upload by creating a file. Instead the user
+// the method will not finalize the upload by creating a file. Instead, the user
 // should call ClaimUpload as part of a multi-document transaction to safely
 // claim the upload. Until that happens the upload may be cleaned up.
 func (s *UploadStream) Close() error {
@@ -910,7 +910,7 @@ func (s *UploadStream) Close() error {
 		}
 	}
 
-	// otherwise create file directly
+	// otherwise, create file directly
 	if !s.bucket.tracked {
 		_, err := s.bucket.files.InsertOne(s.context, BucketFile{
 			ID:         s.id,

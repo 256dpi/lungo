@@ -85,7 +85,7 @@ func (c IndexConfig) Name() (string, error) {
 }
 
 // Index is an index for documents that supports MongoDB features. The index is
-// not safe from concurrent access and does not rollback changes on errors.
+// not safe from concurrent access and does not roll back changes on errors.
 // Therefore, the recommended approach is to clone the index before making changes.
 type Index struct {
 	config  IndexConfig
@@ -121,7 +121,7 @@ func CreateIndex(config IndexConfig) (*Index, error) {
 }
 
 // Build will build the index from the specified list. It may return false if
-// there was an unique constraint error when building the index.
+// there was a unique constraint error when building the index.
 func (i *Index) Build(list bsonkit.List) (bool, error) {
 	// add documents
 	for _, doc := range list {

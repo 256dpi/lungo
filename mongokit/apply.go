@@ -44,7 +44,7 @@ type Changes struct {
 }
 
 // Record will record a field change. If the value is bsonkit.Missing it will
-// record an removal. It will return an error if a path is conflicting with a
+// record a removal. It will return an error if a path is conflicting with a
 // previous recorded change.
 func (c *Changes) Record(path string, val interface{}) error {
 	// check if path conflicts with another recorded change

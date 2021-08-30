@@ -24,7 +24,7 @@ func Get(doc Doc, path string) interface{} {
 
 // All has the basic behaviour as Get but additionally collects values from
 // embedded documents in arrays. It returns and array and true if values from
-// multiple documents haven been collected. Missing values are skipped and
+// multiple documents, haven been collected. Missing values are skipped and
 // intermediary arrays flattened if compact is set to true. By enabling merge,
 // a resulting array of embedded document may be merged to on array containing
 // all values.

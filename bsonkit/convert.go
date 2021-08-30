@@ -47,8 +47,8 @@ func MustConvertList(v interface{}) List {
 	return list
 }
 
-// ConvertList will convert an array to a list. The value is expected to be a
-// bson.A of bson.M or bson.D elements composed of standard types.
+// ConvertList will convert an array to a list. The value is expected to be an
+// array of bson.M or bson.D elements composed of standard types.
 func ConvertList(v interface{}) (List, error) {
 	// convert value
 	doc, err := ConvertValue(v)

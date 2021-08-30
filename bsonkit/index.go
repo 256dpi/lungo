@@ -18,8 +18,8 @@ func NewIndex(unique bool, columns []Column) *Index {
 }
 
 // Build will build the index from the specified list. It may return false if
-// there was an unique constraint error when building the index. If an error
-// is returned the index only has some of the provided documents added.
+// there was a unique constraint error when building the index. If an error
+// is returned the index only has some documents added.
 func (i *Index) Build(list List) bool {
 	// add documents
 	for _, doc := range list {
@@ -40,7 +40,7 @@ func (i *Index) Add(doc Doc) bool {
 		return false
 	}
 
-	// otherwise add entry
+	// otherwise, add entry
 	i.btree.Set(doc)
 
 	return true

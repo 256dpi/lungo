@@ -26,7 +26,7 @@ type Result struct {
 
 // Collection combines a set and multiple indexes to form a basic MongoDB like
 // collection that offers basic CRUD capabilities. The collection is not safe
-// from concurrent access and does not rollback changes on errors. Therefore,
+// from concurrent access and does not roll back changes on errors. Therefore,
 // the recommended approach is to clone the collection before making changes.
 type Collection struct {
 	Documents *bsonkit.Set
@@ -58,7 +58,7 @@ func NewCollection(idIndex bool) *Collection {
 	return coll
 }
 
-// Find will lookup the documents that match the specified query.
+// Find will look up the documents that match the specified query.
 func (c *Collection) Find(query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
 	// get documents
 	list := c.Documents.List
@@ -120,7 +120,7 @@ func (c *Collection) Insert(doc bsonkit.Doc) (*Result, error) {
 	}, nil
 }
 
-// Replace will lookup the first document that matches the query and if found
+// Replace will look up the first document that matches the query and if found
 // replace it with the specified document.
 func (c *Collection) Replace(query, repl, sort bsonkit.Doc) (*Result, error) {
 	// get documents
@@ -187,7 +187,7 @@ func (c *Collection) Replace(query, repl, sort bsonkit.Doc) (*Result, error) {
 	}, nil
 }
 
-// Update will lookup all documents that match the specified query and update
+// Update will look up all documents that match the specified query and update
 // them according to the update document.
 func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int, arrayFilters bsonkit.List) (*Result, error) {
 	// get documents
