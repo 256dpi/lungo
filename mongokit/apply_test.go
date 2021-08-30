@@ -117,7 +117,9 @@ func TestApply(t *testing.T) {
 		// empty document
 		fn(bson.M{
 			"$set": bson.M{},
-		}, nil, "$set: empty document")
+		}, nil, bsonkit.MustConvert(bson.M{
+			"foo": "bar",
+		}))
 
 		// valid update
 		fn(bson.M{
