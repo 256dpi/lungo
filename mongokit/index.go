@@ -95,6 +95,11 @@ type Index struct {
 
 // CreateIndex will create and return a new index.
 func CreateIndex(config IndexConfig) (*Index, error) {
+	// check key
+	if len(*config.Key) == 0 {
+		return nil, fmt.Errorf("empty index key")
+	}
+
 	// clone key and partial
 	config.Key = bsonkit.Clone(config.Key)
 	config.Partial = bsonkit.Clone(config.Partial)

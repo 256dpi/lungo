@@ -18,10 +18,15 @@ func mustHas(ok bool, err error) bool {
 }
 
 func TestIndex(t *testing.T) {
+	index, err := CreateIndex(IndexConfig{
+		Key: bsonkit.MustConvert(bson.M{}),
+	})
+	assert.Error(t, err)
+
 	d1 := bsonkit.MustConvert(bson.M{"a": "1"})
 	d2 := bsonkit.MustConvert(bson.M{"a": "1"})
 
-	index, err := CreateIndex(IndexConfig{
+	index, err = CreateIndex(IndexConfig{
 		Key: bsonkit.MustConvert(bson.M{
 			"a": int32(1),
 		}),

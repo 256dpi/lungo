@@ -118,8 +118,15 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{}, readAll(csr))
 
-		// invalid index
+		// empty index
 		name, err := c.Indexes().CreateOne(nil, mongo.IndexModel{
+			Keys: bson.M{},
+		})
+		assert.Error(t, err)
+		assert.Empty(t, name)
+
+		// invalid index
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"bar": false,
 			},
