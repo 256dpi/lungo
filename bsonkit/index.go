@@ -5,25 +5,16 @@ import "github.com/tidwall/btree"
 // Index is a basic btree based index for documents. The index is not safe from
 // concurrent access.
 type Index struct {
-	unique  bool
-	columns []Column
-	btree   *btree.BTree
+	btree *btree.BTree
 }
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
-	// create index
-	index := &Index{
-		unique:  unique,
-		columns: columns,
+	return &Index{
+		btree: btree.New(func(a, b interface{}) bool {
+			return Order(a.(Doc), b.(Doc), columns, !unique) < 0
+		}),
 	}
-
-	// create btree
-	index.btree = btree.New(func(a, b interface{}) bool {
-		return index.less(a.(Doc), b.(Doc))
-	})
-
-	return index
 }
 
 // Build will build the index from the specified list. It may return false if
@@ -97,19 +88,8 @@ func (i *Index) List() List {
 func (i *Index) Clone() *Index {
 	// create clone
 	clone := &Index{
-		unique:  i.unique,
-		columns: i.columns,
-		btree:   i.btree.Copy(),
+		btree: i.btree.Copy(),
 	}
 
-	// update less
-	clone.btree.SetLess(func(a, b interface{}) bool {
-		return clone.less(a.(Doc), b.(Doc))
-	})
-
 	return clone
-}
-
-func (i *Index) less(a, b Doc) bool {
-	return Order(a, b, i.columns, !i.unique) < 0
 }
