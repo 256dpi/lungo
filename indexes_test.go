@@ -188,11 +188,34 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "foo", name)
 
+		// TODO: Support following test case.
+
+		// ensure existing index without options
+		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
+			Keys: bson.M{
+				"foo": 1,
+			},
+		})
+		switch c.(type) {
+		case *Collection:
+			assert.Error(t, err)
+			assert.Equal(t, "", name)
+		default:
+			assert.NoError(t, err)
+			assert.Equal(t, "foo_1", name)
+		}
+
+		// prepare options
+		opts = options.Index().
+			SetName("foo").
+			SetUnique(false)
+
 		// duplicate index (same key)
 		name, err = c.Indexes().CreateOne(nil, mongo.IndexModel{
 			Keys: bson.M{
 				"foo": 1,
 			},
+			Options: opts,
 		})
 		assert.Error(t, err)
 		assert.Equal(t, "", name)

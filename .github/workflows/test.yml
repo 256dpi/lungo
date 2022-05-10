@@ -7,13 +7,13 @@ jobs:
       - name: Install
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16.x
+          go-version: 1.17.x
       - name: Checkout
         uses: actions/checkout@v2
       - name: MongoDB
-        uses: supercharge/mongodb-github-action@1.4.0
+        uses: supercharge/mongodb-github-action@1.7.0
         with:
-          mongodb-version: 4.4
+          mongodb-version: 5.0
           mongodb-replica-set: rs0
       - name: Test
         run: go test ./...

@@ -171,7 +171,8 @@ func TestStream(t *testing.T) {
 				"updatedFields": bson.M{
 					"foo.bar": "baz",
 				},
-				"removedFields": bson.A{},
+				"removedFields":   bson.A{},
+				"truncatedArrays": bson.A{},
 			},
 		}, event)
 
@@ -225,6 +226,7 @@ func TestStream(t *testing.T) {
 				"removedFields": bson.A{
 					"foo.bar",
 				},
+				"truncatedArrays": bson.A{},
 			},
 		}, event)
 
@@ -478,7 +480,8 @@ func TestStreamArrayChanges(t *testing.T) {
 						"bar": "baz",
 					},
 				},
-				"removedFields": bson.A{},
+				"removedFields":   bson.A{},
+				"truncatedArrays": bson.A{},
 			},
 		}, event)
 
@@ -531,7 +534,8 @@ func TestStreamArrayChanges(t *testing.T) {
 						},
 					},
 				},
-				"removedFields": bson.A{},
+				"removedFields":   bson.A{},
+				"truncatedArrays": bson.A{},
 			},
 		}, event)
 

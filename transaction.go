@@ -723,8 +723,9 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 
 		// set description
 		event["updateDescription"] = bson.M{
-			"updatedFields": updated,
-			"removedFields": removed,
+			"updatedFields":   updated,
+			"removedFields":   removed,
+			"truncatedArrays": bson.A{},
 		}
 	}
 
