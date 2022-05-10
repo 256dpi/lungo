@@ -1,11 +1,11 @@
 module github.com/256dpi/lungo
 
-go 1.17
+go 1.18
 
 require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/btree v0.5.0
+	github.com/tidwall/btree v1.3.1
 	go.mongodb.org/mongo-driver v1.9.1
 )
 

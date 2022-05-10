@@ -5,14 +5,14 @@ import "github.com/tidwall/btree"
 // Index is a basic btree based index for documents. The index is not safe from
 // concurrent access.
 type Index struct {
-	btree *btree.BTree
+	btree *btree.Generic[Doc]
 }
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
 	return &Index{
-		btree: btree.New(func(a, b interface{}) bool {
-			return Order(a.(Doc), b.(Doc), columns, !unique) < 0
+		btree: btree.NewGeneric[Doc](func(a, b Doc) bool {
+			return Order(a, b, columns, !unique) < 0
 		}),
 	}
 }
@@ -35,7 +35,7 @@ func (i *Index) Build(list List) bool {
 // already been added to the index.
 func (i *Index) Add(doc Doc) bool {
 	// check if index already has an entry
-	item := i.btree.Get(doc)
+	item, _ := i.btree.Get(doc)
 	if item != nil {
 		return false
 	}
@@ -49,7 +49,7 @@ func (i *Index) Add(doc Doc) bool {
 // Has returns whether the specified document has been added to the index.
 func (i *Index) Has(doc Doc) bool {
 	// check if index already has an item
-	item := i.btree.Get(doc)
+	item, _ := i.btree.Get(doc)
 	if item != nil {
 		return true
 	}
@@ -61,7 +61,7 @@ func (i *Index) Has(doc Doc) bool {
 // has not yet been added to the index.
 func (i *Index) Remove(doc Doc) bool {
 	// remove entry
-	item := i.btree.Delete(doc)
+	item, _ := i.btree.Delete(doc)
 	if item == nil {
 		return false
 	}
@@ -75,8 +75,8 @@ func (i *Index) List() List {
 	list := make(List, 0, i.btree.Len())
 
 	// walk index
-	i.btree.Ascend(nil, func(item interface{}) bool {
-		list = append(list, item.(Doc))
+	i.btree.Scan(func(item Doc) bool {
+		list = append(list, item)
 		return true
 	})
 
