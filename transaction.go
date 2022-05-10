@@ -22,7 +22,7 @@ const (
 	Delete
 )
 
-// Strings returns the opcode name.
+// String returns the opcode name.
 func (c Opcode) String() string {
 	switch c {
 	case Insert:

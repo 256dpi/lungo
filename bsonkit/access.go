@@ -47,9 +47,7 @@ func All(doc Doc, path string, compact, merge bool) (interface{}, bool) {
 	// merge arrays
 	for _, item := range array {
 		if a, ok := item.(bson.A); ok {
-			for _, i := range a {
-				result = append(result, i)
-			}
+			result = append(result, a...)
 		} else {
 			result = append(result, item)
 		}

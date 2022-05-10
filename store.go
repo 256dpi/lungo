@@ -29,12 +29,12 @@ func NewMemoryStore() *MemoryStore {
 }
 
 // Load will return the catalog.
-func (m MemoryStore) Load() (*Catalog, error) {
+func (m *MemoryStore) Load() (*Catalog, error) {
 	return m.catalog, nil
 }
 
 // Store will store the catalog.
-func (m MemoryStore) Store(data *Catalog) error {
+func (m *MemoryStore) Store(data *Catalog) error {
 	m.catalog = data
 	return nil
 }
