@@ -393,6 +393,8 @@ func TestBucketSeekDownload(t *testing.T) {
 		data = append(data, i)
 	}
 
+	abstractSeekTest(t, bytes.NewReader(data))
+
 	bucketTest(t, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
@@ -414,71 +416,91 @@ func TestBucketSeekDownload(t *testing.T) {
 		assert.Equal(t, 3, n2)
 		assert.Equal(t, []byte{10, 11, 12}, buf)
 
-		/* back */
-
-		n1, err = stream.Seek(-5, io.SeekCurrent)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(8), n1)
-
-		buf = make([]byte, 3)
-		n2, err = stream.Read(buf)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, n2)
-		assert.Equal(t, []byte{8, 9, 10}, buf)
-
-		/* absolute */
-
-		n1, err = stream.Seek(20, io.SeekStart)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(20), n1)
-
-		buf = make([]byte, 3)
-		n2, err = stream.Read(buf)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, n2)
-		assert.Equal(t, []byte{20, 21, 22}, buf)
-
-		/* reverse */
-
-		n1, err = stream.Seek(10, io.SeekEnd)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(245), n1)
-
-		buf = make([]byte, 3)
-		n2, err = stream.Read(buf)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, n2)
-		assert.Equal(t, []byte{245, 246, 247}, buf)
-
-		/* underflow */
-
-		n1, err = stream.Seek(-10, io.SeekStart)
-		assert.Error(t, err)
-		assert.Equal(t, ErrInvalidPosition, err)
-
-		/* overflow */
-
-		n1, err = stream.Seek(300, io.SeekStart)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(300), n1)
-
-		buf = make([]byte, 3)
-		n2, err = stream.Read(buf)
-		assert.Error(t, err)
-		assert.Equal(t, io.EOF, err)
-
-		/* user after EOF */
-
-		n1, err = stream.Seek(0, io.SeekStart)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(0), n1)
-
-		buf = make([]byte, 3)
-		n2, err = stream.Read(buf)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, n2)
-		assert.Equal(t, []byte{0, 1, 2}, buf)
+		abstractSeekTest(t, stream)
 	})
+}
+
+func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
+	n1, err := stream.Seek(0, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), n1)
+
+	/* forward */
+
+	n1, err = stream.Seek(10, io.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(10), n1)
+
+	buf := make([]byte, 3)
+	n2, err := stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n2)
+	assert.Equal(t, []byte{10, 11, 12}, buf)
+
+	/* back */
+
+	n1, err = stream.Seek(-5, io.SeekCurrent)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(8), n1)
+
+	buf = make([]byte, 3)
+	n2, err = stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n2)
+	assert.Equal(t, []byte{8, 9, 10}, buf)
+
+	/* absolute */
+
+	n1, err = stream.Seek(20, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(20), n1)
+
+	buf = make([]byte, 3)
+	n2, err = stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n2)
+	assert.Equal(t, []byte{20, 21, 22}, buf)
+
+	/* reverse */
+
+	n1, err = stream.Seek(-10, io.SeekEnd)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(245), n1)
+
+	buf = make([]byte, 3)
+	n2, err = stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n2)
+	assert.Equal(t, []byte{245, 246, 247}, buf)
+
+	/* underflow */
+
+	n1, err = stream.Seek(-10, io.SeekStart)
+	assert.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), "negative position"))
+
+	/* overflow */
+
+	n1, err = stream.Seek(300, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(300), n1)
+
+	buf = make([]byte, 3)
+	n2, err = stream.Read(buf)
+	assert.Error(t, err)
+	assert.Equal(t, io.EOF, err)
+
+	/* user after EOF */
+
+	n1, err = stream.Seek(0, io.SeekStart)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), n1)
+
+	buf = make([]byte, 3)
+	n2, err = stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, n2)
+	assert.Equal(t, []byte{0, 1, 2}, buf)
 }
 
 func TestBucketTracking(t *testing.T) {

@@ -22,9 +22,9 @@ import (
 // The value is the same as gridfs.ErrFileNotFound and can be used interchangeably.
 var ErrFileNotFound = gridfs.ErrFileNotFound
 
-// ErrInvalidPosition is returned if the resulting position after a seek
-// operation is invalid.
-var ErrInvalidPosition = errors.New("invalid position")
+// ErrNegativePosition is returned if the resulting position after a seek
+// operation is negative.
+var ErrNegativePosition = errors.New("negative position")
 
 // The bucket marker states.
 const (
@@ -1114,7 +1114,7 @@ func (s *DownloadStream) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		position = s.position + int(offset)
 	case io.SeekEnd:
-		position = s.file.Length - int(offset)
+		position = s.file.Length + int(offset)
 	}
 
 	// seek to position
@@ -1264,7 +1264,7 @@ func (s *DownloadStream) load() error {
 func (s *DownloadStream) seek(position int) error {
 	// check underflow
 	if position < 0 {
-		return ErrInvalidPosition
+		return ErrNegativePosition
 	}
 
 	// check position
