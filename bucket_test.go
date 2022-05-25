@@ -477,6 +477,7 @@ func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
 
 	n1, err = stream.Seek(-10, io.SeekStart)
 	assert.Error(t, err)
+	assert.Zero(t, n1)
 	assert.True(t, strings.Contains(err.Error(), "negative position"))
 
 	/* overflow */
