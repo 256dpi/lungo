@@ -46,7 +46,7 @@ func TestDownloadStreamSymmetry(t *testing.T) {
 }
 
 func TestBucketBasic(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", strings.NewReader("Hello World!"))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
@@ -148,7 +148,7 @@ func TestBucketBasic(t *testing.T) {
 func TestBucketEmptyFile(t *testing.T) {
 	data := make([]byte, 0)
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
@@ -184,7 +184,7 @@ func TestBucketEmptyFile(t *testing.T) {
 func TestBucketBigFile(t *testing.T) {
 	data := make([]byte, gridfs.UploadBufferSize*1.5)
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
@@ -220,7 +220,7 @@ func TestBucketBigFile(t *testing.T) {
 func TestBucketManyWrites(t *testing.T) {
 	data := make([]byte, gridfs.UploadBufferSize/100*1.5)
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		stream, err := b.OpenUploadStream(nil, "foo")
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
@@ -272,7 +272,7 @@ func TestBucketManyWrites(t *testing.T) {
 func TestBucketAbortUpload(t *testing.T) {
 	data := make([]byte, gridfs.UploadBufferSize/100*1.5)
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		stream, err := b.OpenUploadStream(nil, "foo")
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
@@ -322,7 +322,7 @@ func TestBucketAbortUpload(t *testing.T) {
 func TestBucketReUpload(t *testing.T) {
 	data := []byte("Hello World!")
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		id := primitive.NewObjectID()
 
 		err := b.UploadFromStreamWithID(nil, id, "foo", bytes.NewReader(data))
@@ -388,14 +388,16 @@ func TestBucketReUpload(t *testing.T) {
 }
 
 func TestBucketSeekDownload(t *testing.T) {
-	data := make([]byte, 0, 255)
-	for i := byte(0); i < 255; i++ {
-		data = append(data, i)
+	data := make([]byte, 1024)
+	for i := 0; i < len(data); i++ {
+		data[i] = byte(i % 256)
 	}
 
-	abstractSeekTest(t, bytes.NewReader(data))
+	reader := bytes.NewReader(data)
+	abstractSeekTest(t, reader)
+	abstractSeekTest(t, reader)
 
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 128, func(t *testing.T, b *Bucket) {
 		id, err := b.UploadFromStream(nil, "foo", bytes.NewReader(data))
 		assert.NoError(t, err)
 		assert.NotEmpty(t, id)
@@ -416,6 +418,7 @@ func TestBucketSeekDownload(t *testing.T) {
 		assert.Equal(t, 3, n2)
 		assert.Equal(t, []byte{10, 11, 12}, buf)
 
+		abstractSeekTest(t, stream)
 		abstractSeekTest(t, stream)
 	})
 }
@@ -465,13 +468,13 @@ func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
 
 	n1, err = stream.Seek(-10, io.SeekEnd)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(245), n1)
+	assert.Equal(t, int64(1014), n1)
 
 	buf = make([]byte, 3)
 	n2, err = stream.Read(buf)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, n2)
-	assert.Equal(t, []byte{245, 246, 247}, buf)
+	assert.Equal(t, []byte{246, 247, 248}, buf)
 
 	/* underflow */
 
@@ -480,11 +483,23 @@ func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
 	assert.Zero(t, n1)
 	assert.True(t, strings.Contains(err.Error(), "negative position"))
 
+	/* end */
+
+	n1, err = stream.Seek(-1, io.SeekEnd)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1023), n1)
+
+	buf = make([]byte, 2)
+	n2, err = stream.Read(buf)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, n2)
+	assert.Equal(t, []byte{255, 0}, buf)
+
 	/* overflow */
 
-	n1, err = stream.Seek(300, io.SeekStart)
+	n1, err = stream.Seek(1048, io.SeekStart)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(300), n1)
+	assert.Equal(t, int64(1048), n1)
 
 	buf = make([]byte, 3)
 	n2, err = stream.Read(buf)
@@ -505,7 +520,7 @@ func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
 }
 
 func TestBucketTracking(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		b.EnableTracking()
 
 		id, err := b.UploadFromStream(nil, "foo", strings.NewReader("Hello World!"))
@@ -553,7 +568,7 @@ func TestBucketTracking(t *testing.T) {
 }
 
 func TestBucketUploadResuming(t *testing.T) {
-	bucketTest(t, func(t *testing.T, b *Bucket) {
+	bucketTest(t, 0, func(t *testing.T, b *Bucket) {
 		b.EnableTracking()
 
 		id := primitive.NewObjectID()

@@ -79,9 +79,12 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 	})
 }
 
-func bucketTest(t *testing.T, fn func(t *testing.T, b *Bucket)) {
+func bucketTest(t *testing.T, chunkSize int32, fn func(t *testing.T, b *Bucket)) {
+	if chunkSize == 0 {
+		chunkSize = gridfs.DefaultChunkSize
+	}
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName())))
+		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize)))
 	})
 }
 
