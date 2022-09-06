@@ -1251,6 +1251,9 @@ func (s *DownloadStream) load() error {
 
 	// set chunks
 	s.chunks = s.file.Length / s.file.ChunkSize
+	if s.file.Length%s.file.ChunkSize != 0 {
+		s.chunks++
+	}
 
 	// seek to zero
 	err = s.seek(0)
@@ -1308,7 +1311,7 @@ func (s *DownloadStream) seek(position int) error {
 	// check chunk
 	if chunk.Num != num {
 		return gridfs.ErrWrongIndex
-	} else if num == s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
+	} else if num < s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
 		return gridfs.ErrWrongSize
 	}
 
@@ -1348,7 +1351,7 @@ func (s *DownloadStream) next() error {
 	// check chunk
 	if chunk.Num != s.chunk.Num+1 {
 		return gridfs.ErrWrongIndex
-	} else if chunk.Num == s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
+	} else if chunk.Num < s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
 		return gridfs.ErrWrongSize
 	}
 
