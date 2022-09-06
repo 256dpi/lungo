@@ -9,6 +9,8 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+// TODO: Test Collection.
+
 // Result is returned by collection operations.
 type Result struct {
 	// The list of found or deleted documents.
@@ -72,17 +74,22 @@ func (c *Collection) Find(query, sort bsonkit.Doc, skip, limit int) (*Result, er
 		}
 	}
 
-	// apply skip
-	if skip > len(list) {
-		list = nil
-	} else {
-		list = list[skip:]
+	// adjust limit
+	if limit > 0 {
+		limit += skip
 	}
 
 	// filter documents
 	list, err = Filter(list, query, limit)
 	if err != nil {
 		return nil, err
+	}
+
+	// apply skip
+	if skip > len(list) {
+		list = nil
+	} else {
+		list = list[skip:]
 	}
 
 	return &Result{
@@ -202,17 +209,22 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int, ar
 		}
 	}
 
-	// apply skip
-	if skip > len(list) {
-		list = nil
-	} else {
-		list = list[skip:]
+	// adjust limit
+	if limit > 0 {
+		limit += skip
 	}
 
 	// filter documents
 	list, err = Filter(list, query, limit)
 	if err != nil {
 		return nil, err
+	}
+
+	// apply skip
+	if skip > len(list) {
+		list = nil
+	} else {
+		list = list[skip:]
 	}
 
 	// check list
@@ -368,17 +380,22 @@ func (c *Collection) Delete(query, sort bsonkit.Doc, skip, limit int) (*Result, 
 		}
 	}
 
-	// apply skip
-	if skip > len(list) {
-		list = nil
-	} else {
-		list = list[skip:]
+	// adjust limit
+	if limit > 0 {
+		limit += skip
 	}
 
 	// filter documents
 	list, err = Filter(list, query, limit)
 	if err != nil {
 		return nil, err
+	}
+
+	// apply skip
+	if skip > len(list) {
+		list = nil
+	} else {
+		list = list[skip:]
 	}
 
 	// update indexes

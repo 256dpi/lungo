@@ -422,19 +422,27 @@ func TestCollectionFind(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
+		id3 := primitive.NewObjectID()
 
 		res1, err := c.InsertMany(nil, bson.A{
 			bson.M{
 				"_id": id1,
+				"n":   2,
 				"foo": "bar",
 			},
 			bson.M{
 				"_id": id2,
+				"n":   3,
 				"foo": "baz",
+			},
+			bson.M{
+				"_id": id3,
+				"n":   1,
+				"foo": "qux",
 			},
 		})
 		assert.NoError(t, err)
-		assert.Len(t, res1.InsertedIDs, 2)
+		assert.Len(t, res1.InsertedIDs, 3)
 
 		// find all
 		csr, err := c.Find(nil, bson.M{})
@@ -442,11 +450,18 @@ func TestCollectionFind(t *testing.T) {
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
+				"n":   int32(2),
 				"foo": "bar",
 			},
 			{
 				"_id": id2,
+				"n":   int32(3),
 				"foo": "baz",
+			},
+			{
+				"_id": id3,
+				"n":   int32(1),
+				"foo": "qux",
 			},
 		}, readAll(csr))
 
@@ -456,23 +471,31 @@ func TestCollectionFind(t *testing.T) {
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
+				"n":   int32(2),
 				"foo": "bar",
 			},
 		}, readAll(csr))
 
 		// sort all
 		csr, err = c.Find(nil, bson.M{}, options.Find().SetSort(bson.M{
-			"foo": -1,
+			"n": 1,
 		}))
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"_id": id2,
-				"foo": "baz",
+				"_id": id3,
+				"n":   int32(1),
+				"foo": "qux",
 			},
 			{
 				"_id": id1,
+				"n":   int32(2),
 				"foo": "bar",
+			},
+			{
+				"_id": id2,
+				"n":   int32(3),
+				"foo": "baz",
 			},
 		}, readAll(csr))
 
@@ -482,6 +505,29 @@ func TestCollectionFind(t *testing.T) {
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id2,
+				"n":   int32(3),
+				"foo": "baz",
+			},
+			{
+				"_id": id3,
+				"n":   int32(1),
+				"foo": "qux",
+			},
+		}, readAll(csr))
+
+		// filter, sort, skip and limit
+		csr, err = c.Find(nil, bson.M{
+			"n": bson.M{
+				"$gt": 1,
+			},
+		}, options.Find().SetSort(bson.M{
+			"n": 1,
+		}).SetSkip(1).SetLimit(1))
+		assert.NoError(t, err)
+		assert.Equal(t, []bson.M{
+			{
+				"_id": id2,
+				"n":   int32(3),
 				"foo": "baz",
 			},
 		}, readAll(csr))
@@ -490,7 +536,7 @@ func TestCollectionFind(t *testing.T) {
 		var m bson.M
 		csr, err = c.Find(nil, bson.M{})
 		assert.NoError(t, err)
-		assert.Equal(t, 2, csr.RemainingBatchLength())
+		assert.Equal(t, 3, csr.RemainingBatchLength())
 		err = csr.Decode(&m)
 		assert.Equal(t, io.EOF, err)
 		assert.Nil(t, m)
@@ -503,7 +549,7 @@ func TestCollectionFind(t *testing.T) {
 			assert.NoError(t, csr.Err())
 			i++
 		}
-		assert.Equal(t, 2, i)
+		assert.Equal(t, 3, i)
 		assert.Equal(t, 0, csr.RemainingBatchLength())
 		err = csr.Decode(&m)
 		assert.NoError(t, err)
@@ -518,7 +564,7 @@ func TestCollectionFind(t *testing.T) {
 		assert.NoError(t, csr.Err())
 
 		// project all
-		csr, err = c.Find(nil, bson.M{}, options.Find().SetProjection(bson.M{"_id": 0}))
+		csr, err = c.Find(nil, bson.M{}, options.Find().SetProjection(bson.M{"_id": 0, "foo": 1}))
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
@@ -526,6 +572,9 @@ func TestCollectionFind(t *testing.T) {
 			},
 			{
 				"foo": "baz",
+			},
+			{
+				"foo": "qux",
 			},
 		}, readAll(csr))
 	})
