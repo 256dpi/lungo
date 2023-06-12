@@ -1213,6 +1213,25 @@ func TestCollectionFindOneAndUpdateUpsert(t *testing.T) {
 				"baz": "quz",
 			},
 		}, dumpCollection(c, false))
+
+		// update after
+		out = nil
+		err = c.FindOneAndUpdate(nil, bson.M{
+			"_id": id2,
+		}, bson.M{
+			"$set": bson.M{
+				"bar": "baaz",
+			},
+			"$setOnInsert": bson.M{
+				"baz": "quuz",
+			},
+		}, options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)).Decode(&out)
+		assert.NoError(t, err)
+		assert.Equal(t, bson.M{
+			"_id": id2,
+			"bar": "baaz",
+			"baz": "quz",
+		}, out)
 	})
 }
 
