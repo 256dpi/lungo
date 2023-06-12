@@ -109,6 +109,9 @@ func (c *Cursor) RemainingBatchLength() int {
 	return len(c.list) - c.pos
 }
 
+// SetBatchSize implements the ICursor.SetBatchSize method.
+func (c *Cursor) SetBatchSize(int32) {}
+
 // TryNext implements the ICursor.TryNext method.
 func (c *Cursor) TryNext(ctx context.Context) bool {
 	return c.Next(ctx)

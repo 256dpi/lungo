@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/shopspring/decimal v1.3.1
-	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/btree v1.3.1
-	go.mongodb.org/mongo-driver v1.10.1
+	github.com/stretchr/testify v1.8.4
+	github.com/tidwall/btree v1.6.0
+	go.mongodb.org/mongo-driver v1.11.7
 )
 
 require (

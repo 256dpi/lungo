@@ -24,7 +24,7 @@ var gridfsReplacements = map[string]string{
 
 func TestBucketSymmetry(t *testing.T) {
 	a := methods(reflect.TypeOf(&Bucket{}), nil)
-	b := methods(reflect.TypeOf(&gridfs.Bucket{}), gridfsReplacements, "SetReadDeadline", "SetWriteDeadline")
+	b := methods(reflect.TypeOf(&gridfs.Bucket{}), gridfsReplacements, "FindContext", "RenameContext", "DeleteContext", "DropContext", "SetReadDeadline", "SetWriteDeadline")
 	for i := range b {
 		b[i] = strings.Replace(b[i], "(", "(context.Context, ", 1)
 		b[i] = strings.Replace(b[i], ", )", ")", 1)

@@ -2,6 +2,7 @@ package lungo
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -155,6 +156,11 @@ func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error)
 	return &Session{
 		engine: c.engine,
 	}, nil
+}
+
+// Timeout implements the IClient.Timeout method.
+func (c *Client) Timeout() *time.Duration {
+	return nil
 }
 
 // UseSession implements the IClient.UseSession method.

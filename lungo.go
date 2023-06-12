@@ -3,6 +3,7 @@ package lungo
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,6 +24,7 @@ type IClient interface {
 	NumberSessionsInProgress() int
 	Ping(context.Context, *readpref.ReadPref) error
 	StartSession(...*options.SessionOptions) (ISession, error)
+	Timeout() *time.Duration
 	UseSession(context.Context, func(ISessionContext) error) error
 	UseSessionWithOptions(context.Context, *options.SessionOptions, func(ISessionContext) error) error
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
@@ -85,6 +87,7 @@ type ICursor interface {
 	ID() int64
 	Next(context.Context) bool
 	RemainingBatchLength() int
+	SetBatchSize(batchSize int32)
 	TryNext(context.Context) bool
 }
 
