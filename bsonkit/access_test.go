@@ -84,6 +84,54 @@ func TestGetArray(t *testing.T) {
 	assert.Equal(t, int64(42), res)
 }
 
+func TestGetLax(t *testing.T) {
+	v := &struct {
+		Foo map[string][]int `bson:"_foo"`
+	}{
+		Foo: map[string][]int{
+			"Bar": {0, 7, 42},
+		},
+	}
+
+	// first element
+	res := GetLax(v, "Foo.Bar.1")
+	assert.Equal(t, 7, res)
+
+	// second element (with BSON key)
+	res = GetLax(v, "_foo.Bar.2")
+	assert.Equal(t, 42, res)
+
+	// missing map entry
+	res = GetLax(v, "Foo.Foo")
+	assert.Equal(t, Missing, res)
+
+	v.Foo["Bar"] = nil
+
+	// nil slice
+	res = GetLax(v, "Foo.Bar.1")
+	assert.Equal(t, Missing, res)
+
+	v.Foo = nil
+
+	// nil map
+	res = GetLax(v, "Foo.Foo")
+	assert.Equal(t, Missing, res)
+
+	v = nil
+
+	// nil struct
+	res = GetLax(v, "Foo")
+	assert.Equal(t, Missing, res)
+
+	v2 := map[int]int{
+		1: 2,
+	}
+
+	// non string map
+	res = GetLax(v2, "1")
+	assert.Equal(t, Missing, res)
+}
+
 func TestAll(t *testing.T) {
 	doc := MustConvert(bson.M{
 		"foo": bson.A{
@@ -184,6 +232,61 @@ func TestAllMerge(t *testing.T) {
 	res, multi = All(doc, "foo.quz", true, true)
 	assert.True(t, multi)
 	assert.Equal(t, bson.A{int64(3), int64(4), bson.A{int64(1), int64(2)}, int64(5)}, res)
+}
+
+func TestAllLax(t *testing.T) {
+	type list struct {
+		Int  int
+		List []list
+		Map  bson.M
+	}
+
+	v := []list{
+		{
+			List: []list{
+				{
+					Int: 1,
+				},
+				{
+					Int: 2,
+				},
+			},
+			Map: bson.M{
+				"Foo": 7,
+			},
+		},
+		{
+			List: []list{
+				{
+					Int: 3,
+				},
+				{
+					Int: 4,
+				},
+			},
+		},
+		{},
+	}
+
+	res, multi := AllLax(v, "Map.Foo", false, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{7, Missing, Missing}, res)
+
+	res, multi = AllLax(v, "Map.Foo", true, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{7}, res)
+
+	res, multi = AllLax(v, "List.Int", false, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{
+		bson.A{1, 2},
+		bson.A{3, 4},
+		bson.A{},
+	}, res)
+
+	res, multi = AllLax(v, "List.Int", true, false)
+	assert.True(t, multi)
+	assert.Equal(t, bson.A{1, 2, 3, 4}, res)
 }
 
 func TestPut(t *testing.T) {
@@ -388,6 +491,50 @@ func TestPutArray(t *testing.T) {
 	}), doc)
 }
 
+func TestPutLax(t *testing.T) {
+	type thing struct {
+		Foo map[string][]int `bson:"_foo"`
+	}
+
+	v := &thing{
+		Foo: map[string][]int{
+			"Bar": {0},
+		},
+	}
+
+	// existing element
+	_, err := PutLax(v, "Foo.Bar.0", 7, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, v.Foo["Bar"][0])
+
+	// new element
+	_, err = PutLax(v, "_foo.Bar.2", 42, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v.Foo["Bar"][2])
+
+	v.Foo["Bar"] = nil
+
+	// new slice and element
+	_, err = PutLax(v, "Foo.Bar.2", 42, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v.Foo["Bar"][2])
+
+	v.Foo = nil
+
+	// new map, slice and element
+	_, err = PutLax(v, "Foo.Bar.2", 42, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v.Foo["Bar"][2])
+
+	assert.Panics(t, func() {
+		_, _ = PutLax(v, "Foo.Baz", 1, false)
+	})
+
+	assert.PanicsWithValue(t, "bsonkit: unexpected nil value", func() {
+		_, _ = PutLax(nil, "Foo.Bar.2", 42, false)
+	})
+}
+
 func TestUnset(t *testing.T) {
 	doc := MustConvert(bson.M{
 		"foo": bson.M{
@@ -489,6 +636,39 @@ func TestUnsetArray(t *testing.T) {
 			nil,
 		},
 	}), doc)
+}
+
+func TestUnsetLax(t *testing.T) {
+	type thing struct {
+		Foo map[string][]int `bson:"_foo"`
+	}
+
+	v := &thing{
+		Foo: map[string][]int{
+			"Bar": {7},
+		},
+	}
+
+	// slice item
+	res := UnsetLax(v, "Foo.Bar.0")
+	assert.Equal(t, 7, res)
+	assert.Equal(t, 0, v.Foo["Bar"][0])
+
+	// map entry
+	res = UnsetLax(v, "Foo.Bar")
+	assert.Equal(t, []int{0}, res)
+	assert.Nil(t, v.Foo["Bar"])
+
+	// struct field
+	res = UnsetLax(v, "Foo")
+	assert.Equal(t, map[string][]int{}, res)
+	assert.Nil(t, v.Foo["Bar"])
+
+	v = nil
+
+	assert.PanicsWithValue(t, "bsonkit: unexpected nil value", func() {
+		_ = UnsetLax(v, "Foo")
+	})
 }
 
 func TestIncrement(t *testing.T) {
