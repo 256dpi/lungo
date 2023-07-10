@@ -19,7 +19,7 @@ func Sort(list List, columns []Column, identity bool) {
 	})
 }
 
-// Order will return the order of  documents based on the specified columns.
+// Order will return the order of documents based on the specified columns.
 func Order(l, r Doc, columns []Column, identity bool) int {
 	for _, column := range columns {
 		// get values
