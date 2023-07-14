@@ -5,13 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.18.x
+          go-version: 1.20
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: MongoDB
-        uses: supercharge/mongodb-github-action@1.7.0
+        uses: supercharge/mongodb-github-action@1.9.0
         with:
           mongodb-version: 5.0
           mongodb-replica-set: rs0

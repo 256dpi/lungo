@@ -1,6 +1,6 @@
 module github.com/256dpi/lungo
 
-go 1.18
+go 1.20
 
 require (
 	github.com/shopspring/decimal v1.3.1
