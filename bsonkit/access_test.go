@@ -195,6 +195,7 @@ func TestPut(t *testing.T) {
 	res, err := Put(doc, "foo", Missing, false)
 	assert.Error(t, err)
 	assert.Equal(t, "cannot put missing value at foo", err.Error())
+	assert.Nil(t, res)
 
 	// replace final value
 	res, err = Put(doc, "foo", "baz", false)
@@ -575,6 +576,7 @@ func TestPush(t *testing.T) {
 	res, err := Push(doc, "foo", Missing)
 	assert.Error(t, err)
 	assert.Equal(t, "cannot push missing value at foo", err.Error())
+	assert.Nil(t, res)
 
 	// create array
 	res, err = Push(doc, "foo", int64(42))
@@ -598,6 +600,7 @@ func TestPush(t *testing.T) {
 	res, err = Push(doc, "bar", int64(2))
 	assert.Error(t, err)
 	assert.Equal(t, `value at path "bar" is not an array`, err.Error())
+	assert.Equal(t, nil, res)
 }
 
 func TestPop(t *testing.T) {
@@ -655,6 +658,7 @@ func TestPop(t *testing.T) {
 	res, err = Pop(doc, "bar", false)
 	assert.Error(t, err)
 	assert.Equal(t, `value at path "bar" is not an array`, err.Error())
+	assert.Equal(t, nil, res)
 }
 
 func BenchmarkGet(b *testing.B) {

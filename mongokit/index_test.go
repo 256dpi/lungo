@@ -22,6 +22,7 @@ func TestIndex(t *testing.T) {
 		Key: bsonkit.MustConvert(bson.M{}),
 	})
 	assert.Error(t, err)
+	assert.Nil(t, index)
 
 	d1 := bsonkit.MustConvert(bson.M{"a": "1"})
 	d2 := bsonkit.MustConvert(bson.M{"a": "1"})

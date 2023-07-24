@@ -505,6 +505,7 @@ func abstractSeekTest(t *testing.T, stream io.ReadSeeker) {
 	n2, err = stream.Read(buf)
 	assert.Error(t, err)
 	assert.Equal(t, io.EOF, err)
+	assert.Zero(t, n2)
 
 	/* user after EOF */
 
