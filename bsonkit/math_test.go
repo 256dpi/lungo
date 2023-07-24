@@ -41,6 +41,11 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, d128("4"), Add(d128("2"), d128("2")))
 }
 
+func TestAddLax(t *testing.T) {
+	assert.Equal(t, int64(4), AddLax(2, uint16(2)))
+	assert.Equal(t, d128("4"), AddLax(float32(2), d128("2")))
+}
+
 func TestMul(t *testing.T) {
 	assert.Equal(t, Missing, Mul("x", "y"))
 	assert.Equal(t, Missing, Mul(int32(2), "y"))
@@ -67,6 +72,11 @@ func TestMul(t *testing.T) {
 	assert.Equal(t, d128("4"), Mul(d128("2"), d128("2")))
 }
 
+func TestMulLax(t *testing.T) {
+	assert.Equal(t, int64(4), MulLax(2, uint16(2)))
+	assert.Equal(t, d128("4"), MulLax(float32(2), d128("2")))
+}
+
 func TestMod(t *testing.T) {
 	assert.Equal(t, Missing, Mod("x", "y"))
 	assert.Equal(t, Missing, Mod(int32(2), "y"))
@@ -91,4 +101,9 @@ func TestMod(t *testing.T) {
 	assert.Equal(t, d128("0"), Mod(d128("2"), int64(2)))
 	assert.Equal(t, d128("0"), Mod(d128("2"), float64(2)))
 	assert.Equal(t, d128("0"), Mod(d128("2"), d128("2")))
+}
+
+func TestModLax(t *testing.T) {
+	assert.Equal(t, int64(0), ModLax(2, uint16(2)))
+	assert.Equal(t, d128("0"), ModLax(float32(2), d128("2")))
 }

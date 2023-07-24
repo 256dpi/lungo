@@ -2,6 +2,7 @@ package bsonkit
 
 import (
 	"math"
+	"reflect"
 
 	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +16,33 @@ func d128ToDec(d primitive.Decimal128) decimal.Decimal {
 func decTod128(d decimal.Decimal) primitive.Decimal128 {
 	dd, _ := primitive.ParseDecimal128FromBigInt(d.Coefficient(), int(d.Exponent()))
 	return dd
+}
+
+func numToStrict(num interface{}) interface{} {
+	// handle strict inputs
+	switch num.(type) {
+	case int32, int64, float64, primitive.Decimal128:
+		return num
+	}
+
+	// handle decimal.Decimal values
+	dec, ok := num.(decimal.Decimal)
+	if ok {
+		return decTod128(dec)
+	}
+
+	// convert other values
+	val := reflect.ValueOf(num)
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return val.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return int64(val.Uint())
+	case reflect.Float32, reflect.Float64:
+		return val.Float()
+	}
+
+	return Missing
 }
 
 // Add will add together two numerical values. It accepts and returns int32,
@@ -78,6 +106,11 @@ func Add(num, inc interface{}) interface{} {
 	}
 }
 
+// AddLax is the same as Add but supports non-strict BSON types.
+func AddLax(num, inc interface{}) interface{} {
+	return Add(numToStrict(num), numToStrict(inc))
+}
+
 // Mul will multiply the two numerical values. It accepts and returns int32,
 // int64, float64 and decimal128.
 func Mul(num, mul interface{}) interface{} {
@@ -139,6 +172,11 @@ func Mul(num, mul interface{}) interface{} {
 	}
 }
 
+// MulLax is the same as Mul but supports non-strict BSON types.
+func MulLax(num, inc interface{}) interface{} {
+	return Mul(numToStrict(num), numToStrict(inc))
+}
+
 // Mod will compute the modulo of the two values. It accepts and returns int32,
 // in64, float64 and decimal128.
 func Mod(num, div interface{}) interface{} {
@@ -198,4 +236,9 @@ func Mod(num, div interface{}) interface{} {
 	default:
 		return Missing
 	}
+}
+
+// ModLax is the same as Mod but supports non-strict BSON types.
+func ModLax(num, inc interface{}) interface{} {
+	return Mod(numToStrict(num), numToStrict(inc))
 }
