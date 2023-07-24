@@ -5,13 +5,13 @@ import "github.com/tidwall/btree"
 // Index is a basic btree based index for documents. The index is not safe from
 // concurrent access.
 type Index struct {
-	btree *btree.Generic[Doc]
+	btree *btree.BTreeG[Doc]
 }
 
 // NewIndex creates and returns a new index.
 func NewIndex(unique bool, columns []Column) *Index {
 	return &Index{
-		btree: btree.NewGeneric[Doc](func(a, b Doc) bool {
+		btree: btree.NewBTreeG[Doc](func(a, b Doc) bool {
 			return Order(a, b, columns, !unique) < 0
 		}),
 	}
@@ -50,11 +50,7 @@ func (i *Index) Add(doc Doc) bool {
 func (i *Index) Has(doc Doc) bool {
 	// check if index already has an item
 	item, _ := i.btree.Get(doc)
-	if item != nil {
-		return true
-	}
-
-	return false
+	return item != nil
 }
 
 // Remove will remove a document from the index. May return false if the document
@@ -62,11 +58,7 @@ func (i *Index) Has(doc Doc) bool {
 func (i *Index) Remove(doc Doc) bool {
 	// remove entry
 	item, _ := i.btree.Delete(doc)
-	if item == nil {
-		return false
-	}
-
-	return true
+	return item != nil
 }
 
 // List will return an ascending list of all documents in the index.
