@@ -1,7 +1,6 @@
 package dbkit
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -15,7 +14,7 @@ func TestAtomicWriteFile(t *testing.T) {
 	err := AtomicWriteFile("./atomic", r, 0)
 	assert.NoError(t, err)
 
-	data, err := ioutil.ReadFile("./atomic")
+	data, err := os.ReadFile("./atomic")
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", string(data))
 
@@ -24,7 +23,7 @@ func TestAtomicWriteFile(t *testing.T) {
 	err = AtomicWriteFile("./atomic", r, 0)
 	assert.NoError(t, err)
 
-	data, err = ioutil.ReadFile("./atomic")
+	data, err = os.ReadFile("./atomic")
 	assert.NoError(t, err)
 	assert.Equal(t, "bar", string(data))
 

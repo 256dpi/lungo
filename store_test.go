@@ -1,7 +1,6 @@
 package lungo
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -60,7 +59,7 @@ func TestFileStore(t *testing.T) {
 
 	engine.Close()
 
-	bytes, err := ioutil.ReadFile("./test.bson")
+	bytes, err := os.ReadFile("./test.bson")
 	assert.NoError(t, err)
 
 	var out bson.M

@@ -2,7 +2,6 @@ package lungo
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -57,7 +56,7 @@ func NewFileStore(path string, mode os.FileMode) *FileStore {
 // specified location an empty catalog is returned.
 func (s *FileStore) Load() (*Catalog, error) {
 	// load file
-	buf, err := ioutil.ReadFile(s.path)
+	buf, err := os.ReadFile(s.path)
 	if os.IsNotExist(err) {
 		return NewCatalog(), nil
 	} else if err != nil {
