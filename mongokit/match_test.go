@@ -638,6 +638,11 @@ func TestMatchComp(t *testing.T) {
 		"foo": "bar",
 		"bar": bson.A{7.0, 42.0},
 	}, func(fn func(bson.M, interface{})) {
+		// not equal (wrong type)
+		fn(bson.M{
+			"foo": bson.M{"$ne": false},
+		}, true)
+
 		// greater than (wrong type)
 		fn(bson.M{
 			"foo": bson.M{"$gt": int64(0)},

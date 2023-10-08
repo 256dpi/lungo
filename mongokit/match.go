@@ -134,12 +134,10 @@ func matchNor(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) er
 
 func matchComp(_ Context, doc bsonkit.Doc, op, path string, v interface{}) error {
 	return matchUnwind(doc, path, true, false, func(field interface{}) error {
-		// check classes (type bracketing)
+		// determine if comparable (type bracketing)
 		lc, _ := bsonkit.Inspect(field)
 		rc, _ := bsonkit.Inspect(v)
-		if lc != rc {
-			return ErrNotMatched
-		}
+		comp := lc == rc
 
 		// compare field with value
 		res := bsonkit.Compare(field, v)
@@ -148,17 +146,17 @@ func matchComp(_ Context, doc bsonkit.Doc, op, path string, v interface{}) error
 		var ok bool
 		switch op {
 		case "", "$eq":
-			ok = res == 0
+			ok = comp && res == 0
 		case "$gt":
-			ok = res > 0
+			ok = comp && res > 0
 		case "$gte":
-			ok = res >= 0
+			ok = comp && res >= 0
 		case "$lt":
-			ok = res < 0
+			ok = comp && res < 0
 		case "$lte":
-			ok = res <= 0
+			ok = comp && res <= 0
 		case "$ne":
-			ok = res != 0
+			ok = !comp || res != 0
 		default:
 			return fmt.Errorf("unknown comparison operator %q", op)
 		}
