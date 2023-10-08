@@ -412,7 +412,7 @@ func matchElem(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) e
 			bson.E{Key: "item", Value: item},
 		}
 
-		// TODO: Blacklist unsupported operators.
+		// TODO: Block-list unsupported operators.
 
 		// process virtual document
 		err := Process(ctx, &virtual, query, "item", false)

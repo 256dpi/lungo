@@ -11,7 +11,7 @@ import (
 	"github.com/256dpi/lungo/bsonkit"
 )
 
-// TODO: Whitelist supported query operators?
+// TODO: Allow-list supported query operators?
 
 // IndexConfig defines an index configuration.
 type IndexConfig struct {
