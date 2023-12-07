@@ -265,7 +265,7 @@ func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startA
 	if resumeAfter != nil {
 		resumed := false
 		for _, event := range oplog.List {
-			res := bsonkit.Compare(*resumeAfter, bsonkit.Get(event, "_id"))
+			res := bsonkit.Compare(*resumeAfter, bsonkit.Get(event, "_id"), nil)
 			if res == 0 {
 				last = event
 				resumed = true
@@ -281,7 +281,7 @@ func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startA
 	if startAfter != nil {
 		resumed := false
 		for _, event := range oplog.List {
-			res := bsonkit.Compare(*startAfter, bsonkit.Get(event, "_id"))
+			res := bsonkit.Compare(*startAfter, bsonkit.Get(event, "_id"), nil)
 			if res == 0 {
 				last = event
 				resumed = true
@@ -297,7 +297,7 @@ func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startA
 	if startAt != nil {
 		resumed := false
 		for i, event := range oplog.List {
-			res := bsonkit.Compare(*startAt, bsonkit.Get(event, "clusterTime"))
+			res := bsonkit.Compare(*startAt, bsonkit.Get(event, "clusterTime"), nil)
 			if res == 0 {
 				if i > 0 {
 					last = oplog.List[i-1]

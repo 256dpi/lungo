@@ -8,12 +8,13 @@ import (
 	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/text/collate"
 )
 
 // Compare will compare two bson values and return their order according to the
 // BSON type comparison order specification:
 // https://docs.mongodb.com/manual/reference/bson-type-comparison-order.
-func Compare(lv, rv interface{}) int {
+func Compare(lv, rv interface{}, collator *collate.Collator) int {
 	// get types
 	lc, _ := Inspect(lv)
 	rc, _ := Inspect(rv)
@@ -32,11 +33,11 @@ func Compare(lv, rv interface{}) int {
 	case Number:
 		return compareNumbers(lv, rv)
 	case String:
-		return compareStrings(lv, rv)
+		return compareStrings(lv, rv, collator)
 	case Document:
-		return compareDocuments(lv, rv)
+		return compareDocuments(lv, rv, collator)
 	case Array:
-		return compareArrays(lv, rv)
+		return compareArrays(lv, rv, collator)
 	case Binary:
 		return compareBinaries(lv, rv)
 	case ObjectID:
@@ -105,18 +106,20 @@ func compareNumbers(lv, rv interface{}) int {
 	panic("bsonkit: unreachable")
 }
 
-func compareStrings(lv, rv interface{}) int {
+func compareStrings(lv, rv interface{}, collator *collate.Collator) int {
 	// get strings
 	l := lv.(string)
 	r := rv.(string)
 
 	// compare strings
 	res := strings.Compare(l, r)
-
+	if collator != nil {
+		res = collator.Compare([]byte(l), []byte(r))
+	}
 	return res
 }
 
-func compareDocuments(lv, rv interface{}) int {
+func compareDocuments(lv, rv interface{}, collator *collate.Collator) int {
 	// get documents
 	l := lv.(bson.D)
 	r := rv.(bson.D)
@@ -150,14 +153,14 @@ func compareDocuments(lv, rv interface{}) int {
 		}
 
 		// compare values
-		res = Compare(l[i].Value, r[i].Value)
+		res = Compare(l[i].Value, r[i].Value, collator)
 		if res != 0 {
 			return res
 		}
 	}
 }
 
-func compareArrays(lv, rv interface{}) int {
+func compareArrays(lv, rv interface{}, collator *collate.Collator) int {
 	// get array
 	l := lv.(bson.A)
 	r := rv.(bson.A)
@@ -185,7 +188,7 @@ func compareArrays(lv, rv interface{}) int {
 		}
 
 		// compare elements
-		res := Compare(l[i], r[i])
+		res := Compare(l[i], r[i], collator)
 		if res != 0 {
 			return res
 		}
