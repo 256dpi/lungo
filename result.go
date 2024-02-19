@@ -65,3 +65,8 @@ func (r *SingleResult) Err() error {
 
 	return nil
 }
+
+// Raw implements the ISingleResult.Raw method.
+func (r *SingleResult) Raw() (bson.Raw, error) {
+	return r.DecodeBytes()
+}

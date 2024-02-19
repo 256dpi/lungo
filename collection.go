@@ -1050,6 +1050,11 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 	}, nil
 }
 
+// SearchIndexes implements the ICollection.SearchIndexes method.
+func (c *Collection) SearchIndexes() mongo.SearchIndexView {
+	panic("lungo: not implemented")
+}
+
 // UpdateByID implements the ICollection.UpdateByID method.
 func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	// check id

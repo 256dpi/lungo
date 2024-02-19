@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -111,6 +112,12 @@ func (c *Cursor) RemainingBatchLength() int {
 
 // SetBatchSize implements the ICursor.SetBatchSize method.
 func (c *Cursor) SetBatchSize(int32) {}
+
+// SetComment implements the ICursor.SetComment method.
+func (c *Cursor) SetComment(interface{}) {}
+
+// SetMaxTime implements the ICursor.SetMaxTime method.
+func (c *Cursor) SetMaxTime(time.Duration) {}
 
 // TryNext implements the ICursor.TryNext method.
 func (c *Cursor) TryNext(ctx context.Context) bool {

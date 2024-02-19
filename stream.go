@@ -111,7 +111,10 @@ func (s *Stream) ResumeToken() bson.Raw {
 	return bytes
 }
 
-// TryNext implements the ICursor.TryNext method.
+// SetBatchSize implements the IChangeStream.SetBatchSize method.
+func (s *Stream) SetBatchSize(int32) {}
+
+// TryNext implements the IChangeStream.TryNext method.
 func (s *Stream) TryNext(ctx context.Context) bool {
 	return s.next(ctx, false)
 }

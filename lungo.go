@@ -72,6 +72,7 @@ type ICollection interface {
 	InsertOne(context.Context, interface{}, ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
 	Name() string
 	ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error)
+	SearchIndexes() mongo.SearchIndexView
 	UpdateByID(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
@@ -88,6 +89,8 @@ type ICursor interface {
 	Next(context.Context) bool
 	RemainingBatchLength() int
 	SetBatchSize(batchSize int32)
+	SetComment(interface{})
+	SetMaxTime(time.Duration)
 	TryNext(context.Context) bool
 }
 
@@ -96,6 +99,7 @@ type ISingleResult interface {
 	Decode(interface{}) error
 	DecodeBytes() (bson.Raw, error)
 	Err() error
+	Raw() (bson.Raw, error)
 }
 
 // IIndexView defines a generic index view.
@@ -116,6 +120,7 @@ type IChangeStream interface {
 	ID() int64
 	Next(context.Context) bool
 	ResumeToken() bson.Raw
+	SetBatchSize(int32)
 	TryNext(context.Context) bool
 }
 
