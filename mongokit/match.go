@@ -140,7 +140,7 @@ func matchComp(_ Context, doc bsonkit.Doc, op, path string, v interface{}) error
 		comp := lc == rc
 
 		// compare field with value
-		res := bsonkit.Compare(field, v)
+		res := bsonkit.Compare(field, v, nil)
 
 		// check operator
 		var ok bool
@@ -205,7 +205,7 @@ func matchIn(_ Context, doc bsonkit.Doc, name, path string, v interface{}) error
 
 		// check if field is in array
 		for _, item := range array {
-			if bsonkit.Compare(field, item) == 0 {
+			if bsonkit.Compare(field, item, nil) == 0 {
 				return nil
 			}
 		}
@@ -340,7 +340,7 @@ func matchAll(_ Context, doc bsonkit.Doc, name, path string, v interface{}) erro
 			for _, value := range array {
 				ok := false
 				for _, element := range arr {
-					if bsonkit.Compare(value, element) == 0 {
+					if bsonkit.Compare(value, element, nil) == 0 {
 						ok = true
 					}
 				}
@@ -355,7 +355,7 @@ func matchAll(_ Context, doc bsonkit.Doc, name, path string, v interface{}) erro
 
 		// check if field is in array
 		for _, item := range array {
-			if bsonkit.Compare(field, item) != 0 {
+			if bsonkit.Compare(field, item, nil) != 0 {
 				return ErrNotMatched
 			}
 		}
@@ -375,7 +375,7 @@ func matchSize(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 		// compare length if array
 		array, ok := field.(bson.A)
 		if ok {
-			if bsonkit.Compare(int64(len(array)), v) == 0 {
+			if bsonkit.Compare(int64(len(array)), v, nil) == 0 {
 				return nil
 			}
 		}

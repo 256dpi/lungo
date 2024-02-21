@@ -1708,7 +1708,7 @@ func TestCollectionUpdateMany(t *testing.T) {
 		}, dumpCollection(c, false))
 
 		// invalid _id mutation
-		res2, err = c.UpdateMany(nil, bson.M{
+		_, err = c.UpdateMany(nil, bson.M{
 			"_id": id1,
 		}, bson.M{
 			"$set": bson.M{

@@ -675,7 +675,7 @@ func (b *Bucket) hasIndex(ctx context.Context, coll ICollection, model mongo.Ind
 
 	// check if index with same keys already exists
 	for _, index := range indexes {
-		if bsonkit.Compare(index.Keys, model.Keys) == 0 {
+		if bsonkit.Compare(index.Keys, model.Keys, nil) == 0 {
 			return true, nil
 		}
 	}

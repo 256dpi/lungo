@@ -135,9 +135,9 @@ func projectCondition(ctx Context, _ bsonkit.Doc, _, path string, v interface{})
 	state := ctx.Value.(*projectState)
 
 	// handle inclusion or exclusion
-	if bsonkit.Compare(v, int64(1)) == 0 {
+	if bsonkit.Compare(v, int64(1), nil) == 0 {
 		state.include = append(state.include, path)
-	} else if bsonkit.Compare(v, int64(0)) == 0 {
+	} else if bsonkit.Compare(v, int64(0), nil) == 0 {
 		if path == "_id" {
 			state.hideID = true
 		} else {

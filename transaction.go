@@ -127,7 +127,7 @@ func (t *Transaction) Create(handle Handle) error {
 // Find will query documents from a namespace. Sort, skip and limit may be
 // supplied to modify the result. The returned results will contain the matched
 // list of documents.
-func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
+func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, collation bsonkit.Doc, skip, limit int) (*Result, error) {
 	// acquire read lock
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
@@ -144,7 +144,7 @@ func (t *Transaction) Find(handle Handle, query, sort bsonkit.Doc, skip, limit i
 	}
 
 	// find documents
-	res, err := t.catalog.Namespaces[handle].Find(query, sort, skip, limit)
+	res, err := t.catalog.Namespaces[handle].Find(query, sort, collation, skip, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -901,7 +901,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 	// sort list
 	bsonkit.Sort(list, []bsonkit.Column{
 		{Path: "name"},
-	}, true)
+	}, true, nil)
 
 	return list, nil
 }
@@ -1046,8 +1046,8 @@ func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) 
 		ts := bsonkit.Get(doc, "_id.ts")
 
 		// determine inclusion
-		afterMin := i < minIndex && bsonkit.Compare(ts, minTimestamp) < 0
-		beyondMax := i < maxIndex || bsonkit.Compare(ts, maxTimestamp) < 0
+		afterMin := i < minIndex && bsonkit.Compare(ts, minTimestamp, nil) < 0
+		beyondMax := i < maxIndex || bsonkit.Compare(ts, maxTimestamp, nil) < 0
 
 		// remove event if below threshold or timestamp
 		if afterMin && beyondMax {
