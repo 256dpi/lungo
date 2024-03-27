@@ -1,12 +1,27 @@
 package lungo
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func TestOpenGoroutineLeak(t *testing.T) {
+	num := runtime.NumGoroutine()
+
+	for i := 0; i < 10; i++ {
+		_, engine, err := Open(nil, Options{
+			Store: NewMemoryStore(),
+		})
+		assert.NoError(t, err)
+		engine.Close()
+	}
+
+	assert.Equal(t, num, runtime.NumGoroutine())
+}
 
 func TestClientListDatabasesAndNames(t *testing.T) {
 	clientTest(t, func(t *testing.T, c IClient) {

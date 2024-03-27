@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/dbkit"
@@ -52,7 +53,7 @@ type Engine struct {
 	streams map[*Stream]struct{}
 	token   *dbkit.Semaphore
 	txn     *Transaction
-	closed  bool
+	tomb    tomb.Tomb
 	mutex   sync.Mutex
 }
 
@@ -98,7 +99,10 @@ func CreateEngine(opts Options) (*Engine, error) {
 	e.catalog = data
 
 	// run expiry
-	go e.expire(opts.ExpireInterval, opts.ExpireErrors)
+	e.tomb.Go(func() error {
+		e.expire(opts.ExpireInterval, opts.ExpireErrors)
+		return nil
+	})
 
 	return e, nil
 }
@@ -123,7 +127,7 @@ func (e *Engine) Begin(ctx context.Context, lock bool) (*Transaction, error) {
 	defer e.mutex.Unlock()
 
 	// check if closed
-	if e.closed {
+	if !e.tomb.Alive() {
 		return nil, ErrEngineClosed
 	}
 
@@ -173,7 +177,7 @@ func (e *Engine) Commit(txn *Transaction) error {
 	defer e.mutex.Unlock()
 
 	// check if closed
-	if e.closed {
+	if !e.tomb.Alive() {
 		return ErrEngineClosed
 	}
 
@@ -225,7 +229,7 @@ func (e *Engine) Abort(txn *Transaction) {
 	defer e.mutex.Unlock()
 
 	// check if closed
-	if e.closed {
+	if !e.tomb.Alive() {
 		return
 	}
 
@@ -248,7 +252,7 @@ func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startA
 	defer e.mutex.Unlock()
 
 	// check if closed
-	if e.closed {
+	if !e.tomb.Alive() {
 		return nil, ErrEngineClosed
 	}
 
@@ -346,7 +350,7 @@ func (e *Engine) Close() {
 	defer e.mutex.Unlock()
 
 	// check if closed
-	if e.closed {
+	if !e.tomb.Alive() {
 		return
 	}
 
@@ -355,14 +359,23 @@ func (e *Engine) Close() {
 		close(stream.signal)
 	}
 
-	// set flag
-	e.closed = true
+	// kill tomb
+	e.tomb.Kill(nil)
+	_ = e.tomb.Wait()
 }
 
 func (e *Engine) expire(interval time.Duration, reporter func(error)) {
+	// prepare ticker
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
 	for {
 		// await next interval
-		time.Sleep(interval)
+		select {
+		case <-e.tomb.Dying():
+			return
+		case <-ticker.C:
+		}
 
 		// get transaction
 		txn, err := e.Begin(nil, true)
