@@ -185,7 +185,7 @@ func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType 
 				}
 				var ok bool
 				for _, enum := range kv {
-					if Compare(enum, value) == 0 {
+					if Compare(enum, value, nil) == 0 {
 						ok = true
 					}
 				}
@@ -318,10 +318,10 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 		case "multipleOf":
 			switch kv := keyword.Value.(type) {
 			case int32, int64, float64, primitive.Decimal128:
-				if Compare(kv, int32(0)) <= 0 {
+				if Compare(kv, int32(0), nil) <= 0 {
 					return fmt.Errorf("invalid multipleOf value: %v", kv)
 				}
-				if Compare(Mod(num, kv), int32(0)) != 0 {
+				if Compare(Mod(num, kv), int32(0), nil) != 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -330,7 +330,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 		case "minimum":
 			switch kv := keyword.Value.(type) {
 			case int32, int64, float64, primitive.Decimal128:
-				res := Compare(num, kv)
+				res := Compare(num, kv, nil)
 				if exclusiveMinimum && res <= 0 {
 					return ErrValidationFailed
 				} else if !exclusiveMinimum && res < 0 {
@@ -342,7 +342,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 		case "maximum":
 			switch kv := keyword.Value.(type) {
 			case int32, int64, float64, primitive.Decimal128:
-				res := Compare(num, kv)
+				res := Compare(num, kv, nil)
 				if exclusiveMaximum && res >= 0 {
 					return ErrValidationFailed
 				} else if !exclusiveMaximum && res > 0 {
@@ -364,10 +364,10 @@ func (s *Schema) evaluateString(str string) error {
 		case "minLength":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid minLength value: %v", kv)
 				}
-				if Compare(int64(len(str)), kv) < 0 {
+				if Compare(int64(len(str)), kv, nil) < 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -376,10 +376,10 @@ func (s *Schema) evaluateString(str string) error {
 		case "maxLength":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid maxLength value: %v", kv)
 				}
-				if Compare(int64(len(str)), kv) > 0 {
+				if Compare(int64(len(str)), kv, nil) > 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -430,10 +430,10 @@ func (s *Schema) evaluateDocument(doc bson.D) error {
 		case "minProperties":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid minProperties value: %v", kv)
 				}
-				if Compare(int64(len(doc)), kv) < 0 {
+				if Compare(int64(len(doc)), kv, nil) < 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -442,10 +442,10 @@ func (s *Schema) evaluateDocument(doc bson.D) error {
 		case "maxProperties":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid maxProperties value: %v", kv)
 				}
-				if Compare(int64(len(doc)), kv) > 0 {
+				if Compare(int64(len(doc)), kv, nil) > 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -602,10 +602,10 @@ func (s *Schema) evaluateArray(arr bson.A) error {
 		case "minItems":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid minItems value: %v", kv)
 				}
-				if Compare(int64(len(arr)), kv) < 0 {
+				if Compare(int64(len(arr)), kv, nil) < 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -614,10 +614,10 @@ func (s *Schema) evaluateArray(arr bson.A) error {
 		case "maxItems":
 			switch kv := keyword.Value.(type) {
 			case int32, int64:
-				if Compare(kv, int32(0)) < 0 {
+				if Compare(kv, int32(0), nil) < 0 {
 					return fmt.Errorf("invalid maxItems value: %v", kv)
 				}
-				if Compare(int64(len(arr)), kv) > 0 {
+				if Compare(int64(len(arr)), kv, nil) > 0 {
 					return ErrValidationFailed
 				}
 			default:
@@ -629,7 +629,7 @@ func (s *Schema) evaluateArray(arr bson.A) error {
 				if kv {
 					for i := 0; i < len(arr)-1; i++ {
 						for j := i + 1; j < len(arr); j++ {
-							if Compare(arr[i], arr[j]) == 0 {
+							if Compare(arr[i], arr[j], nil) == 0 {
 								return ErrValidationFailed
 							}
 						}

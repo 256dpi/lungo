@@ -148,7 +148,7 @@ func TestFileStore(t *testing.T) {
 	txn, err = engine.Begin(nil, false)
 	assert.NoError(t, err)
 
-	res, err = txn.Find(handle, bsonkit.MustConvert(bson.M{}), nil, 0, 0)
+	res, err = txn.Find(handle, bsonkit.MustConvert(bson.M{}), nil, nil, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{
 		bsonkit.MustConvert(bson.M{
@@ -162,7 +162,7 @@ func TestFileStore(t *testing.T) {
 	}, res.Matched)
 
 	databases, err := txn.ListDatabases(bsonkit.MustConvert(bson.M{}))
-	bsonkit.Sort(databases, []bsonkit.Column{{Path: "name"}}, true)
+	bsonkit.Sort(databases, []bsonkit.Column{{Path: "name"}}, true, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.A{
 		"foo",

@@ -12,7 +12,7 @@ type Index struct {
 func NewIndex(unique bool, columns []Column) *Index {
 	return &Index{
 		btree: btree.NewBTreeG[Doc](func(a, b Doc) bool {
-			return Order(a, b, columns, !unique) < 0
+			return Order(a, b, columns, !unique, nil) < 0
 		}),
 	}
 }
