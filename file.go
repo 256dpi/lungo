@@ -70,7 +70,7 @@ func (f *File) BuildCatalog() (*Catalog, error) {
 	// process namespaces
 	for name, ns := range f.Namespaces {
 		// split name
-		segments := strings.Split(name, ".")
+		segments := strings.SplitN(name, ".", 2)
 		if len(segments) != 2 {
 			return nil, fmt.Errorf("invalid namespace name %q", name)
 		}
