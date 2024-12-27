@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/256dpi/lungo/bsonkit"
+	"golang.org/x/text/collate"
 )
 
 // Columns will return columns from a MongoDB sort document.
@@ -41,7 +42,7 @@ func Columns(doc bsonkit.Doc) ([]bsonkit.Column, error) {
 
 // Sort will sort a list based on a MongoDB sort document and return a new
 // list with sorted documents.
-func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
+func Sort(list bsonkit.List, doc bsonkit.Doc, collator *collate.Collator) (bsonkit.List, error) {
 	// copy list
 	result := make(bsonkit.List, len(list))
 	copy(result, list)
@@ -53,7 +54,7 @@ func Sort(list bsonkit.List, doc bsonkit.Doc) (bsonkit.List, error) {
 	}
 
 	// sort list
-	bsonkit.Sort(result, columns, true)
+	bsonkit.Sort(result, columns, true, collator)
 
 	return result, nil
 }

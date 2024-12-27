@@ -258,7 +258,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 	// find documents
 	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
-		return txn.Find(c.handle, query, nil, skip, limit)
+		return txn.Find(c.handle, query, nil, nil, skip, limit)
 	})
 	if err != nil {
 		return 0, err
@@ -376,7 +376,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 
 	// find documents
 	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
-		return txn.Find(c.handle, query, nil, 0, 0)
+		return txn.Find(c.handle, query, nil, nil, 0, 0)
 	})
 	if err != nil {
 		return nil, err
@@ -456,6 +456,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		"Skip":                supported,
 		"Snapshot":            ignored,
 		"Sort":                supported,
+		"Collation":           ignored,
 	})
 
 	// check filer
@@ -487,6 +488,15 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 		}
 	}
 
+	// get collation
+	var collation bsonkit.Doc
+	if opt.Collation != nil {
+		collation, err = bsonkit.Transform(opt.Collation)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// get skip
 	var skip int
 	if opt.Skip != nil {
@@ -501,7 +511,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// find documents
 	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
-		return txn.Find(c.handle, query, sort, skip, limit)
+		return txn.Find(c.handle, query, sort, collation, skip, limit)
 	})
 	if err != nil {
 		return nil, err
@@ -560,6 +570,15 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 		}
 	}
 
+	// get collation
+	var collation bsonkit.Doc
+	if opt.Collation != nil {
+		collation, err = bsonkit.Transform(opt.Collation)
+		if err != nil {
+			return &SingleResult{err: err}
+		}
+	}
+
 	// get skip
 	var skip int
 	if opt.Skip != nil {
@@ -577,7 +596,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// find documents
 	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
-		return txn.Find(c.handle, query, sort, skip, 1)
+		return txn.Find(c.handle, query, sort, collation, skip, 1)
 	})
 	if err != nil {
 		return &SingleResult{err: err}

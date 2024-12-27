@@ -3,6 +3,8 @@ package bsonkit
 import (
 	"sort"
 	"unsafe"
+
+	"golang.org/x/text/collate"
 )
 
 // Column defines a column for ordering.
@@ -12,22 +14,22 @@ type Column struct {
 }
 
 // Sort will sort the list of documents in-place based on the specified columns.
-func Sort(list List, columns []Column, identity bool) {
+func Sort(list List, columns []Column, identity bool, collator *collate.Collator) {
 	// sort slice by comparing values
 	sort.Slice(list, func(i, j int) bool {
-		return Order(list[i], list[j], columns, identity) < 0
+		return Order(list[i], list[j], columns, identity, collator) < 0
 	})
 }
 
 // Order will return the order of documents based on the specified columns.
-func Order(l, r Doc, columns []Column, identity bool) int {
+func Order(l, r Doc, columns []Column, identity bool, collator *collate.Collator) int {
 	for _, column := range columns {
 		// get values
 		a := Get(l, column.Path)
 		b := Get(r, column.Path)
 
 		// compare values
-		res := Compare(a, b)
+		res := Compare(a, b, collator)
 
 		// continue if equal
 		if res == 0 {

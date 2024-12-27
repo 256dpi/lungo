@@ -31,7 +31,7 @@ type IndexConfig struct {
 // Equal will compare to configurations and return whether they are equal.
 func (c IndexConfig) Equal(d IndexConfig) bool {
 	// check key
-	if bsonkit.Compare(*c.Key, *d.Key) != 0 {
+	if bsonkit.Compare(*c.Key, *d.Key, nil) != 0 {
 		return false
 	}
 
@@ -48,7 +48,7 @@ func (c IndexConfig) Equal(d IndexConfig) bool {
 	if d.Partial != nil {
 		p2 = *d.Partial
 	}
-	if bsonkit.Compare(p1, p2) != 0 {
+	if bsonkit.Compare(p1, p2, nil) != 0 {
 		return false
 	}
 

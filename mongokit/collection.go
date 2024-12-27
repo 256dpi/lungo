@@ -3,10 +3,18 @@ package mongokit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/256dpi/lungo/bsonkit"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsonrw"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/text/collate"
+	"golang.org/x/text/language"
+)
+
+const (
+	collationFieldNameLocale = "locale"
 )
 
 // TODO: Test Collection.
@@ -61,14 +69,45 @@ func NewCollection(idIndex bool) *Collection {
 }
 
 // Find will look up the documents that match the specified query.
-func (c *Collection) Find(query, sort bsonkit.Doc, skip, limit int) (*Result, error) {
+func (c *Collection) Find(query, sort bsonkit.Doc, collation bsonkit.Doc, skip, limit int) (*Result, error) {
 	// get documents
 	list := c.Documents.List
 
 	// sort documents
 	var err error
 	if sort != nil && len(*sort) > 0 {
-		list, err = Sort(list, sort)
+
+		var collator *collate.Collator
+		if collation != nil && len(*collation) > 0 {
+
+			// Marshal the BSON document that contains the locale of the collation.
+			data, err := bson.Marshal(collation)
+			if err != nil {
+				panic(err)
+			}
+
+			// Create a Decoder that reads the marshaled BSON document and use it to
+			// unmarshal the document into a mongo-driver options.Collation struct.
+			decoder, err := bson.NewDecoder(bsonrw.NewBSONDocumentReader(data))
+			if err != nil {
+				panic(err)
+			}
+
+			var res *options.Collation
+			err = decoder.Decode(&res)
+			if err != nil {
+				panic(err)
+			}
+
+			l := language.English
+			if res != nil && res.Locale != "" {
+				l = language.Make(fmt.Sprint(res.Locale))
+			}
+
+			collator = collate.New(l)
+		}
+
+		list, err = Sort(list, sort, collator)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +175,7 @@ func (c *Collection) Replace(query, repl, sort bsonkit.Doc) (*Result, error) {
 	// sort documents
 	var err error
 	if sort != nil && len(*sort) > 0 {
-		list, err = Sort(list, sort)
+		list, err = Sort(list, sort, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +242,7 @@ func (c *Collection) Update(query, update, sort bsonkit.Doc, skip, limit int, ar
 	// sort documents
 	var err error
 	if sort != nil && len(*sort) > 0 {
-		list, err = Sort(list, sort)
+		list, err = Sort(list, sort, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +347,7 @@ func (c *Collection) Upsert(query, repl, update bsonkit.Doc, arrayFilters bsonki
 
 		// check ids
 		if queryID != bsonkit.Missing && replID != bsonkit.Missing {
-			if bsonkit.Compare(replID, queryID) != 0 {
+			if bsonkit.Compare(replID, queryID, nil) != 0 {
 				return nil, fmt.Errorf("query _id and replacement _id must match")
 			}
 		}
@@ -374,7 +413,7 @@ func (c *Collection) Delete(query, sort bsonkit.Doc, skip, limit int) (*Result, 
 	// sort documents
 	var err error
 	if sort != nil && len(*sort) > 0 {
-		list, err = Sort(list, sort)
+		list, err = Sort(list, sort, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -446,7 +485,7 @@ func (c *Collection) CreateIndex(name string, config IndexConfig) (string, error
 
 	// check duplicate
 	for name, index := range c.Indexes {
-		if bsonkit.Compare(*config.Key, *index.Config().Key) == 0 {
+		if bsonkit.Compare(*config.Key, *index.Config().Key, nil) == 0 {
 			return "", fmt.Errorf("existing index %q has same key", name)
 		}
 	}

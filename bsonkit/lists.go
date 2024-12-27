@@ -98,7 +98,7 @@ func Collect(list List, path string, compact, merge, flatten, distinct bool) bso
 
 	// sort results
 	sort.Slice(result, func(i, j int) bool {
-		return Compare(result[i], result[j]) < 0
+		return Compare(result[i], result[j], nil) < 0
 	})
 
 	// prepare distincts
@@ -108,7 +108,7 @@ func Collect(list List, path string, compact, merge, flatten, distinct bool) bso
 	var prevValue interface{}
 	for _, value := range result {
 		// check if same as previous value
-		if len(distincts) > 0 && Compare(prevValue, value) == 0 {
+		if len(distincts) > 0 && Compare(prevValue, value, nil) == 0 {
 			continue
 		}
 

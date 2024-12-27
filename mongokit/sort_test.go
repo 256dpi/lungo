@@ -19,28 +19,28 @@ func TestSort(t *testing.T) {
 	// invalid document
 	list, err := Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "a", Value: "0"},
-	})
+	}, nil)
 	assert.Error(t, err)
 	assert.Nil(t, list)
 
 	// invalid document
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "a", Value: 0},
-	})
+	}, nil)
 	assert.Error(t, err)
 	assert.Nil(t, list)
 
 	// sort forwards single
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "a", Value: int64(1)},
-	})
+	}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a1, a2, a3}, list)
 
 	// sort backwards single
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "a", Value: int64(-1)},
-	})
+	}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a3, a2, a1}, list)
 
@@ -48,7 +48,7 @@ func TestSort(t *testing.T) {
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "b", Value: int64(1)},
 		bson.E{Key: "a", Value: int64(1)},
-	})
+	}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a2, a1, a3}, list)
 
@@ -56,7 +56,7 @@ func TestSort(t *testing.T) {
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "b", Value: int64(-1)},
 		bson.E{Key: "a", Value: int64(-1)},
-	})
+	}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a3, a1, a2}, list)
 
@@ -64,7 +64,7 @@ func TestSort(t *testing.T) {
 	list, err = Sort(bsonkit.List{a3, a1, a2}, &bson.D{
 		bson.E{Key: "b", Value: int64(1)},
 		bson.E{Key: "a", Value: int64(-1)},
-	})
+	}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, bsonkit.List{a2, a3, a1}, list)
 }

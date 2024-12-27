@@ -244,7 +244,7 @@ func applyMax(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	}
 
 	// replace value if smaller
-	if bsonkit.Compare(value, v) < 0 {
+	if bsonkit.Compare(value, v, nil) < 0 {
 		// replace value
 		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
@@ -281,7 +281,7 @@ func applyMin(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) error
 	}
 
 	// replace value if bigger
-	if bsonkit.Compare(value, v) > 0 {
+	if bsonkit.Compare(value, v, nil) > 0 {
 		// replace value
 		_, err := bsonkit.Put(doc, path, v, false)
 		if err != nil {
@@ -384,9 +384,9 @@ func applyPush(ctx Context, doc bsonkit.Doc, _, path string, v interface{}) erro
 func applyPop(ctx Context, doc bsonkit.Doc, name, path string, v interface{}) error {
 	// check value
 	last := false
-	if bsonkit.Compare(v, int64(1)) == 0 {
+	if bsonkit.Compare(v, int64(1), nil) == 0 {
 		last = true
-	} else if bsonkit.Compare(v, int64(-1)) != 0 {
+	} else if bsonkit.Compare(v, int64(-1), nil) != 0 {
 		return fmt.Errorf("%s: expected 1 or -1", name)
 	}
 
