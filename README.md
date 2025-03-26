@@ -5,6 +5,7 @@
 [![Test](https://github.com/256dpi/lungo/actions/workflows/test.yml/badge.svg)](https://github.com/256dpi/lungo/actions/workflows/test.yml)
 [![GoDoc](https://godoc.org/github.com/256dpi/lungo?status.svg)](https://godoc.org/github.com/256dpi/lungo)
 [![Release](https://img.shields.io/github/release/256dpi/lungo.svg)](https://github.com/256dpi/lungo/releases)
+[![libs.tech recommends](https://libs.tech/project/215532341/badge.svg)](https://libs.tech/project/215532341/lungo)
 
 **A MongoDB compatible embeddable database and toolkit for Go.**
 
