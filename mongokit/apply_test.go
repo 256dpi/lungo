@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -25,7 +24,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				}
 			}
 
-			opts := options.Update().SetUpsert(upsert)
+			opts := options.UpdateOne().SetUpsert(upsert)
 
 			if arrayFilters != nil {
 				list := make([]interface{}, 0, len(arrayFilters))
@@ -33,7 +32,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 					list = append(list, af)
 				}
 
-				opts.SetArrayFilters(options.ArrayFilters{Filters: list})
+				opts.SetArrayFilters(list)
 			}
 
 			res, err := coll.UpdateOne(nil, query, update, opts)
@@ -312,17 +311,17 @@ func TestApplyPositionalOperators(t *testing.T) {
 	// multiple nested positional operators
 	applyTest(t, false, bson.M{
 		"foo": bson.A{
-			bson.M{
-				"val":  int32(10),
-				"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
+			bson.D{
+				{Key: "val", Value: int32(10)},
+				{Key: "ints", Value: bson.A{int32(-1), int32(2), int32(-3), int32(4)}},
 			},
-			bson.M{
-				"val":  int32(20),
-				"ints": bson.A{int32(10), int32(-20), int32(30), int32(-40)},
+			bson.D{
+				{Key: "val", Value: int32(20)},
+				{Key: "ints", Value: bson.A{int32(10), int32(-20), int32(30), int32(-40)}},
 			},
-			bson.M{
-				"val":  int32(30),
-				"ints": bson.A{int32(-100), int32(200), int32(-300), int32(400)},
+			bson.D{
+				{Key: "val", Value: int32(30)},
+				{Key: "ints", Value: bson.A{int32(-100), int32(200), int32(-300), int32(400)}},
 			},
 		},
 	}, func(fn func(bson.M, []bson.M, interface{})) {
@@ -339,17 +338,17 @@ func TestApplyPositionalOperators(t *testing.T) {
 			}},
 		}, bsonkit.MustConvert(bson.M{
 			"foo": bson.A{
-				bson.M{
-					"val":  int32(10),
-					"ints": bson.A{int32(-1), int32(2), int32(-3), int32(4)},
+				bson.D{
+					{Key: "val", Value: int32(10)},
+					{Key: "ints", Value: bson.A{int32(-1), int32(2), int32(-3), int32(4)}},
 				},
-				bson.M{
-					"val":  int32(20),
-					"ints": bson.A{int32(10), int32(0), int32(30), int32(0)},
+				bson.D{
+					{Key: "val", Value: int32(20)},
+					{Key: "ints", Value: bson.A{int32(10), int32(0), int32(30), int32(0)}},
 				},
-				bson.M{
-					"val":  int32(30),
-					"ints": bson.A{int32(0), int32(200), int32(0), int32(400)},
+				bson.D{
+					{Key: "val", Value: int32(30)},
+					{Key: "ints", Value: bson.A{int32(0), int32(200), int32(0), int32(400)}},
 				},
 			},
 		}))
@@ -857,7 +856,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.DateTime(0), d[0].Value)
+			assert.IsType(t, bson.DateTime(0), d[0].Value)
 		})
 
 		// set date using type
@@ -870,7 +869,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.DateTime(0), d[0].Value)
+			assert.IsType(t, bson.DateTime(0), d[0].Value)
 		})
 
 		// set timestamp using type
@@ -883,7 +882,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.Timestamp{}, d[0].Value)
+			assert.IsType(t, bson.Timestamp{}, d[0].Value)
 		})
 	})
 

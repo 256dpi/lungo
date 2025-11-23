@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 var tsSeconds uint32
@@ -12,7 +12,7 @@ var tsCounter uint32
 var tsMutex sync.Mutex
 
 // Now will generate a locally monotonic timestamp.
-func Now() primitive.Timestamp {
+func Now() bson.Timestamp {
 	// acquire mutex
 	tsMutex.Lock()
 	defer tsMutex.Unlock()
@@ -29,7 +29,7 @@ func Now() primitive.Timestamp {
 	// increment counter
 	tsCounter++
 
-	return primitive.Timestamp{
+	return bson.Timestamp{
 		T: tsSeconds,
 		I: tsCounter,
 	}

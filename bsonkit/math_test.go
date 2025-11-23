@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func d128(str string) primitive.Decimal128 {
-	d, err := primitive.ParseDecimal128(str)
+func d128(str string) bson.Decimal128 {
+	d, err := bson.ParseDecimal128(str)
 	if err != nil {
 		panic(err)
 	}

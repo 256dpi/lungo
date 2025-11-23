@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -925,7 +924,7 @@ func TestMatchJSONSchema(t *testing.T) {
 
 	matchTest(t, bson.M{
 		"nil":      nil,
-		"null":     primitive.Null{},
+		"null":     bson.Null{},
 		"bool":     true,
 		"int":      int32(7),
 		"long":     int64(42),
@@ -933,9 +932,9 @@ func TestMatchJSONSchema(t *testing.T) {
 		"string":   "Hello World!",
 		"object":   bson.M{"foo": "bar"},
 		"array":    bson.A{"foo", "bar"},
-		"binary":   primitive.Binary{},
-		"objectId": primitive.NewObjectID(),
-		"date":     primitive.NewDateTimeFromTime(time.Now()),
+		"binary":   bson.Binary{},
+		"objectId": bson.NewObjectID(),
+		"date":     bson.NewDateTimeFromTime(time.Now()),
 	}, func(fn func(bson.M, interface{})) {
 		// json types
 		fn(bson.M{

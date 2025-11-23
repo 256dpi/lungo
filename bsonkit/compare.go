@@ -6,8 +6,7 @@ import (
 	"strings"
 
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Compare will compare two bson values and return their order according to the
@@ -64,7 +63,7 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareFloat64s(l, float64(r))
 		case int64:
 			return compareFloat64ToInt64(l, r)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decimal.NewFromFloat(l).Cmp(d128ToDec(r))
 		}
 	case int32:
@@ -75,7 +74,7 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareInt32s(l, r)
 		case int64:
 			return compareInt64s(int64(l), r)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decimal.NewFromInt32(l).Cmp(d128ToDec(r))
 		}
 	case int64:
@@ -86,10 +85,10 @@ func compareNumbers(lv, rv interface{}) int {
 			return compareInt64s(l, int64(r))
 		case int64:
 			return compareInt64s(l, r)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decimal.NewFromInt(l).Cmp(d128ToDec(r))
 		}
-	case primitive.Decimal128:
+	case bson.Decimal128:
 		switch r := rv.(type) {
 		case float64:
 			return d128ToDec(l).Cmp(decimal.NewFromFloat(r))
@@ -97,7 +96,7 @@ func compareNumbers(lv, rv interface{}) int {
 			return d128ToDec(l).Cmp(decimal.NewFromInt32(r))
 		case int64:
 			return d128ToDec(l).Cmp(decimal.NewFromInt(r))
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return d128ToDec(l).Cmp(d128ToDec(r))
 		}
 	}
@@ -194,8 +193,8 @@ func compareArrays(lv, rv interface{}) int {
 
 func compareBinaries(lv, rv interface{}) int {
 	// get binaries
-	l := lv.(primitive.Binary)
-	r := rv.(primitive.Binary)
+	l := lv.(bson.Binary)
+	r := rv.(bson.Binary)
 
 	// compare length
 	if len(l.Data) > len(r.Data) {
@@ -219,8 +218,8 @@ func compareBinaries(lv, rv interface{}) int {
 
 func compareObjectIDs(lv, rv interface{}) int {
 	// get object ids
-	l := lv.(primitive.ObjectID)
-	r := rv.(primitive.ObjectID)
+	l := lv.(bson.ObjectID)
+	r := rv.(bson.ObjectID)
 
 	// compare object ids
 	res := bytes.Compare(l[:], r[:])
@@ -245,8 +244,8 @@ func compareBooleans(lv, rv interface{}) int {
 
 func compareDates(lv, rv interface{}) int {
 	// get times
-	l := lv.(primitive.DateTime)
-	r := rv.(primitive.DateTime)
+	l := lv.(bson.DateTime)
+	r := rv.(bson.DateTime)
 
 	// compare times
 	if l == r {
@@ -260,19 +259,19 @@ func compareDates(lv, rv interface{}) int {
 
 func compareTimestamps(lv, rv interface{}) int {
 	// get timestamps
-	l := lv.(primitive.Timestamp)
-	r := rv.(primitive.Timestamp)
+	l := lv.(bson.Timestamp)
+	r := rv.(bson.Timestamp)
 
 	// compare timestamps
-	ret := primitive.CompareTimestamp(l, r)
+	ret := l.Compare(r)
 
 	return ret
 }
 
 func compareRegexes(lv, rv interface{}) int {
 	// get regexes
-	l := lv.(primitive.Regex)
-	r := rv.(primitive.Regex)
+	l := lv.(bson.Regex)
+	r := rv.(bson.Regex)
 
 	// compare patterns
 	ret := strings.Compare(l.Pattern, r.Pattern)

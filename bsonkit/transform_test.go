@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestTransform(t *testing.T) {
@@ -85,8 +84,8 @@ func TestTransform(t *testing.T) {
 				bson.E{Key: "uint64", Value: int64(42)},
 				bson.E{Key: "float32", Value: 4.199999809265137},
 				bson.E{Key: "float64", Value: 4.2},
-				bson.E{Key: "time", Value: primitive.DateTime(1570729020000)},
-				bson.E{Key: "bytes", Value: primitive.Binary{Data: []byte("foo")}},
+				bson.E{Key: "time", Value: bson.DateTime(1570729020000)},
+				bson.E{Key: "bytes", Value: bson.Binary{Data: []byte("foo")}},
 			},
 		},
 	}

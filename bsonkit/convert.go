@@ -5,8 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // MustConvert will call Convert and panic on errors.
@@ -147,7 +146,7 @@ func ConvertValue(v interface{}) (interface{}, error) {
 			}
 		}
 		return a, nil
-	case []primitive.ObjectID:
+	case []bson.ObjectID:
 		a := make(bson.A, len(value))
 		for i, item := range value {
 			a[i] = item
@@ -157,20 +156,20 @@ func ConvertValue(v interface{}) (interface{}, error) {
 		return value, nil
 	case int:
 		return int64(value), nil
-	case primitive.Null, primitive.ObjectID, primitive.DateTime,
-		primitive.Timestamp, primitive.Regex, primitive.Decimal128,
-		primitive.Binary:
+	case bson.Null, bson.ObjectID, bson.DateTime,
+		bson.Timestamp, bson.Regex, bson.Decimal128,
+		bson.Binary:
 		return value, nil
-	case *primitive.ObjectID:
+	case *bson.ObjectID:
 		if value != nil {
 			return *value, nil
 		}
 		return nil, nil
 	case time.Time:
-		return primitive.NewDateTimeFromTime(value.UTC()), nil
+		return bson.NewDateTimeFromTime(value.UTC()), nil
 	case *time.Time:
 		if value != nil {
-			return primitive.NewDateTimeFromTime(value.UTC()), nil
+			return bson.NewDateTimeFromTime(value.UTC()), nil
 		}
 		return nil, nil
 	default:

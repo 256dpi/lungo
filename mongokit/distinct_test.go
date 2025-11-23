@@ -1,10 +1,11 @@
 package mongokit
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -26,16 +27,22 @@ func distinctTest(t *testing.T, list bsonkit.List, fn func(fn func(string, bson.
 		assert.Equal(t, len(list), len(res.InsertedIDs))
 
 		fn(func(path string, result bson.A) {
-			values, err := coll.Distinct(nil, path, bson.M{})
+			values := coll.Distinct(context.TODO(), path, bson.M{})
+			var dec bson.A
+			err = values.Decode(&dec)
 			assert.NoError(t, err)
-			assert.Equal(t, result, convertArray(values))
+			assert.Equal(t, result, dec)
 		})
 	})
 
 	t.Run("Lungo", func(t *testing.T) {
 		fn(func(path string, result bson.A) {
-			values := Distinct(list, path)
-			assert.Equal(t, result, values)
+			raw := Distinct(list, path)
+
+			var dec bson.A
+			err := bson.RawValue{Type: bson.TypeArray, Value: raw}.Unmarshal(&dec)
+			assert.NoError(t, err)
+			assert.Equal(t, result, dec)
 		})
 	})
 }
@@ -69,7 +76,7 @@ func TestDistinct(t *testing.T) {
 		fn("a.b", bson.A{"1", "2"})
 	})
 
-	// numbers
+	//numbers
 	distinctTest(t, bsonkit.List{
 		bsonkit.MustConvert(bson.M{"a": int32(1)}),
 		bsonkit.MustConvert(bson.M{"a": 1}),

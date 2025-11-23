@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -43,7 +43,14 @@ func extractTest(t *testing.T, fn func(fn func(bson.M, interface{}))) {
 				assert.Nil(t, doc, query)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, result, doc.Map(), query)
+				// convert returned *bson.D (bsonkit.Doc) to bson.M for comparison
+				out := bson.M{}
+				if doc != nil {
+					for _, e := range *doc {
+						out[e.Key] = e.Value
+					}
+				}
+				assert.Equal(t, result, out, query)
 			}
 		})
 	})

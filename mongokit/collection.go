@@ -3,8 +3,7 @@ package mongokit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -101,7 +100,7 @@ func (c *Collection) Find(query, sort bsonkit.Doc, skip, limit int) (*Result, er
 func (c *Collection) Insert(doc bsonkit.Doc) (*Result, error) {
 	// ensure object id
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
+		_, err := bsonkit.Put(doc, "_id", bson.NewObjectID(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -340,7 +339,7 @@ func (c *Collection) Upsert(query, repl, update bsonkit.Doc, arrayFilters bsonki
 
 	// generate object id if missing
 	if bsonkit.Get(doc, "_id") == bsonkit.Missing {
-		_, err := bsonkit.Put(doc, "_id", primitive.NewObjectID(), true)
+		_, err := bsonkit.Put(doc, "_id", bson.NewObjectID(), true)
 		if err != nil {
 			return nil, err
 		}

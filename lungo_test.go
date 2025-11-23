@@ -5,19 +5,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 var mongoReplacements = map[string]string{
-	"*mongo.Client":        "lungo.IClient",
-	"*mongo.Database":      "lungo.IDatabase",
-	"*mongo.Collection":    "lungo.ICollection",
-	"*mongo.Cursor":        "lungo.ICursor",
-	"*mongo.SingleResult":  "lungo.ISingleResult",
-	"mongo.IndexView":      "lungo.IIndexView",
-	"*mongo.ChangeStream":  "lungo.IChangeStream",
-	"mongo.Session":        "lungo.ISession",
-	"mongo.SessionContext": "lungo.ISessionContext",
+	"*mongo.Client":         "lungo.IClient",
+	"*mongo.Database":       "lungo.IDatabase",
+	"*mongo.Collection":     "lungo.ICollection",
+	"*mongo.Cursor":         "lungo.ICursor",
+	"*mongo.SingleResult":   "lungo.ISingleResult",
+	"mongo.IndexView":       "lungo.IIndexView",
+	"*mongo.ChangeStream":   "lungo.IChangeStream",
+	"*mongo.Session":        "lungo.ISession",
+	"mongo.SessionContext":  "lungo.ISessionContext",
+	"*mongo.GridFSBucket":   "lungo.IGridFSBucket",
+	"*mongo.DistinctResult": "lungo.IDistinctResult",
 }
 
 func TestClientInterface(t *testing.T) {
@@ -64,6 +66,6 @@ func TestChangeStreamInterface(t *testing.T) {
 
 func TestSessionInterface(t *testing.T) {
 	a := reflect.TypeOf((*ISession)(nil)).Elem()
-	b := reflect.TypeOf((*mongo.Session)(nil)).Elem()
+	b := reflect.TypeOf(&mongo.Session{})
 	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
 }

@@ -3,13 +3,9 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-
 	"github.com/256dpi/lungo/bsonkit"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var _ IDatabase = &Database{}
@@ -21,7 +17,11 @@ type Database struct {
 }
 
 // Aggregate implements the IDatabase.Aggregate method.
-func (d *Database) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
+func (d *Database) Aggregate(
+	ctx context.Context,
+	pipeline any,
+	opts ...options.Lister[options.AggregateOptions],
+) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
@@ -33,12 +33,15 @@ func (d *Database) Client() IClient {
 }
 
 // Collection implements the IDatabase.Collection method.
-func (d *Database) Collection(name string, opts ...*options.CollectionOptions) ICollection {
+func (d *Database) Collection(name string, opts ...options.Lister[options.CollectionOptions]) ICollection {
 	// merge options
-	opt := options.MergeCollectionOptions(opts...)
+	args, err := NewOptions[options.CollectionOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ReadConcern":    ignored,
 		"WriteConcern":   ignored,
 		"ReadPreference": ignored,
@@ -51,12 +54,15 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 }
 
 // CreateCollection implements the IDatabase.CreateCollection method.
-func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*options.CreateCollectionOptions) error {
+func (d *Database) CreateCollection(ctx context.Context, name string, opts ...options.Lister[options.CreateCollectionOptions]) error {
 	// merge options
-	opt := options.MergeCreateCollectionOptions(opts...)
+	args, err := NewOptions[options.CreateCollectionOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(args, map[string]string{})
 
 	// begin transaction
 	txn, err := d.engine.Begin(ctx, true)
@@ -83,7 +89,7 @@ func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*o
 }
 
 // CreateView implements the IDatabase.CreateView method.
-func (d *Database) CreateView(_ context.Context, _, _ string, _ interface{}, _ ...*options.CreateViewOptions) error {
+func (d *Database) CreateView(ctx context.Context, viewName, viewOn string, pipeline any, opts ...options.Lister[options.CreateViewOptions]) error {
 	panic("lungo: not implemented")
 }
 
@@ -114,7 +120,11 @@ func (d *Database) Drop(ctx context.Context) error {
 }
 
 // ListCollectionNames implements the IDatabase.ListCollectionNames method.
-func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
+func (d *Database) ListCollectionNames(
+	ctx context.Context,
+	filter any,
+	opts ...options.Lister[options.ListCollectionsOptions],
+) ([]string, error) {
 	// list collections
 	res, err := d.ListCollections(ctx, filter, opts...)
 	if err != nil {
@@ -135,17 +145,28 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 
 // ListCollectionSpecifications implements the
 // IDatabase.ListCollectionSpecifications method.
-func (d *Database) ListCollectionSpecifications(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error) {
+func (d *Database) ListCollectionSpecifications(
+	ctx context.Context,
+	filter any,
+	opts ...options.Lister[options.ListCollectionsOptions],
+) ([]mongo.CollectionSpecification, error) {
 	panic("lungo: not implemented")
 }
 
 // ListCollections implements the IDatabase.ListCollections method.
-func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
+func (d *Database) ListCollections(
+	ctx context.Context,
+	filter any,
+	opts ...options.Lister[options.ListCollectionsOptions],
+) (ICursor, error) {
 	// merge options
-	opt := options.MergeListCollectionsOptions(opts...)
+	args, err := NewOptions[options.ListCollectionsOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(args, map[string]string{})
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)
@@ -174,32 +195,43 @@ func (d *Database) Name() string {
 }
 
 // ReadConcern implements the IDatabase.ReadConcern method.
-func (d *Database) ReadConcern() *readconcern.ReadConcern {
-	return readconcern.New()
-}
+//func (d *Database) ReadConcern() *readconcern.ReadConcern {
+//	return readconcern.New()
+//}
 
 // ReadPreference implements the IDatabase.ReadPreference method.
-func (d *Database) ReadPreference() *readpref.ReadPref {
-	return readpref.Primary()
-}
+//func (d *Database) ReadPreference() *readpref.ReadPref {
+//	return readpref.Primary()
+//}
 
 // RunCommand implements the IDatabase.RunCommand method.
-func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult {
+func (d *Database) RunCommand(
+	ctx context.Context,
+	runCommand any,
+	opts ...options.Lister[options.RunCmdOptions],
+) ISingleResult {
 	panic("lungo: not implemented")
 }
 
 // RunCommandCursor implements the IDatabase.RunCommandCursor method.
-func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
+func (d *Database) RunCommandCursor(
+	ctx context.Context,
+	runCommand any,
+	opts ...options.Lister[options.RunCmdOptions],
+) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
 // Watch implements the IDatabase.Watch method.
-func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+func (d *Database) Watch(ctx context.Context, pipeline any, opts ...options.Lister[options.ChangeStreamOptions]) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	args, err := NewOptions[options.ChangeStreamOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"BatchSize":            ignored,
 		"FullDocument":         ignored,
 		"MaxAwaitTime":         ignored,
@@ -216,8 +248,8 @@ func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*optio
 
 	// get resume after
 	var resumeAfter bsonkit.Doc
-	if opt.ResumeAfter != nil {
-		resumeAfter, err = bsonkit.Transform(opt.ResumeAfter)
+	if args.ResumeAfter != nil {
+		resumeAfter, err = bsonkit.Transform(args.ResumeAfter)
 		if err != nil {
 			return nil, err
 		}
@@ -225,15 +257,15 @@ func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*optio
 
 	// get start after
 	var startAfter bsonkit.Doc
-	if opt.StartAfter != nil {
-		startAfter, err = bsonkit.Transform(opt.StartAfter)
+	if args.StartAfter != nil {
+		startAfter, err = bsonkit.Transform(args.StartAfter)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// open stream
-	stream, err := d.engine.Watch(Handle{d.name}, filter, resumeAfter, startAfter, opt.StartAtOperationTime)
+	stream, err := d.engine.Watch(Handle{d.name}, filter, resumeAfter, startAfter, args.StartAtOperationTime)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +274,48 @@ func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*optio
 }
 
 // WriteConcern implements the IDatabase.WriteConcern method.
-func (d *Database) WriteConcern() *writeconcern.WriteConcern {
-	return nil
+//func (d *Database) WriteConcern() *writeconcern.WriteConcern {
+//	return nil
+//}
+
+func (d *Database) GridFSBucket(opts ...options.Lister[options.BucketOptions]) IGridFSBucket {
+	// merge options
+	args, err := NewOptions[options.BucketOptions](opts...)
+
+	if err != nil {
+		panic(err)
+	}
+	// assert supported options
+	assertOptions(args, map[string]string{
+		"Name":           supported,
+		"ChunkSizeBytes": supported,
+		"WriteConcern":   supported,
+		"ReadConcern":    supported,
+		"ReadPreference": supported,
+	})
+
+	// get name
+	name := options.DefaultName
+	if args.Name != nil {
+		name = *args.Name
+	}
+
+	// get chunk size
+	var chunkSize = int(options.DefaultChunkSize)
+	if args.ChunkSizeBytes != nil {
+		chunkSize = int(*args.ChunkSizeBytes)
+	}
+
+	// prepare collection options
+	var collOpt = options.Collection().
+		SetWriteConcern(args.WriteConcern).
+		SetReadConcern(args.ReadConcern).
+		SetReadPreference(args.ReadPreference)
+
+	return &Bucket{
+		files:     d.Collection(name+".files", collOpt),
+		chunks:    d.Collection(name+".chunks", collOpt),
+		markers:   d.Collection(name+".markers", collOpt),
+		chunkSize: chunkSize,
+	}
 }

@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -47,7 +46,7 @@ func projectTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))
 }
 
 func TestProject(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	// hide id
 	projectTest(t, bson.M{
@@ -135,7 +134,7 @@ func TestProject(t *testing.T) {
 }
 
 func TestProjectSlice(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	projectTest(t, bson.M{
 		"_id": id,
@@ -169,9 +168,7 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 1.0,
-				},
+				bson.D{{Key: "a", Value: 1.0}},
 			},
 		})
 
@@ -183,11 +180,11 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 1.0,
+				bson.D{
+					{Key: "a", Value: 1.0},
 				},
-				bson.M{
-					"a": 2.0,
+				bson.D{
+					{Key: "a", Value: 2.0},
 				},
 			},
 		})
@@ -200,8 +197,8 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 3.0,
+				bson.D{
+					{Key: "a", Value: 3.0},
 				},
 			},
 		})
@@ -214,11 +211,11 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 2.0,
+				bson.D{
+					{Key: "a", Value: 2.0},
 				},
-				bson.M{
-					"a": 3.0,
+				bson.D{
+					{Key: "a", Value: 3.0},
 				},
 			},
 		})
@@ -231,14 +228,14 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 1.0,
+				bson.D{
+					{Key: "a", Value: 1.0},
 				},
-				bson.M{
-					"a": 2.0,
+				bson.D{
+					{Key: "a", Value: 2.0},
 				},
-				bson.M{
-					"a": 3.0,
+				bson.D{
+					{Key: "a", Value: 3.0},
 				},
 			},
 		})
@@ -251,14 +248,14 @@ func TestProjectSlice(t *testing.T) {
 		}, bson.M{
 			"_id": id,
 			"foo": bson.A{
-				bson.M{
-					"a": 1.0,
+				bson.D{
+					{Key: "a", Value: 1.0},
 				},
-				bson.M{
-					"a": 2.0,
+				bson.D{
+					{Key: "a", Value: 2.0},
 				},
-				bson.M{
-					"a": 3.0,
+				bson.D{
+					{Key: "a", Value: 3.0},
 				},
 			},
 		})
