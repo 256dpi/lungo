@@ -3,10 +3,11 @@ package lungo
 import (
 	"context"
 	"fmt"
+	"reflect"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -21,14 +22,17 @@ type Collection struct {
 }
 
 // Aggregate implements the ICollection.Aggregate method.
-func (c *Collection) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
+func (c *Collection) Aggregate(ctx context.Context, pipeline any, opts ...options.Lister[options.AggregateOptions]) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
 // BulkWrite implements the ICollection.BulkWrite method.
-func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...options.Lister[options.BulkWriteOptions]) (*mongo.BulkWriteResult, error) {
 	// merge options
-	opt := options.MergeBulkWriteOptions(opts...)
+	args, err := NewOptions[options.BulkWriteOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -38,8 +42,8 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 
 	// get ordered
 	var ordered bool
-	if opt.Ordered != nil {
-		ordered = *opt.Ordered
+	if args.Ordered != nil {
+		ordered = *args.Ordered
 	}
 
 	// prepare operations
@@ -74,7 +78,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 			upsert = model.Upsert
 			limit = 1
 			if model.ArrayFilters != nil {
-				arrayFilters = model.ArrayFilters.Filters
+				arrayFilters = model.ArrayFilters
 			}
 		case *mongo.UpdateManyModel:
 			opcode = Update
@@ -83,7 +87,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 			upsert = model.Upsert
 			limit = 0
 			if model.ArrayFilters != nil {
-				arrayFilters = model.ArrayFilters.Filters
+				arrayFilters = model.ArrayFilters
 			}
 		case *mongo.DeleteOneModel:
 			opcode = Delete
@@ -145,15 +149,12 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 	}
 
 	// run bulk
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	results, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) ([]Result, error) {
 		return txn.Bulk(c.handle, ops, ordered)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get results
-	results := res.([]Result)
 
 	// prepare result
 	result := &mongo.BulkWriteResult{
@@ -213,12 +214,15 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 }
 
 // Clone implements the ICollection.Clone method.
-func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, error) {
+func (c *Collection) Clone(opts ...options.Lister[options.CollectionOptions]) ICollection {
 	// merge options
-	opt := options.MergeCollectionOptions(opts...)
+	args, err := NewOptions[options.CollectionOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ReadConcern":    ignored,
 		"WriteConcern":   ignored,
 		"ReadPreference": ignored,
@@ -227,13 +231,16 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 	return &Collection{
 		engine: c.engine,
 		handle: c.handle,
-	}, nil
+	}
 }
 
 // CountDocuments implements the ICollection.CountDocuments method.
-func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
+func (c *Collection) CountDocuments(ctx context.Context, filter any, opts ...options.Lister[options.CountOptions]) (int64, error) {
 	// merge options
-	opt := options.MergeCountOptions(opts...)
+	args, err := NewOptions[options.CountOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -257,18 +264,18 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 
 	// get skip
 	var skip int
-	if opt.Skip != nil {
-		skip = int(*opt.Skip)
+	if args.Skip != nil {
+		skip = int(*args.Skip)
 	}
 
 	// get limit
 	var limit int
-	if opt.Limit != nil {
-		limit = int(*opt.Limit)
+	if args.Limit != nil {
+		limit = int(*args.Limit)
 	}
 
 	// find documents
-	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (*Result, error) {
 		return txn.Find(c.handle, query, nil, skip, limit)
 	})
 	if err != nil {
@@ -276,7 +283,7 @@ func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opt
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	return int64(len(list)), nil
 }
@@ -290,9 +297,12 @@ func (c *Collection) Database() IDatabase {
 }
 
 // DeleteMany implements the ICollection.DeleteMany method.
-func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteMany(ctx context.Context, filter any, opts ...options.Lister[options.DeleteManyOptions]) (*mongo.DeleteResult, error) {
 	// merge options
-	opt := options.MergeDeleteOptions(opts...)
+	args, err := NewOptions[options.DeleteManyOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -312,7 +322,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// delete documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Delete(c.handle, query, nil, 0, 0)
 	})
 	if err != nil {
@@ -320,7 +330,7 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	return &mongo.DeleteResult{
 		DeletedCount: int64(len(list)),
@@ -328,9 +338,12 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 }
 
 // DeleteOne implements the ICollection.DeleteOne method.
-func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteOne(ctx context.Context, filter any, opts ...options.Lister[options.DeleteOneOptions]) (*mongo.DeleteResult, error) {
 	// merge options
-	opt := options.MergeDeleteOptions(opts...)
+	args, err := NewOptions[options.DeleteOneOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -350,7 +363,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// delete document
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Delete(c.handle, query, nil, 0, 1)
 	})
 	if err != nil {
@@ -358,7 +371,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	return &mongo.DeleteResult{
 		DeletedCount: int64(len(list)),
@@ -366,9 +379,12 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 }
 
 // Distinct implements the ICollection.Distinct method.
-func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
+func (c *Collection) Distinct(ctx context.Context, fieldName string, filter any, opts ...options.Lister[options.DistinctOptions]) IDistinctResult {
 	// merge options
-	opt := options.MergeDistinctOptions(opts...)
+	args, err := NewOptions[options.DistinctOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -377,7 +393,7 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	})
 
 	// check field
-	if field == "" {
+	if fieldName == "" {
 		panic("lungo: missing field path")
 	}
 
@@ -389,28 +405,65 @@ func (c *Collection) Distinct(ctx context.Context, field string, filter interfac
 	// transform filter
 	query, err := bsonkit.Transform(filter)
 	if err != nil {
-		return nil, err
+		// return nil, err
+		panic(err)
 	}
 
 	// find documents
-	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (*Result, error) {
 		return txn.Find(c.handle, query, nil, 0, 0)
 	})
 	if err != nil {
-		return nil, err
+		panic(err)
+		// return nil, err
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	// collect distinct values
-	values := mongokit.Distinct(list, field)
+	rawValues := mongokit.Distinct(list, fieldName)
+	return DistinctResult{RawArray: rawValues}
+}
 
-	return values, nil
+var _ IDistinctResult = &DistinctResult{}
+
+type DistinctResult struct {
+	bson.RawArray
+}
+
+func (d DistinctResult) Decode(v any) error {
+	// if there is no underlying array, signal no documents
+	if d.RawArray == nil {
+		return ErrNoDocuments
+	}
+
+	// delegate decoding to the BSON RawValue helper
+	return bson.RawValue{
+		Type:  bson.TypeArray,
+		Value: d.RawArray,
+	}.Unmarshal(v)
+}
+
+func (d DistinctResult) Err() error {
+	// no error state is tracked; only signal no documents if there is no array
+	if d.RawArray == nil {
+		return ErrNoDocuments
+	}
+
+	return nil
+}
+
+func (d DistinctResult) Raw() (bson.RawArray, error) {
+	if d.RawArray == nil {
+		return nil, ErrNoDocuments
+	}
+
+	return d.RawArray, nil
 }
 
 // Drop implements the ICollection.Drop method.
-func (c *Collection) Drop(ctx context.Context) error {
+func (c *Collection) Drop(ctx context.Context, opts ...options.Lister[options.DropCollectionOptions]) error {
 	// begin transaction
 	txn, err := c.engine.Begin(ctx, true)
 	if err != nil {
@@ -436,34 +489,40 @@ func (c *Collection) Drop(ctx context.Context) error {
 }
 
 // EstimatedDocumentCount implements the ICollection.EstimatedDocumentCount method.
-func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
+func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...options.Lister[options.EstimatedDocumentCountOptions]) (int64, error) {
 	// merge options
-	opt := options.MergeEstimatedDocumentCountOptions(opts...)
+	args, err := NewOptions[options.EstimatedDocumentCountOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment": ignored,
 		"MaxTime": ignored,
 	})
 
 	// count documents
-	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (int, error) {
 		return txn.CountDocuments(c.handle)
 	})
 	if err != nil {
 		return 0, err
 	}
 
-	return int64(res.(int)), nil
+	return int64(res), nil
 }
 
 // Find implements the ICollection.Find method.
-func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
+func (c *Collection) Find(ctx context.Context, filter any, opts ...options.Lister[options.FindOptions]) (ICursor, error) {
 	// merge options
-	opt := options.MergeFindOptions(opts...)
+	args, err := NewOptions[options.FindOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"AllowDiskUse":        ignored,
 		"AllowPartialResults": ignored,
 		"BatchSize":           ignored,
@@ -492,8 +551,8 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// get sort
 	var sort bsonkit.Doc
-	if opt.Sort != nil {
-		sort, err = bsonkit.Transform(opt.Sort)
+	if args.Sort != nil {
+		sort, err = bsonkit.Transform(args.Sort)
 		if err != nil {
 			return nil, err
 		}
@@ -501,8 +560,8 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// get projection
 	var projection bsonkit.Doc
-	if opt.Projection != nil {
-		projection, err = bsonkit.Transform(opt.Projection)
+	if args.Projection != nil {
+		projection, err = bsonkit.Transform(args.Projection)
 		if err != nil {
 			return nil, err
 		}
@@ -510,18 +569,18 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 
 	// get skip
 	var skip int
-	if opt.Skip != nil {
-		skip = int(*opt.Skip)
+	if args.Skip != nil {
+		skip = int(*args.Skip)
 	}
 
 	// get limit
 	var limit int
-	if opt.Limit != nil {
-		limit = int(*opt.Limit)
+	if args.Limit != nil {
+		limit = int(*args.Limit)
 	}
 
 	// find documents
-	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (*Result, error) {
 		return txn.Find(c.handle, query, sort, skip, limit)
 	})
 	if err != nil {
@@ -529,7 +588,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	// apply projection
 	if projection != nil {
@@ -543,12 +602,15 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 }
 
 // FindOne implements the ICollection.FindOne method.
-func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
+func (c *Collection) FindOne(ctx context.Context, filter any, opts ...options.Lister[options.FindOneOptions]) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneOptions(opts...)
+	args, err := NewOptions[options.FindOneOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"AllowPartialResults": ignored,
 		"BatchSize":           ignored,
 		"Comment":             ignored,
@@ -575,8 +637,8 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// get sort
 	var sort bsonkit.Doc
-	if opt.Sort != nil {
-		sort, err = bsonkit.Transform(opt.Sort)
+	if args.Sort != nil {
+		sort, err = bsonkit.Transform(args.Sort)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -584,21 +646,21 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 
 	// get skip
 	var skip int
-	if opt.Skip != nil {
-		skip = int(*opt.Skip)
+	if args.Skip != nil {
+		skip = int(*args.Skip)
 	}
 
 	// get projection
 	var projection bsonkit.Doc
-	if opt.Projection != nil {
-		projection, err = bsonkit.Transform(opt.Projection)
+	if args.Projection != nil {
+		projection, err = bsonkit.Transform(args.Projection)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
 	}
 
 	// find documents
-	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, false, func(txn *Transaction) (*Result, error) {
 		return txn.Find(c.handle, query, sort, skip, 1)
 	})
 	if err != nil {
@@ -606,7 +668,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	// check list
 	if len(list) == 0 {
@@ -625,12 +687,15 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 }
 
 // FindOneAndDelete implements the ICollection.FindOneAndDelete method.
-func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
+func (c *Collection) FindOneAndDelete(ctx context.Context, filter any, opts ...options.Lister[options.FindOneAndDeleteOptions]) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndDeleteOptions(opts...)
+	args, err := NewOptions[options.FindOneAndDeleteOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment":    ignored,
 		"Hint":       ignored,
 		"MaxTime":    ignored,
@@ -651,8 +716,8 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// get projection
 	var projection bsonkit.Doc
-	if opt.Projection != nil {
-		projection, err = bsonkit.Transform(opt.Projection)
+	if args.Projection != nil {
+		projection, err = bsonkit.Transform(args.Projection)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -660,15 +725,15 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 
 	// get sort
 	var sort bsonkit.Doc
-	if opt.Sort != nil {
-		sort, err = bsonkit.Transform(opt.Sort)
+	if args.Sort != nil {
+		sort, err = bsonkit.Transform(args.Sort)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
 	}
 
 	// delete documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Delete(c.handle, query, sort, 0, 1)
 	})
 	if err != nil {
@@ -676,7 +741,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 	}
 
 	// get list
-	list := res.(*Result).Matched
+	list := res.Matched
 
 	// check list
 	if len(list) == 0 {
@@ -695,12 +760,15 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 }
 
 // FindOneAndReplace implements the ICollection.FindOneAndReplace method.
-func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
+func (c *Collection) FindOneAndReplace(ctx context.Context, filter any, replacement any, opts ...options.Lister[options.FindOneAndReplaceOptions]) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndReplaceOptions(opts...)
+	args, err := NewOptions[options.FindOneAndReplaceOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment":        ignored,
 		"Hint":           ignored,
 		"MaxTime":        ignored,
@@ -728,8 +796,8 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// get projection
 	var projection bsonkit.Doc
-	if opt.Projection != nil {
-		projection, err = bsonkit.Transform(opt.Projection)
+	if args.Projection != nil {
+		projection, err = bsonkit.Transform(args.Projection)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -737,8 +805,8 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// get sort
 	var sort bsonkit.Doc
-	if opt.Sort != nil {
-		sort, err = bsonkit.Transform(opt.Sort)
+	if args.Sort != nil {
+		sort, err = bsonkit.Transform(args.Sort)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -757,26 +825,23 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 
 	// get upsert
 	var upsert bool
-	if opt.Upsert != nil {
-		upsert = *opt.Upsert
+	if args.Upsert != nil {
+		upsert = *args.Upsert
 	}
 
 	// get return after
 	var returnAfter bool
-	if opt.ReturnDocument != nil {
-		returnAfter = *opt.ReturnDocument == options.After
+	if args.ReturnDocument != nil {
+		returnAfter = *args.ReturnDocument == options.After
 	}
 
 	// insert document
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Replace(c.handle, query, sort, repl, upsert)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// get doc
 	var doc bsonkit.Doc
@@ -803,12 +868,15 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 }
 
 // FindOneAndUpdate implements the ICollection.FindOneAndUpdate method.
-func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
+func (c *Collection) FindOneAndUpdate(ctx context.Context, filter any, update any, opts ...options.Lister[options.FindOneAndUpdateOptions]) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndUpdateOptions(opts...)
+	args, err := NewOptions[options.FindOneAndUpdateOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ArrayFilters":   supported,
 		"Comment":        ignored,
 		"Hint":           ignored,
@@ -837,8 +905,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// get projection
 	var projection bsonkit.Doc
-	if opt.Projection != nil {
-		projection, err = bsonkit.Transform(opt.Projection)
+	if args.Projection != nil {
+		projection, err = bsonkit.Transform(args.Projection)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -846,8 +914,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// get sort
 	var sort bsonkit.Doc
-	if opt.Sort != nil {
-		sort, err = bsonkit.Transform(opt.Sort)
+	if args.Sort != nil {
+		sort, err = bsonkit.Transform(args.Sort)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -861,35 +929,32 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// get upsert
 	var upsert bool
-	if opt.Upsert != nil {
-		upsert = *opt.Upsert
+	if args.Upsert != nil {
+		upsert = *args.Upsert
 	}
 
 	// get return after
 	var returnAfter bool
-	if opt.ReturnDocument != nil {
-		returnAfter = *opt.ReturnDocument == options.After
+	if args.ReturnDocument != nil {
+		returnAfter = *args.ReturnDocument == options.After
 	}
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if args.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(args.ArrayFilters)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
 	}
 
 	// update documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Update(c.handle, query, sort, upd, 0, 1, upsert, arrayFilters)
 	})
 	if err != nil {
 		return &SingleResult{err: err}
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// get doc
 	var doc bsonkit.Doc
@@ -924,26 +989,40 @@ func (c *Collection) Indexes() IIndexView {
 }
 
 // InsertMany implements the ICollection.InsertMany method.
-func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+func (c *Collection) InsertMany(ctx context.Context, documents any, opts ...options.Lister[options.InsertManyOptions]) (*mongo.InsertManyResult, error) {
 	// merge options
-	opt := options.MergeInsertManyOptions(opts...)
+	args, err := NewOptions[options.InsertManyOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment": ignored,
 		"Ordered": supported,
 	})
 
 	// check documents
-	if len(documents) == 0 {
+	if documents == nil {
+		panic("lungo: missing documents")
+	}
+
+	// ensure documents is a slice or array
+	rv := reflect.ValueOf(documents)
+	kind := rv.Kind()
+	if kind != reflect.Slice && kind != reflect.Array {
+		panic("lungo: expected slice of documents")
+	}
+	if rv.Len() == 0 {
 		panic("lungo: missing documents")
 	}
 
 	// prepare list
-	list := make(bsonkit.List, 0, len(documents))
+	list := make(bsonkit.List, 0, rv.Len())
 
 	// transform documents
-	for _, document := range documents {
+	for i := 0; i < rv.Len(); i++ {
+		document := rv.Index(i).Interface()
 		// transform document
 		doc, err := bsonkit.Transform(document)
 		if err != nil {
@@ -954,22 +1033,19 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		list = append(list, doc)
 	}
 
-	// get ordered
-	var ordered bool
-	if opt.Ordered != nil {
-		ordered = *opt.Ordered
+	// get ordered (default true, as in the official driver)
+	ordered := true
+	if args.Ordered != nil {
+		ordered = *args.Ordered
 	}
 
 	// insert documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Insert(c.handle, list, ordered)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get result
-	result := res.(*Result)
 
 	return &mongo.InsertManyResult{
 		InsertedIDs: bsonkit.Pick(result.Modified, "_id", false),
@@ -977,12 +1053,15 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 }
 
 // InsertOne implements the ICollection.InsertOne method.
-func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
+func (c *Collection) InsertOne(ctx context.Context, document any, opts ...options.Lister[options.InsertOneOptions]) (*mongo.InsertOneResult, error) {
 	// merge options
-	opt := options.MergeInsertOneOptions(opts...)
+	args, err := NewOptions[options.InsertOneOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment": ignored,
 	})
 
@@ -998,15 +1077,12 @@ func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts .
 	}
 
 	// insert document
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Insert(c.handle, bsonkit.List{doc}, true)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// check error
 	if result.Error != nil {
@@ -1030,12 +1106,15 @@ func (c *Collection) Name() string {
 }
 
 // ReplaceOne implements the ICollection.ReplaceOne method.
-func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) ReplaceOne(ctx context.Context, filter any, replacement any, opts ...options.Lister[options.ReplaceOptions]) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeReplaceOptions(opts...)
+	args, err := NewOptions[options.ReplaceOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Comment": ignored,
 		"Hint":    ignored,
 		"Upsert":  supported,
@@ -1070,20 +1149,17 @@ func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interfa
 
 	// get upsert
 	var upsert bool
-	if opt.Upsert != nil {
-		upsert = *opt.Upsert
+	if args.Upsert != nil {
+		upsert = *args.Upsert
 	}
 
 	// insert document
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Replace(c.handle, query, nil, doc, upsert)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// check if upserted
 	if result.Upserted != nil {
@@ -1105,7 +1181,7 @@ func (c *Collection) SearchIndexes() mongo.SearchIndexView {
 }
 
 // UpdateByID implements the ICollection.UpdateByID method.
-func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateByID(ctx context.Context, id any, update any, opts ...options.Lister[options.UpdateOneOptions]) (*mongo.UpdateResult, error) {
 	// check id
 	if id == nil {
 		return nil, mongo.ErrNilValue
@@ -1115,12 +1191,15 @@ func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update inte
 }
 
 // UpdateMany implements the ICollection.UpdateMany method.
-func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateMany(ctx context.Context, filter any, update any, opts ...options.Lister[options.UpdateManyOptions]) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeUpdateOptions(opts...)
+	args, err := NewOptions[options.UpdateManyOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ArrayFilters": supported,
 		"Comment":      ignored,
 		"Hint":         ignored,
@@ -1151,29 +1230,26 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 
 	// get upsert
 	var upsert bool
-	if opt.Upsert != nil {
-		upsert = *opt.Upsert
+	if args.Upsert != nil {
+		upsert = *args.Upsert
 	}
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if args.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(args.ArrayFilters)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// update documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Update(c.handle, query, nil, doc, 0, 0, upsert, arrayFilters)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// check if upserted
 	if result.Upserted != nil {
@@ -1190,12 +1266,15 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 }
 
 // UpdateOne implements the ICollection.UpdateOne method.
-func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateOne(ctx context.Context, filter any, update any, opts ...options.Lister[options.UpdateOneOptions]) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeUpdateOptions(opts...)
+	args, err := NewOptions[options.UpdateOneOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ArrayFilters": supported,
 		"Comment":      ignored,
 		"Hint":         ignored,
@@ -1226,29 +1305,26 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 
 	// get upsert
 	var upsert bool
-	if opt.Upsert != nil {
-		upsert = *opt.Upsert
+	if args.Upsert != nil {
+		upsert = *args.Upsert
 	}
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if args.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(args.ArrayFilters)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// update documents
-	res, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (interface{}, error) {
+	result, err := useTransaction(ctx, c.engine, true, func(txn *Transaction) (*Result, error) {
 		return txn.Update(c.handle, query, nil, doc, 0, 1, upsert, arrayFilters)
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// get result
-	result := res.(*Result)
 
 	// check if upserted
 	if result.Upserted != nil {
@@ -1265,12 +1341,15 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 }
 
 // Watch implements the ICollection.Watch method.
-func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+func (c *Collection) Watch(ctx context.Context, pipeline any, opts ...options.Lister[options.ChangeStreamOptions]) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	args, err := NewOptions[options.ChangeStreamOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"BatchSize":            ignored,
 		"Comment":              ignored,
 		"FullDocument":         ignored,
@@ -1295,8 +1374,8 @@ func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*opt
 
 	// get resume after
 	var resumeAfter bsonkit.Doc
-	if opt.ResumeAfter != nil {
-		resumeAfter, err = bsonkit.Transform(opt.ResumeAfter)
+	if args.ResumeAfter != nil {
+		resumeAfter, err = bsonkit.Transform(args.ResumeAfter)
 		if err != nil {
 			return nil, err
 		}
@@ -1304,15 +1383,15 @@ func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*opt
 
 	// get start after
 	var startAfter bsonkit.Doc
-	if opt.StartAfter != nil {
-		startAfter, err = bsonkit.Transform(opt.StartAfter)
+	if args.StartAfter != nil {
+		startAfter, err = bsonkit.Transform(args.StartAfter)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// open stream
-	stream, err := c.engine.Watch(c.handle, filter, resumeAfter, startAfter, opt.StartAtOperationTime)
+	stream, err := c.engine.Watch(c.handle, filter, resumeAfter, startAfter, args.StartAtOperationTime)
 	if err != nil {
 		return nil, err
 	}

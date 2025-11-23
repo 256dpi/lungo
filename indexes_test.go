@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func TestIndexViewCreateMany(t *testing.T) {
@@ -59,28 +58,28 @@ func TestIndexViewCreateMany(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"bar": int32(-1),
-					"baz": int32(1),
+				"key": bson.D{
+					{Key: "bar", Value: int32(-1)},
+					{Key: "baz", Value: int32(1)},
 				},
 				"name": "bar_-1_baz_1",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"foo": int32(1),
+				"key": bson.D{
+					{Key: "foo", Value: int32(1)},
 				},
 				"name":   "foo",
 				"unique": true,
-				"partialFilterExpression": bson.M{
-					"bar": "baz",
+				"partialFilterExpression": bson.D{
+					{Key: "bar", Value: "baz"},
 				},
 				"v": int32(2),
 			},
@@ -158,19 +157,19 @@ func TestIndexViewCreateOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"foo": int32(1),
+				"key": bson.D{
+					{Key: "foo", Value: int32(1)},
 				},
 				"expireAfterSeconds": int32(10),
-				"partialFilterExpression": bson.M{
-					"foo": "bar",
+				"partialFilterExpression": bson.D{
+					{Key: "foo", Value: "bar"},
 				},
 				"name":   "foo",
 				"unique": true,
@@ -257,23 +256,23 @@ func TestIndexViewDropAll(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"bar": int32(-1),
-					"baz": int32(1),
+				"key": bson.D{
+					{Key: "bar", Value: int32(-1)},
+					{Key: "baz", Value: int32(1)},
 				},
 				"name": "bar_-1_baz_1",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"foo": int32(1),
+				"key": bson.D{
+					{Key: "foo", Value: int32(1)},
 				},
 				"name":   "foo",
 				"unique": true,
@@ -282,7 +281,7 @@ func TestIndexViewDropAll(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropAll(nil)
+		err = c.Indexes().DropAll(nil)
 		assert.NoError(t, err)
 
 		// list
@@ -290,8 +289,8 @@ func TestIndexViewDropAll(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
@@ -324,15 +323,15 @@ func TestIndexViewDropOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"foo": int32(1),
+				"key": bson.D{
+					{Key: "foo", Value: int32(1)},
 				},
 				"name":   "foo",
 				"unique": true,
@@ -341,7 +340,7 @@ func TestIndexViewDropOne(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropOne(nil, "foo")
+		err = c.Indexes().DropOne(nil, "foo")
 		assert.NoError(t, err)
 
 		// list
@@ -349,8 +348,8 @@ func TestIndexViewDropOne(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
@@ -398,15 +397,15 @@ func TestIndexExpiry(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []bson.M{
 			{
-				"key": bson.M{
-					"_id": int32(1),
+				"key": bson.D{
+					{Key: "_id", Value: int32(1)},
 				},
 				"name": "_id_",
 				"v":    int32(2),
 			},
 			{
-				"key": bson.M{
-					"foo": int32(1),
+				"key": bson.D{
+					{Key: "foo", Value: int32(1)},
 				},
 				"name":               "foo_1",
 				"expireAfterSeconds": int32(0),
@@ -421,8 +420,8 @@ func TestIndexExpiry(t *testing.T) {
 
 		// add documents
 		now := time.Now()
-		id1 := primitive.NewObjectID()
-		id2 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
+		id2 := bson.NewObjectID()
 		_, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"foo": now,
@@ -452,7 +451,7 @@ func TestIndexExpiry(t *testing.T) {
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
-				"foo": primitive.NewDateTimeFromTime(now.Add(time.Second)),
+				"foo": bson.NewDateTimeFromTime(now.Add(time.Second)),
 			},
 			{
 				"_id": id2,

@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // TODO: IEEE-754 propagation for non-finite operands (Decimal128 NaN / ±Inf
@@ -58,7 +58,7 @@ func Add(num, inc interface{}) interface{} {
 			return int64(num) + inc
 		case float64:
 			return float64(num) + inc
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(decimal.NewFromInt(int64(num)).Add(safeD128ToDec(inc)))
 		default:
 			return Missing
@@ -71,7 +71,7 @@ func Add(num, inc interface{}) interface{} {
 			return num + inc
 		case float64:
 			return float64(num) + inc
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(decimal.NewFromInt(num).Add(safeD128ToDec(inc)))
 		default:
 			return Missing
@@ -84,12 +84,12 @@ func Add(num, inc interface{}) interface{} {
 			return num + float64(inc)
 		case float64:
 			return num + inc
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeFloatToDec(num).Add(safeD128ToDec(inc)))
 		default:
 			return Missing
 		}
-	case primitive.Decimal128:
+	case bson.Decimal128:
 		switch inc := inc.(type) {
 		case int32:
 			return decToD128(safeD128ToDec(num).Add(decimal.NewFromInt(int64(inc))))
@@ -97,7 +97,7 @@ func Add(num, inc interface{}) interface{} {
 			return decToD128(safeD128ToDec(num).Add(decimal.NewFromInt(inc)))
 		case float64:
 			return decToD128(safeD128ToDec(num).Add(safeFloatToDec(inc)))
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeD128ToDec(num).Add(safeD128ToDec(inc)))
 		default:
 			return Missing
@@ -119,7 +119,7 @@ func Mul(num, mul interface{}) interface{} {
 			return int64(num) * mul
 		case float64:
 			return float64(num) * mul
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(decimal.NewFromInt(int64(num)).Mul(safeD128ToDec(mul)))
 		default:
 			return Missing
@@ -132,7 +132,7 @@ func Mul(num, mul interface{}) interface{} {
 			return num * mul
 		case float64:
 			return float64(num) * mul
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(decimal.NewFromInt(num).Mul(safeD128ToDec(mul)))
 		default:
 			return Missing
@@ -145,12 +145,12 @@ func Mul(num, mul interface{}) interface{} {
 			return num * float64(mul)
 		case float64:
 			return num * mul
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeFloatToDec(num).Mul(safeD128ToDec(mul)))
 		default:
 			return Missing
 		}
-	case primitive.Decimal128:
+	case bson.Decimal128:
 		switch mul := mul.(type) {
 		case int32:
 			return decToD128(safeD128ToDec(num).Mul(decimal.NewFromInt(int64(mul))))
@@ -158,7 +158,7 @@ func Mul(num, mul interface{}) interface{} {
 			return decToD128(safeD128ToDec(num).Mul(decimal.NewFromInt(mul)))
 		case float64:
 			return decToD128(safeD128ToDec(num).Mul(safeFloatToDec(mul)))
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeD128ToDec(num).Mul(safeD128ToDec(mul)))
 		default:
 			return Missing
@@ -200,7 +200,7 @@ func Mod(num, div interface{}) interface{} {
 			return int64(num) % div
 		case float64:
 			return math.Mod(float64(num), div)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeDecMod(decimal.NewFromInt(int64(num)), safeD128ToDec(div)))
 		default:
 			return Missing
@@ -213,7 +213,7 @@ func Mod(num, div interface{}) interface{} {
 			return num % div
 		case float64:
 			return math.Mod(float64(num), div)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeDecMod(decimal.NewFromInt(num), safeD128ToDec(div)))
 		default:
 			return Missing
@@ -226,12 +226,12 @@ func Mod(num, div interface{}) interface{} {
 			return math.Mod(num, float64(div))
 		case float64:
 			return math.Mod(num, div)
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeDecMod(safeFloatToDec(num), safeD128ToDec(div)))
 		default:
 			return Missing
 		}
-	case primitive.Decimal128:
+	case bson.Decimal128:
 		switch div := div.(type) {
 		case int32:
 			return decToD128(safeDecMod(safeD128ToDec(num), decimal.NewFromInt(int64(div))))
@@ -239,7 +239,7 @@ func Mod(num, div interface{}) interface{} {
 			return decToD128(safeDecMod(safeD128ToDec(num), decimal.NewFromInt(div)))
 		case float64:
 			return decToD128(safeDecMod(safeD128ToDec(num), safeFloatToDec(div)))
-		case primitive.Decimal128:
+		case bson.Decimal128:
 			return decToD128(safeDecMod(safeD128ToDec(num), safeD128ToDec(div)))
 		default:
 			return Missing

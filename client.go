@@ -2,11 +2,10 @@ package lungo
 
 import (
 	"context"
-	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -37,17 +36,29 @@ func NewClient(engine *Engine) IClient {
 }
 
 // Connect implements the IClient.Connect method.
-func (c *Client) Connect(context.Context) error {
-	return nil
+//func (c *Client) Connect(context.Context) error {
+//	return nil
+//}
+
+func (c *Client) AppendDriverInfo(info options.DriverInfo) {
+
+}
+func (c *Client) BulkWrite(ctx context.Context, writes []mongo.ClientBulkWrite,
+	opts ...options.Lister[options.ClientBulkWriteOptions]) (*mongo.ClientBulkWriteResult, error) {
+	panic("lungo: not implemented")
 }
 
 // Database implements the IClient.Database method.
-func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
+func (c *Client) Database(name string, opts ...options.Lister[options.DatabaseOptions]) IDatabase {
 	// merge options
-	opt := options.MergeDatabaseOptions(opts...)
+	args, err := NewOptions[options.DatabaseOptions](opts...)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ReadConcern":    ignored,
 		"WriteConcern":   ignored,
 		"ReadPreference": ignored,
@@ -65,7 +76,7 @@ func (c *Client) Disconnect(context.Context) error {
 }
 
 // ListDatabaseNames implements the IClient.ListDatabaseNames method.
-func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
+func (c *Client) ListDatabaseNames(ctx context.Context, filter any, opts ...options.Lister[options.ListDatabasesOptions]) ([]string, error) {
 	// list databases
 	res, err := c.ListDatabases(ctx, filter, opts...)
 	if err != nil {
@@ -82,12 +93,16 @@ func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts
 }
 
 // ListDatabases implements the IClient.ListDatabases method.
-func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error) {
+func (c *Client) ListDatabases(ctx context.Context, filter any, opts ...options.Lister[options.ListDatabasesOptions]) (mongo.ListDatabasesResult, error) {
 	// merge options
-	opt := options.MergeListDatabasesOptions(opts...)
+	args, err := NewOptions[options.ListDatabasesOptions](opts...)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{})
+	assertOptions(args, map[string]string{})
 
 	// transform filter
 	query, err := bsonkit.Transform(filter)
@@ -138,12 +153,16 @@ func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 }
 
 // StartSession implements the IClient.StartSession method.
-func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error) {
+func (c *Client) StartSession(opts ...options.Lister[options.SessionOptions]) (ISession, error) {
 	// merge options
-	opt := options.MergeSessionOptions(opts...)
+	args, err := NewOptions[options.SessionOptions](opts...)
+
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"CausalConsistency":     ignored,
 		"DefaultReadConcern":    ignored,
 		"DefaultReadPreference": ignored,
@@ -157,19 +176,20 @@ func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error)
 }
 
 // Timeout implements the IClient.Timeout method.
-func (c *Client) Timeout() *time.Duration {
-	return nil
-}
+//func (c *Client) Timeout() *time.Duration {
+//	return nil
+//}
 
 // UseSession implements the IClient.UseSession method.
-func (c *Client) UseSession(ctx context.Context, fn func(ISessionContext) error) error {
+func (c *Client) UseSession(ctx context.Context, fn func(context.Context) error) error {
 	return c.UseSessionWithOptions(ctx, options.Session(), fn)
 }
 
 // UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
-func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
+func (c *Client) UseSessionWithOptions(ctx context.Context, opts *options.SessionOptionsBuilder, fn func(context.Context) error,
+) error {
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(opts, map[string]string{
 		"CausalConsistency":     ignored,
 		"DefaultReadConcern":    ignored,
 		"DefaultReadPreference": ignored,
@@ -186,13 +206,10 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.Session
 	defer session.EndSession(nil)
 
 	// prepare session context
-	sc := SessionContext{
-		Context: context.WithValue(ensureContext(ctx), sessionKey{}, session),
-		Session: session,
-	}
+	ctx = context.WithValue(ensureContext(ctx), sessionKey{}, session)
 
 	// yield context
-	err := fn(sc)
+	err := fn(ctx)
 	if err != nil {
 		return err
 	}
@@ -201,12 +218,15 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.Session
 }
 
 // Watch implements the IClient.Watch method.
-func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+func (c *Client) Watch(ctx context.Context, pipeline any, opts ...options.Lister[options.ChangeStreamOptions]) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	args, err := NewOptions[options.ChangeStreamOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"BatchSize":            ignored,
 		"Comment":              ignored,
 		"FullDocument":         ignored,
@@ -229,8 +249,8 @@ func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options
 
 	// get resume after
 	var resumeAfter bsonkit.Doc
-	if opt.ResumeAfter != nil {
-		resumeAfter, err = bsonkit.Transform(opt.ResumeAfter)
+	if args.ResumeAfter != nil {
+		resumeAfter, err = bsonkit.Transform(args.ResumeAfter)
 		if err != nil {
 			return nil, err
 		}
@@ -238,15 +258,15 @@ func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options
 
 	// get start after
 	var startAfter bsonkit.Doc
-	if opt.StartAfter != nil {
-		startAfter, err = bsonkit.Transform(opt.StartAfter)
+	if args.StartAfter != nil {
+		startAfter, err = bsonkit.Transform(args.StartAfter)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// open stream
-	stream, err := c.engine.Watch(Handle{}, filter, resumeAfter, startAfter, opt.StartAtOperationTime)
+	stream, err := c.engine.Watch(Handle{}, filter, resumeAfter, startAfter, args.StartAtOperationTime)
 	if err != nil {
 		return nil, err
 	}

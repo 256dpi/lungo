@@ -11,9 +11,9 @@ import (
 	"unicode"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const testDB = "test-lungo"
@@ -79,24 +79,37 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 	})
 }
 
-func bucketTest(t *testing.T, chunkSize int32, fn func(t *testing.T, b *Bucket)) {
+func bucketTest(t *testing.T, chunkSize int32, fn func(t *testing.T, ctx context.Context, b IGridFSBucket)) {
 	if chunkSize == 0 {
-		chunkSize = gridfs.DefaultChunkSize
+		chunkSize = options.DefaultChunkSize
 	}
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize)))
+		err := client.UseSession(context.Background(), func(ctx context.Context) (err error) {
+			fn(t, ctx, client.
+				Database(testDB).
+				GridFSBucket(options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize)),
+			)
+			return
+		})
+		if err != nil {
+			return
+		}
 	})
 }
 
-func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket)) {
+func gridfsTest(t *testing.T, fn func(t *testing.T, ctx context.Context, b *mongo.GridFSBucket)) {
 	db := testMongoClient.Database(testDB).(*MongoDatabase).Database
 	name := collectionName()
-	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
+	b := db.GridFSBucket(options.GridFSBucket().SetName(name))
+
+	err := testMongoClient.UseSession(context.Background(), func(ctx context.Context) (err error) {
+		t.Run("GridFS", func(t *testing.T) {
+			fn(t, ctx, b)
+		})
+		return
+	})
 	assert.NoError(t, err)
 
-	t.Run("GridFS", func(t *testing.T) {
-		fn(t, b)
-	})
 }
 
 func readAll(csr ICursor) []bson.M {

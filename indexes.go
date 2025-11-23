@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -21,23 +20,30 @@ type IndexView struct {
 }
 
 // CreateMany implements the IIndexView.CreateMany method.
-func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, opts ...*options.CreateIndexesOptions) ([]string, error) {
+func (v *IndexView) CreateMany(
+	ctx context.Context,
+	models []mongo.IndexModel,
+	opts ...options.Lister[options.CreateIndexesOptions],
+) ([]string, error) {
 	// merge options
-	opt := options.MergeCreateIndexesOptions(opts...)
+	args, err := NewOptions[options.CreateIndexesOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"MaxTime": ignored,
 	})
 
 	// check filer
-	if len(indexes) == 0 {
+	if len(models) == 0 {
 		panic("lungo: missing indexes")
 	}
 
 	// created indexes separately
 	var names []string
-	for _, index := range indexes {
+	for _, index := range models {
 		name, err := v.CreateOne(ctx, index, opts...)
 		if err != nil {
 			return names, err
@@ -49,18 +55,29 @@ func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, 
 }
 
 // CreateOne implements the IIndexView.CreateOne method.
-func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts ...*options.CreateIndexesOptions) (string, error) {
+func (v *IndexView) CreateOne(
+	ctx context.Context,
+	model mongo.IndexModel,
+	opts ...options.Lister[options.CreateIndexesOptions],
+) (string, error) {
 	// merge options
-	opt := options.MergeCreateIndexesOptions(opts...)
+	args, err := NewOptions[options.CreateIndexesOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"MaxTime": ignored,
 	})
 
+	mOpts, err := NewOptions[options.IndexOptions](model.Options)
+	if err != nil {
+		panic(err)
+	}
 	// assert supported index options
-	if index.Options != nil {
-		assertOptions(index.Options, map[string]string{
+	if mOpts != nil {
+		assertOptions(mOpts, map[string]string{
 			"Background":              ignored,
 			"ExpireAfterSeconds":      supported,
 			"Name":                    supported,
@@ -71,37 +88,37 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 	}
 
 	// transform key
-	key, err := bsonkit.Transform(index.Keys)
+	key, err := bsonkit.Transform(model.Keys)
 	if err != nil {
 		return "", err
 	}
 
 	// get expiry
 	var expiry time.Duration
-	if index.Options != nil && index.Options.ExpireAfterSeconds != nil {
-		if *index.Options.ExpireAfterSeconds == 0 {
+	if mOpts != nil && mOpts.ExpireAfterSeconds != nil {
+		if *mOpts.ExpireAfterSeconds == 0 {
 			expiry = time.Nanosecond
 		} else {
-			expiry = time.Duration(*index.Options.ExpireAfterSeconds) * time.Second
+			expiry = time.Duration(*mOpts.ExpireAfterSeconds) * time.Second
 		}
 	}
 
 	// get name
 	var name string
-	if index.Options != nil && index.Options.Name != nil {
-		name = *index.Options.Name
+	if mOpts != nil && mOpts.Name != nil {
+		name = *mOpts.Name
 	}
 
 	// get unique
 	var unique bool
-	if index.Options != nil && index.Options.Unique != nil {
-		unique = *index.Options.Unique
+	if mOpts != nil && mOpts.Unique != nil {
+		unique = *mOpts.Unique
 	}
 
 	// get partial
 	var partial bsonkit.Doc
-	if index.Options != nil && index.Options.PartialFilterExpression != nil {
-		partial, err = bsonkit.Transform(index.Options.PartialFilterExpression)
+	if mOpts != nil && mOpts.PartialFilterExpression != nil {
+		partial, err = bsonkit.Transform(mOpts.PartialFilterExpression)
 		if err != nil {
 			return "", err
 		}
@@ -137,19 +154,25 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 }
 
 // DropAll implements the IIndexView.DropAll method.
-func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
+func (v *IndexView) DropAll(
+	ctx context.Context,
+	opts ...options.Lister[options.DropIndexesOptions],
+) error {
 	// merge options
-	opt := options.MergeDropIndexesOptions(opts...)
+	args, err := NewOptions[options.DropIndexesOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"MaxTime": ignored,
 	})
 
 	// begin transaction
 	txn, err := v.engine.Begin(ctx, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// ensure abortion
@@ -158,25 +181,32 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 	// drop all indexes
 	err = txn.DropIndex(v.handle, "")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// commit transaction
 	err = v.engine.Commit(txn)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 // DropOne implements the IIndexView.DropOne method.
-func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
+func (v *IndexView) DropOne(
+	ctx context.Context,
+	name string,
+	opts ...options.Lister[options.DropIndexesOptions],
+) error {
 	// merge options
-	opt := options.MergeDropIndexesOptions(opts...)
+	args, err := NewOptions[options.DropIndexesOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"MaxTime": ignored,
 	})
 
@@ -188,7 +218,7 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 	// begin transaction
 	txn, err := v.engine.Begin(ctx, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// ensure abortion
@@ -197,16 +227,20 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 	// drop all indexes
 	err = txn.DropIndex(v.handle, name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// commit transaction
 	err = v.engine.Commit(txn)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
+}
+
+func (v *IndexView) DropWithKey(ctx context.Context, keySpecDocument any, opts ...options.Lister[options.DropIndexesOptions]) error {
+	panic("lungo: not implemented")
 }
 
 // DropOneWithKey implements the IIndexView.DropOneWithKey method.
@@ -250,12 +284,15 @@ func (v *IndexView) DropOneWithKey(ctx context.Context, keySpec interface{}, opt
 }
 
 // List implements the IIndexView.List method.
-func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOptions) (ICursor, error) {
+func (v *IndexView) List(ctx context.Context, opts ...options.Lister[options.ListIndexesOptions]) (ICursor, error) {
 	// merge options
-	opt := options.MergeListIndexesOptions(opts...)
+	args, err := NewOptions[options.ListIndexesOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"BatchSize": ignored,
 		"MaxTime":   ignored,
 	})
@@ -273,6 +310,9 @@ func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOption
 }
 
 // ListSpecifications implements the IIndexView.ListSpecifications method.
-func (v *IndexView) ListSpecifications(context.Context, ...*options.ListIndexesOptions) ([]*mongo.IndexSpecification, error) {
+func (v *IndexView) ListSpecifications(
+	ctx context.Context,
+	opts ...options.Lister[options.ListIndexesOptions],
+) ([]mongo.IndexSpecification, error) {
 	panic("lungo: not implemented")
 }

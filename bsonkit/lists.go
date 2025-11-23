@@ -3,7 +3,7 @@ package bsonkit
 import (
 	"sort"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Select will return a list of documents selected by the specified selector.
@@ -65,7 +65,7 @@ func Pick(list List, path string, compact bool) bson.A {
 }
 
 // Collect will get the value specified by path from each document and return a
-// list of values. Different to Pick this function will also collect values from
+// BSON array. Different to Pick this function will also collect values from
 // arrays of embedded documents. If compact is specified, Missing values are
 // removed and intermediary arrays flattened. By enabling merge, a resulting array
 // of embedded documents may be merged to on array containing all values. Flatten

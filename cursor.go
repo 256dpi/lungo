@@ -21,7 +21,7 @@ type Cursor struct {
 }
 
 // All implements the ICursor.All method.
-func (c *Cursor) All(_ context.Context, out interface{}) error {
+func (c *Cursor) All(ctx context.Context, results any) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -32,7 +32,7 @@ func (c *Cursor) All(_ context.Context, out interface{}) error {
 	}
 
 	// decode items
-	err := bsonkit.DecodeList(c.list, out)
+	err := bsonkit.DecodeList(c.list, results)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (c *Cursor) Close(context.Context) error {
 }
 
 // Decode implements the ICursor.Decode method.
-func (c *Cursor) Decode(out interface{}) error {
+func (c *Cursor) Decode(val any) error {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -67,7 +67,7 @@ func (c *Cursor) Decode(out interface{}) error {
 	}
 
 	// decode item
-	err := bsonkit.Decode(c.list[c.pos-1], out)
+	err := bsonkit.Decode(c.list[c.pos-1], val)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (c *Cursor) RemainingBatchLength() int {
 func (c *Cursor) SetBatchSize(int32) {}
 
 // SetComment implements the ICursor.SetComment method.
-func (c *Cursor) SetComment(interface{}) {}
+func (c *Cursor) SetComment(any) {}
 
 // SetMaxTime implements the ICursor.SetMaxTime method.
 func (c *Cursor) SetMaxTime(time.Duration) {}
@@ -124,4 +124,8 @@ func (c *Cursor) SetMaxTime(time.Duration) {}
 // TryNext implements the ICursor.TryNext method.
 func (c *Cursor) TryNext(ctx context.Context) bool {
 	return c.Next(ctx)
+}
+
+func (c *Cursor) SetMaxAwaitTime(time.Duration) {
+
 }

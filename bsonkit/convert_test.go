@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestConvert(t *testing.T) {
@@ -81,5 +80,5 @@ func TestConvertList(t *testing.T) {
 func TestConvertValue(t *testing.T) {
 	now := time.Now()
 	res := MustConvertValue(now)
-	assert.Equal(t, primitive.NewDateTimeFromTime(now), res)
+	assert.Equal(t, bson.NewDateTimeFromTime(now), res)
 }

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
 	"github.com/256dpi/lungo/bsonkit"
 )
 
@@ -31,6 +33,11 @@ func assertOptions(opts interface{}, fields map[string]string) {
 	for i := 0; i < value.NumField(); i++ {
 		// get name
 		name := value.Type().Field(i).Name
+
+		// deprecated
+		if name == "Internal" {
+			continue
+		}
 
 		// check if field is supported
 		support := fields[name]
@@ -59,7 +66,7 @@ func validateReplacement(doc bsonkit.Doc) error {
 	return nil
 }
 
-func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Transaction) (interface{}, error)) (interface{}, error) {
+func useTransaction[T any](ctx context.Context, engine *Engine, lock bool, fn func(*Transaction) (T, error)) (T, error) {
 	// ensure context
 	ctx = ensureContext(ctx)
 
@@ -75,7 +82,7 @@ func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Tra
 	// create transaction
 	txn, err := engine.Begin(ctx, lock)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
 	// handle unlocked transactions immediately
@@ -89,14 +96,38 @@ func useTransaction(ctx context.Context, engine *Engine, lock bool, fn func(*Tra
 	// yield callback
 	res, err := fn(txn)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
 	// commit transaction
 	err = engine.Commit(txn)
 	if err != nil {
-		return nil, err
+		return *new(T), err
 	}
 
 	return res, nil
+}
+
+// NewOptions will functionally merge a slice of mongo.Options in a
+// "last-one-wins" manner, where nil options are ignored.
+func NewOptions[T any](opts ...options.Lister[T]) (*T, error) {
+	args := new(T)
+	for _, opt := range opts {
+		if opt == nil || reflect.ValueOf(opt).IsNil() {
+			// Do nothing if the option is nil or if opt is nil but implicitly cast as
+			// an Options interface by the NewArgsFromOptions function. The latter
+			// case would look something like this:
+			continue
+		}
+		for _, setArgs := range opt.List() {
+			if setArgs == nil {
+				continue
+			}
+
+			if err := setArgs(args); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return args, nil
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestSelect(t *testing.T) {
@@ -60,11 +60,9 @@ func TestCollect(t *testing.T) {
 	// compact values
 	res = Collect(List{a1, b1, a2, a3}, "a", true, false, false, false)
 	assert.Equal(t, bson.A{"1", "2", "2"}, res)
-
 	// distinct values
 	res = Collect(List{a1, b1, a2, a3}, "a", false, false, false, true)
 	assert.Equal(t, bson.A{Missing, "1", "2"}, res)
-
 	// compact and distinct values
 	res = Collect(List{a1, b1, a2, a1, a3, a1}, "a", true, false, false, true)
 	assert.Equal(t, bson.A{"1", "2"}, res)

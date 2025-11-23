@@ -8,19 +8,19 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
 
+var _ IGridFSBucket = &Bucket{}
+
 // ErrFileNotFound is returned if the specified file was not found in the bucket.
-// The value is the same as gridfs.ErrFileNotFound and can be used interchangeably.
-var ErrFileNotFound = gridfs.ErrFileNotFound
+// The value is the same as mongo.ErrFileNotFound and can be used interchangeably.
+var ErrFileNotFound = mongo.ErrFileNotFound
 
 // ErrNegativePosition is returned if the resulting position after a seek
 // operation is negative.
@@ -39,14 +39,14 @@ const (
 
 // BucketMarker represents a document stored in the bucket "markers" collection.
 type BucketMarker struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	File      interface{}        `bson:"files_id"`
-	State     string             `bson:"state"`
-	Timestamp time.Time          `bson:"timestamp"`
-	Length    int                `bson:"length"`
-	ChunkSize int                `bson:"chunkSize"`
-	Filename  string             `bson:"filename"`
-	Metadata  interface{}        `bson:"metadata,omitempty"`
+	ID        bson.ObjectID `bson:"_id"`
+	File      interface{}   `bson:"files_id"`
+	State     string        `bson:"state"`
+	Timestamp time.Time     `bson:"timestamp"`
+	Length    int           `bson:"length"`
+	ChunkSize int           `bson:"chunkSize"`
+	Filename  string        `bson:"filename"`
+	Metadata  interface{}   `bson:"metadata,omitempty"`
 }
 
 // BucketFile represents a document stored in the bucket "files" collection.
@@ -59,16 +59,29 @@ type BucketFile struct {
 	Metadata   interface{} `bson:"metadata,omitempty"`
 }
 
+func (b *BucketFile) UnmarshalBSON(data []byte) error {
+	// Use an alias type to avoid infinite recursion when calling bson.Unmarshal.
+	type bucketFileAlias BucketFile
+
+	var tmp bucketFileAlias
+	if err := bson.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	*b = BucketFile(tmp)
+	return nil
+}
+
 // BucketChunk represents a document stored in the bucket "chunks" collection.
 type BucketChunk struct {
-	ID   primitive.ObjectID `bson:"_id"`
-	File interface{}        `bson:"files_id"`
-	Num  int                `bson:"n"`
-	Data []byte             `bson:"data"`
+	ID   bson.ObjectID `bson:"_id"`
+	File interface{}   `bson:"files_id"`
+	Num  int           `bson:"n"`
+	Data []byte        `bson:"data"`
 }
 
 // Bucket provides access to a GridFS bucket. The type is generally compatible
-// with gridfs.Bucket from the official driver but allows the passing in of a
+// with mongo.GridFsBucket from the official driver but allows the passing in of a
 // context on all methods. This way the bucket theoretically supports multi-
 // document transactions. However, it is not recommended to use transactions for
 // large uploads and instead enable the tracking mode and claim the uploads
@@ -83,53 +96,13 @@ type Bucket struct {
 	indexEnsured bool
 }
 
-// NewBucket creates a bucket using the provided database and options.
-func NewBucket(db IDatabase, opts ...*options.BucketOptions) *Bucket {
-	// merge options
-	opt := options.MergeBucketOptions(opts...)
-
-	// assert supported options
-	assertOptions(opt, map[string]string{
-		"Name":           supported,
-		"ChunkSizeBytes": supported,
-		"WriteConcern":   supported,
-		"ReadConcern":    supported,
-		"ReadPreference": supported,
-	})
-
-	// get name
-	name := options.DefaultName
-	if opt.Name != nil {
-		name = *opt.Name
-	}
-
-	// get chunk size
-	var chunkSize = int(options.DefaultChunkSize)
-	if opt.ChunkSizeBytes != nil {
-		chunkSize = int(*opt.ChunkSizeBytes)
-	}
-
-	// prepare collection options
-	var collOpt = options.Collection().
-		SetWriteConcern(opt.WriteConcern).
-		SetReadConcern(opt.ReadConcern).
-		SetReadPreference(opt.ReadPreference)
-
-	return &Bucket{
-		files:     db.Collection(name+".files", collOpt),
-		chunks:    db.Collection(name+".chunks", collOpt),
-		markers:   db.Collection(name+".markers", collOpt),
-		chunkSize: chunkSize,
-	}
-}
-
 // GetFilesCollection returns the collection used for storing files.
-func (b *Bucket) GetFilesCollection(_ context.Context) ICollection {
+func (b *Bucket) GetFilesCollection() ICollection {
 	return b.files
 }
 
 // GetChunksCollection returns the collection used for storing chunks.
-func (b *Bucket) GetChunksCollection(_ context.Context) ICollection {
+func (b *Bucket) GetChunksCollection() ICollection {
 	return b.chunks
 }
 
@@ -193,7 +166,7 @@ func (b *Bucket) Delete(ctx context.Context, id interface{}) error {
 
 	// delete file
 	res1, err := b.files.DeleteOne(ctx, bson.M{
-		"_id": id,
+		"_id": fileID,
 	})
 	if err != nil {
 		return err
@@ -219,9 +192,9 @@ func (b *Bucket) Delete(ctx context.Context, id interface{}) error {
 
 // DownloadToStream will download the file with the specified id and write its
 // contents to the provided writer.
-func (b *Bucket) DownloadToStream(ctx context.Context, id interface{}, w io.Writer) (int64, error) {
+func (b *Bucket) DownloadToStream(ctx context.Context, fileID any, w io.Writer) (int64, error) {
 	// open stream
-	stream, err := b.OpenDownloadStream(ctx, id)
+	stream, err := b.OpenDownloadStream(ctx, fileID)
 	if err != nil {
 		return 0, err
 	}
@@ -237,9 +210,14 @@ func (b *Bucket) DownloadToStream(ctx context.Context, id interface{}, w io.Writ
 
 // DownloadToStreamByName will download the file with the specified name and
 // write its contents to the provided writer.
-func (b *Bucket) DownloadToStreamByName(ctx context.Context, name string, w io.Writer, opts ...*options.NameOptions) (int64, error) {
+func (b *Bucket) DownloadToStreamByName(
+	ctx context.Context,
+	filename string,
+	w io.Writer,
+	opts ...options.Lister[options.GridFSNameOptions],
+) (int64, error) {
 	// open stream
-	stream, err := b.OpenDownloadStreamByName(ctx, name, opts...)
+	stream, err := b.OpenDownloadStreamByName(ctx, filename, opts...)
 	if err != nil {
 		return 0, err
 	}
@@ -285,31 +263,38 @@ func (b *Bucket) Drop(ctx context.Context) error {
 }
 
 // Find will perform a query on the underlying file collection.
-func (b *Bucket) Find(ctx context.Context, filter interface{}, opts ...*options.GridFSFindOptions) (ICursor, error) {
+func (b *Bucket) Find(
+	ctx context.Context,
+	filter any,
+	opts ...options.Lister[options.GridFSFindOptions],
+) (ICursor, error) {
 	// merge options
-	opt := options.MergeGridFSFindOptions(opts...)
+	args, err := NewOptions[options.GridFSFindOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// options are asserted by find method
 
 	// prepare find options
 	find := options.Find()
-	if opt.BatchSize != nil {
-		find.SetBatchSize(*opt.BatchSize)
+	if args.BatchSize != nil {
+		find.SetBatchSize(*args.BatchSize)
 	}
-	if opt.Limit != nil {
-		find.SetLimit(int64(*opt.Limit))
+	if args.Limit != nil {
+		find.SetLimit(int64(*args.Limit))
 	}
-	if opt.MaxTime != nil {
-		find.SetMaxTime(*opt.MaxTime)
+	// if args.MaxTime != nil {
+	//	find.SetMaxTime(*args.MaxTime)
+	// }
+	if args.NoCursorTimeout != nil {
+		find.SetNoCursorTimeout(*args.NoCursorTimeout)
 	}
-	if opt.NoCursorTimeout != nil {
-		find.SetNoCursorTimeout(*opt.NoCursorTimeout)
+	if args.Skip != nil {
+		find.SetSkip(int64(*args.Skip))
 	}
-	if opt.Skip != nil {
-		find.SetSkip(int64(*opt.Skip))
-	}
-	if opt.Sort != nil {
-		find.SetSort(opt.Sort)
+	if args.Sort != nil {
+		find.SetSort(args.Sort)
 	}
 
 	// find files
@@ -323,9 +308,9 @@ func (b *Bucket) Find(ctx context.Context, filter interface{}, opts ...*options.
 
 // OpenDownloadStream will open a download stream for the file with the
 // specified id.
-func (b *Bucket) OpenDownloadStream(ctx context.Context, id interface{}) (*DownloadStream, error) {
+func (b *Bucket) OpenDownloadStream(ctx context.Context, fileID any) (IGridFSDownloadStream, error) {
 	// create stream
-	stream := newDownloadStream(ctx, b, id, "", -1)
+	stream := newDownloadStream(ctx, b, fileID, "", -1)
 
 	// match the official driver: surface ErrFileNotFound from Open rather
 	// than deferring it to the first Read/Seek
@@ -338,23 +323,30 @@ func (b *Bucket) OpenDownloadStream(ctx context.Context, id interface{}) (*Downl
 
 // OpenDownloadStreamByName will open a download stream for the file with the
 // specified name.
-func (b *Bucket) OpenDownloadStreamByName(ctx context.Context, name string, opts ...*options.NameOptions) (*DownloadStream, error) {
+func (b *Bucket) OpenDownloadStreamByName(
+	ctx context.Context,
+	filename string,
+	opts ...options.Lister[options.GridFSNameOptions],
+) (IGridFSDownloadStream, error) {
 	// merge options
-	opt := options.MergeNameOptions(opts...)
+	args, err := NewOptions[options.GridFSNameOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"Revision": supported,
 	})
 
 	// get revision
 	revision := int(options.DefaultRevision)
-	if opt.Revision != nil {
-		revision = int(*opt.Revision)
+	if args.Revision != nil {
+		revision = int(*args.Revision)
 	}
 
 	// create stream
-	stream := newDownloadStream(ctx, b, nil, name, revision)
+	stream := newDownloadStream(ctx, b, nil, filename, revision)
 
 	// match the official driver: surface ErrFileNotFound from Open rather
 	// than deferring it to the first Read/Seek
@@ -367,49 +359,61 @@ func (b *Bucket) OpenDownloadStreamByName(ctx context.Context, name string, opts
 
 // OpenUploadStream will open an upload stream for a new file with the provided
 // name.
-func (b *Bucket) OpenUploadStream(ctx context.Context, name string, opts ...*options.UploadOptions) (*UploadStream, error) {
-	return b.OpenUploadStreamWithID(ctx, primitive.NewObjectID(), name, opts...)
+func (b *Bucket) OpenUploadStream(
+	ctx context.Context,
+	filename string,
+	opts ...options.Lister[options.GridFSUploadOptions],
+) (IGridFSUploadStream, error) {
+	return b.OpenUploadStreamWithID(ctx, bson.NewObjectID(), filename, opts...)
 }
 
 // OpenUploadStreamWithID will open an upload stream for a new file with the
 // provided id and name.
-func (b *Bucket) OpenUploadStreamWithID(ctx context.Context, id interface{}, name string, opts ...*options.UploadOptions) (*UploadStream, error) {
+func (b *Bucket) OpenUploadStreamWithID(
+	ctx context.Context,
+	fileID any,
+	filename string,
+	opts ...options.Lister[options.GridFSUploadOptions],
+) (IGridFSUploadStream, error) {
 	// merge options
-	opt := options.MergeUploadOptions(opts...)
+	args, err := NewOptions[options.GridFSUploadOptions](opts...)
 
+	if err != nil {
+		panic(err)
+	}
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ChunkSizeBytes": supported,
 		"Metadata":       supported,
 		"Registry":       ignored,
 	})
 
 	// ensure indexes
-	err := b.EnsureIndexes(ctx, false)
+	err = b.ensureIndexes(ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
 	// get chunk size
 	chunkSize := b.chunkSize
-	if opt.ChunkSizeBytes != nil {
-		chunkSize = int(*opt.ChunkSizeBytes)
+	if args.ChunkSizeBytes != nil {
+		chunkSize = int(*args.ChunkSizeBytes)
 	}
 
 	// create stream
-	stream := newUploadStream(ctx, b, id, name, chunkSize, opt.Metadata)
+	stream := newUploadStream(ctx, b, fileID, filename, chunkSize, args.Metadata)
 
 	return stream, nil
 }
 
 // Rename will rename the file with the specified id to the provided name.
-func (b *Bucket) Rename(ctx context.Context, id interface{}, name string) error {
+func (b *Bucket) Rename(ctx context.Context, fileID any, newFilename string) error {
 	// rename file
 	res, err := b.files.UpdateOne(ctx, bson.M{
-		"_id": id,
+		"_id": fileID,
 	}, bson.M{
 		"$set": bson.M{
-			"filename": name,
+			"filename": newFilename,
 		},
 	})
 	if err != nil {
@@ -426,14 +430,19 @@ func (b *Bucket) Rename(ctx context.Context, id interface{}, name string) error 
 
 // UploadFromStream will upload a new file using the contents read from the
 // provided reader.
-func (b *Bucket) UploadFromStream(ctx context.Context, name string, r io.Reader, opts ...*options.UploadOptions) (primitive.ObjectID, error) {
+func (b *Bucket) UploadFromStream(
+	ctx context.Context,
+	filename string,
+	source io.Reader,
+	opts ...options.Lister[options.GridFSUploadOptions],
+) (bson.ObjectID, error) {
 	// prepare id
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	// upload from stream
-	err := b.UploadFromStreamWithID(ctx, id, name, r, opts...)
+	err := b.UploadFromStreamWithID(ctx, id, filename, source, opts...)
 	if err != nil {
-		return primitive.ObjectID{}, err
+		return bson.ObjectID{}, err
 	}
 
 	return id, nil
@@ -441,15 +450,21 @@ func (b *Bucket) UploadFromStream(ctx context.Context, name string, r io.Reader,
 
 // UploadFromStreamWithID will upload a new file using the contents read from
 // the provided reader.
-func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, name string, r io.Reader, opts ...*options.UploadOptions) error {
+func (b *Bucket) UploadFromStreamWithID(
+	ctx context.Context,
+	fileID any,
+	filename string,
+	source io.Reader,
+	opts ...options.Lister[options.GridFSUploadOptions],
+) error {
 	// open stream
-	stream, err := b.OpenUploadStreamWithID(ctx, id, name, opts...)
+	stream, err := b.OpenUploadStreamWithID(ctx, fileID, filename, opts...)
 	if err != nil {
 		return err
 	}
 
 	// copy data
-	_, err = io.Copy(stream, r)
+	_, err = io.Copy(stream, source)
 	if err != nil {
 		_ = stream.Abort()
 		return err
@@ -466,7 +481,7 @@ func (b *Bucket) UploadFromStreamWithID(ctx context.Context, id interface{}, nam
 
 // ClaimUpload will claim a tracked upload by creating the file and removing
 // the marker.
-func (b *Bucket) ClaimUpload(ctx context.Context, id interface{}) error {
+func (b *Bucket) claimUpload(ctx context.Context, id interface{}) error {
 	// check if tracked
 	if !b.tracked {
 		return fmt.Errorf("bucket not tracked")
@@ -512,7 +527,7 @@ func (b *Bucket) ClaimUpload(ctx context.Context, id interface{}) error {
 
 // Cleanup will remove unfinished uploads older than the specified age and all
 // files marked for deletion.
-func (b *Bucket) Cleanup(ctx context.Context, age time.Duration) error {
+func (b *Bucket) cleanup(ctx context.Context, age time.Duration) error {
 	// check if tracked
 	if !b.tracked {
 		return fmt.Errorf("bucket not tracked")
@@ -602,12 +617,12 @@ func (b *Bucket) Cleanup(ctx context.Context, age time.Duration) error {
 	return nil
 }
 
-// EnsureIndexes will check if all required indexes exist and create them when
+// ensureIndexes will check if all required indexes exist and create them when
 // needed. Usually, this is done automatically when uploading the first file
 // using a bucket. However, when transactions are used to upload files, the
 // indexes must be created before the first upload as index creation is
 // prohibited during transactions.
-func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
+func (b *Bucket) ensureIndexes(ctx context.Context, force bool) error {
 	// acquire mutex
 	b.indexMutex.Lock()
 	defer b.indexMutex.Unlock()
@@ -618,15 +633,15 @@ func (b *Bucket) EnsureIndexes(ctx context.Context, force bool) error {
 	}
 
 	// clone collection with primary read preference
-	files, err := b.files.Clone(options.Collection().SetReadPreference(readpref.Primary()))
-	if err != nil {
-		return err
-	}
+	files := b.files.Clone(options.Collection().SetReadPreference(readpref.Primary()))
+	// if err != nil {
+	//	return err
+	// }
 
 	// unless force is specified, skip index ensuring if files exists already
 	if !force {
-		err = files.FindOne(ctx, bson.M{}).Err()
-		if err != nil && err != ErrNoDocuments {
+		err := files.FindOne(ctx, bson.M{}).Err()
+		if err != nil && !errors.Is(err, ErrNoDocuments) {
 			return err
 		} else if err == nil {
 			b.indexEnsured = true
@@ -746,6 +761,8 @@ type UploadStream struct {
 	mutex     sync.Mutex
 }
 
+const uploadBufferSize = 16 * 1024 * 1024 // 16 MiB
+
 func newUploadStream(ctx context.Context, bucket *Bucket, id interface{}, name string, chunkSize int, metadata interface{}) *UploadStream {
 	return &UploadStream{
 		context:   ctx,
@@ -754,7 +771,7 @@ func newUploadStream(ctx context.Context, bucket *Bucket, id interface{}, name s
 		name:      name,
 		metadata:  metadata,
 		chunkSize: chunkSize,
-		buffer:    make([]byte, gridfs.UploadBufferSize),
+		buffer:    make([]byte, uploadBufferSize),
 	}
 }
 
@@ -852,7 +869,7 @@ func (s *UploadStream) Abort() error {
 
 	// check if stream has been closed
 	if s.closed {
-		return gridfs.ErrStreamClosed
+		return mongo.ErrStreamClosed
 	}
 
 	// delete uploaded chunks
@@ -896,7 +913,7 @@ func (s *UploadStream) Suspend() (int64, error) {
 
 	// check if stream has been closed
 	if s.closed {
-		return 0, gridfs.ErrStreamClosed
+		return 0, mongo.ErrStreamClosed
 	}
 
 	// upload buffered data
@@ -924,7 +941,7 @@ func (s *UploadStream) Close() error {
 
 	// check if stream has been closed
 	if s.closed {
-		return gridfs.ErrStreamClosed
+		return mongo.ErrStreamClosed
 	}
 
 	// upload buffered data; also runs in tracked mode with an empty buffer to
@@ -988,7 +1005,7 @@ func (s *UploadStream) Write(data []uint8) (int, error) {
 
 	// check if stream has been closed
 	if s.closed {
-		return 0, gridfs.ErrStreamClosed
+		return 0, mongo.ErrStreamClosed
 	}
 
 	// buffer and upload data in chunks
@@ -1041,7 +1058,7 @@ func (s *UploadStream) upload(final bool) error {
 
 		// append chunk
 		chunks = append(chunks, BucketChunk{
-			ID:   primitive.NewObjectID(),
+			ID:   bson.NewObjectID(),
 			File: s.id,
 			Num:  s.chunks + len(chunks),
 			Data: s.buffer[i : i+size],
@@ -1055,7 +1072,7 @@ func (s *UploadStream) upload(final bool) error {
 	if s.marker == nil && s.bucket.tracked {
 		// prepare marker
 		s.marker = &BucketMarker{
-			ID:        primitive.NewObjectID(),
+			ID:        bson.NewObjectID(),
 			File:      s.id,
 			State:     BucketMarkerStateUploading,
 			Timestamp: time.Now(),
@@ -1100,6 +1117,8 @@ func (s *UploadStream) upload(final bool) error {
 	return nil
 }
 
+var _ IGridFSDownloadStream = &DownloadStream{}
+
 // DownloadStream is used to download a single file.
 type DownloadStream struct {
 	context  context.Context
@@ -1128,7 +1147,7 @@ func newDownloadStream(ctx context.Context, bucket *Bucket, id interface{}, name
 }
 
 // GetFile will return the file that is stream is downloading from.
-func (s *DownloadStream) GetFile() *BucketFile {
+func (s *DownloadStream) GetFile() IGridFSFile {
 	return s.file
 }
 
@@ -1147,7 +1166,7 @@ func (s *DownloadStream) Seek(offset int64, whence int) (int64, error) {
 
 	// check if closed
 	if s.closed {
-		return 0, gridfs.ErrStreamClosed
+		return 0, mongo.ErrStreamClosed
 	}
 
 	// ensure file is loaded
@@ -1188,7 +1207,7 @@ func (s *DownloadStream) Read(buf []uint8) (int, error) {
 
 	// check if closed
 	if s.closed {
-		return 0, gridfs.ErrStreamClosed
+		return 0, mongo.ErrStreamClosed
 	}
 
 	// ensure file is loaded
@@ -1245,7 +1264,7 @@ func (s *DownloadStream) Close() error {
 
 	// check if closed
 	if s.closed {
-		return gridfs.ErrStreamClosed
+		return mongo.ErrStreamClosed
 	}
 
 	// close cursor
@@ -1293,7 +1312,7 @@ func (s *DownloadStream) load() error {
 
 	// find file
 	err := s.bucket.files.FindOne(s.context, filter, opt).Decode(&s.file)
-	if err == ErrNoDocuments {
+	if errors.Is(err, ErrNoDocuments) {
 		return ErrFileNotFound
 	} else if err != nil {
 		return err
@@ -1370,9 +1389,9 @@ func (s *DownloadStream) seek(position int) error {
 
 	// check chunk
 	if chunk.Num != num {
-		return gridfs.ErrWrongIndex
+		return mongo.ErrMissingChunk
 	} else if num < s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
-		return gridfs.ErrWrongSize
+		return mongo.ErrWrongSize
 	}
 
 	// set cursor
@@ -1413,9 +1432,9 @@ func (s *DownloadStream) next() error {
 
 	// check chunk
 	if chunk.Num != s.chunk.Num+1 {
-		return gridfs.ErrWrongIndex
+		return mongo.ErrMissingChunk
 	} else if chunk.Num < s.chunks-1 && len(chunk.Data) != s.file.ChunkSize {
-		return gridfs.ErrWrongSize
+		return mongo.ErrWrongSize
 	}
 
 	// set chunk
