@@ -4,9 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestDatabaseClient(t *testing.T) {
@@ -79,7 +77,7 @@ func TestDatabaseListCollectionsAndNames(t *testing.T) {
 		assert.Len(t, res, 1)
 		assert.Equal(t, "coll-names", res[0]["name"])
 		assert.Equal(t, "collection", res[0]["type"])
-		assert.Equal(t, bson.M{}, res[0]["options"])
+		assert.Empty(t, res[0]["options"])
 		assert.Equal(t, false, res[0]["info"].(bson.M)["readOnly"])
 	})
 }
@@ -104,23 +102,5 @@ func TestDatabaseListCollectionNamesSorted(t *testing.T) {
 func TestDatabaseName(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
 		assert.Equal(t, testDB, d.Name())
-	})
-}
-
-func TestDatabaseReadConcern(t *testing.T) {
-	databaseTest(t, func(t *testing.T, d IDatabase) {
-		assert.Equal(t, readconcern.New(), d.ReadConcern())
-	})
-}
-
-func TestDatabaseReadPreference(t *testing.T) {
-	databaseTest(t, func(t *testing.T, d IDatabase) {
-		assert.Equal(t, readpref.Primary(), d.ReadPreference())
-	})
-}
-
-func TestDatabaseWriteConcern(t *testing.T) {
-	databaseTest(t, func(t *testing.T, d IDatabase) {
-		assert.Nil(t, d.WriteConcern())
 	})
 }

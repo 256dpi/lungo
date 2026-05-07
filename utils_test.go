@@ -10,10 +10,9 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const testDB = "test-lungo"
@@ -25,7 +24,9 @@ var testLungoEngine *Engine
 var testCollCounter = 0
 
 func init() {
-	mongoClient, err := Connect(nil, options.Client().ApplyURI("mongodb://localhost"))
+	mongoClient, err := Connect(nil, options.Client().
+		ApplyURI("mongodb://localhost").
+		SetBSONOptions(&options.BSONOptions{DefaultDocumentM: true}))
 	if err != nil {
 		panic(err)
 	}
@@ -81,18 +82,17 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 
 func bucketTest(t *testing.T, chunkSize int32, fn func(t *testing.T, b *Bucket)) {
 	if chunkSize == 0 {
-		chunkSize = gridfs.DefaultChunkSize
+		chunkSize = mongo.DefaultGridFSChunkSize
 	}
 	clientTest(t, func(t *testing.T, client IClient) {
 		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize)))
 	})
 }
 
-func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket)) {
+func gridfsTest(t *testing.T, fn func(t *testing.T, b *mongo.GridFSBucket)) {
 	db := testMongoClient.Database(testDB).(*MongoDatabase).Database
 	name := collectionName()
-	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
-	assert.NoError(t, err)
+	b := db.GridFSBucket(options.GridFSBucket().SetName(name))
 
 	t.Run("GridFS", func(t *testing.T) {
 		fn(t, b)

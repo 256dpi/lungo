@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func TestStream(t *testing.T) {
@@ -33,7 +32,7 @@ func TestStream(t *testing.T) {
 		err = stream.Decode(&event)
 		assert.True(t, errors.Is(io.EOF, err))
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 
 		/* insert */
 
@@ -385,7 +384,7 @@ func TestStreamArrayChanges(t *testing.T) {
 		ret := stream.TryNext(nil)
 		assert.False(t, ret)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 
 		/* insert */
 
@@ -645,14 +644,14 @@ func TestStreamResumption(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
 		})
 		assert.NoError(t, err)
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id2,
 			"foo": "bar",
@@ -667,7 +666,7 @@ func TestStreamResumption(t *testing.T) {
 		assert.NoError(t, err)
 
 		token := event["_id"]
-		timestamp := event["clusterTime"].(primitive.Timestamp)
+		timestamp := event["clusterTime"].(bson.Timestamp)
 		assert.NotEmpty(t, token)
 		assert.NotEmpty(t, timestamp)
 
@@ -793,7 +792,7 @@ func TestStreamStartAtNonMatchingTimestamp(t *testing.T) {
 	assert.NoError(t, err)
 
 	// pick a timestamp far in the past that does not match any oplog entry
-	ancient := primitive.Timestamp{T: 1, I: 1}
+	ancient := bson.Timestamp{T: 1, I: 1}
 
 	stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&ancient))
 	assert.NoError(t, err)
@@ -1086,7 +1085,7 @@ func TestStreamIsolationCollection(t *testing.T) {
 		_, err = c.Database().Collection("foo").InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
@@ -1138,7 +1137,7 @@ func TestStreamIsolationDatabase(t *testing.T) {
 		_, err = c.Database().Client().Database("test-lungo-stream").Collection("foo").InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",

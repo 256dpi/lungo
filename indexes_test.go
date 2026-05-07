@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func TestIndexViewCreateMany(t *testing.T) {
@@ -282,7 +281,7 @@ func TestIndexViewDropAll(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropAll(nil)
+		err = c.Indexes().DropAll(nil)
 		assert.NoError(t, err)
 
 		// list
@@ -341,7 +340,7 @@ func TestIndexViewDropOne(t *testing.T) {
 		}, readAll(csr))
 
 		// drop
-		_, err = c.Indexes().DropOne(nil, "foo")
+		err = c.Indexes().DropOne(nil, "foo")
 		assert.NoError(t, err)
 
 		// list
@@ -421,8 +420,8 @@ func TestIndexExpiry(t *testing.T) {
 
 		// add documents
 		now := time.Now()
-		id1 := primitive.NewObjectID()
-		id2 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
+		id2 := bson.NewObjectID()
 		_, err = c.InsertMany(nil, bson.A{
 			bson.M{
 				"foo": now,
@@ -452,7 +451,7 @@ func TestIndexExpiry(t *testing.T) {
 		assert.Equal(t, []bson.M{
 			{
 				"_id": id1,
-				"foo": primitive.NewDateTimeFromTime(now.Add(time.Second)),
+				"foo": bson.NewDateTimeFromTime(now.Add(time.Second)),
 			},
 			{
 				"_id": id2,

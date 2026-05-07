@@ -3,11 +3,8 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -21,7 +18,7 @@ type Database struct {
 }
 
 // Aggregate implements the IDatabase.Aggregate method.
-func (d *Database) Aggregate(context.Context, interface{}, ...*options.AggregateOptions) (ICursor, error) {
+func (d *Database) Aggregate(context.Context, interface{}, ...options.Lister[options.AggregateOptions]) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
@@ -33,9 +30,9 @@ func (d *Database) Client() IClient {
 }
 
 // Collection implements the IDatabase.Collection method.
-func (d *Database) Collection(name string, opts ...*options.CollectionOptions) ICollection {
+func (d *Database) Collection(name string, opts ...options.Lister[options.CollectionOptions]) ICollection {
 	// merge options
-	opt := options.MergeCollectionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -51,9 +48,9 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 }
 
 // CreateCollection implements the IDatabase.CreateCollection method.
-func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*options.CreateCollectionOptions) error {
+func (d *Database) CreateCollection(ctx context.Context, name string, opts ...options.Lister[options.CreateCollectionOptions]) error {
 	// merge options
-	opt := options.MergeCreateCollectionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -83,7 +80,7 @@ func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*o
 }
 
 // CreateView implements the IDatabase.CreateView method.
-func (d *Database) CreateView(_ context.Context, _, _ string, _ interface{}, _ ...*options.CreateViewOptions) error {
+func (d *Database) CreateView(_ context.Context, _, _ string, _ interface{}, _ ...options.Lister[options.CreateViewOptions]) error {
 	panic("lungo: not implemented")
 }
 
@@ -114,7 +111,7 @@ func (d *Database) Drop(ctx context.Context) error {
 }
 
 // ListCollectionNames implements the IDatabase.ListCollectionNames method.
-func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) ([]string, error) {
+func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, opts ...options.Lister[options.ListCollectionsOptions]) ([]string, error) {
 	// list collections
 	res, err := d.ListCollections(ctx, filter, opts...)
 	if err != nil {
@@ -135,14 +132,14 @@ func (d *Database) ListCollectionNames(ctx context.Context, filter interface{}, 
 
 // ListCollectionSpecifications implements the
 // IDatabase.ListCollectionSpecifications method.
-func (d *Database) ListCollectionSpecifications(context.Context, interface{}, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error) {
+func (d *Database) ListCollectionSpecifications(context.Context, interface{}, ...options.Lister[options.ListCollectionsOptions]) ([]mongo.CollectionSpecification, error) {
 	panic("lungo: not implemented")
 }
 
 // ListCollections implements the IDatabase.ListCollections method.
-func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
+func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...options.Lister[options.ListCollectionsOptions]) (ICursor, error) {
 	// merge options
-	opt := options.MergeListCollectionsOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -170,30 +167,20 @@ func (d *Database) Name() string {
 	return d.name
 }
 
-// ReadConcern implements the IDatabase.ReadConcern method.
-func (d *Database) ReadConcern() *readconcern.ReadConcern {
-	return readconcern.New()
-}
-
-// ReadPreference implements the IDatabase.ReadPreference method.
-func (d *Database) ReadPreference() *readpref.ReadPref {
-	return readpref.Primary()
-}
-
 // RunCommand implements the IDatabase.RunCommand method.
-func (d *Database) RunCommand(context.Context, interface{}, ...*options.RunCmdOptions) ISingleResult {
+func (d *Database) RunCommand(context.Context, interface{}, ...options.Lister[options.RunCmdOptions]) ISingleResult {
 	panic("lungo: not implemented")
 }
 
 // RunCommandCursor implements the IDatabase.RunCommandCursor method.
-func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.RunCmdOptions) (ICursor, error) {
+func (d *Database) RunCommandCursor(context.Context, interface{}, ...options.Lister[options.RunCmdOptions]) (ICursor, error) {
 	panic("lungo: not implemented")
 }
 
 // Watch implements the IDatabase.Watch method.
-func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...options.Lister[options.ChangeStreamOptions]) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -242,9 +229,4 @@ func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*optio
 	}
 
 	return stream, nil
-}
-
-// WriteConcern implements the IDatabase.WriteConcern method.
-func (d *Database) WriteConcern() *writeconcern.WriteConcern {
-	return nil
 }

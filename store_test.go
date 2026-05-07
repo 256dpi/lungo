@@ -1,12 +1,12 @@
 package lungo
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -21,14 +21,14 @@ func TestFileStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, engine)
 
-	get := func(i int, name string) primitive.Timestamp {
-		return bsonkit.Get(engine.Catalog().Namespaces[Oplog].Documents.List[i], name).(primitive.Timestamp)
+	get := func(i int, name string) bson.Timestamp {
+		return bsonkit.Get(engine.Catalog().Namespaces[Oplog].Documents.List[i], name).(bson.Timestamp)
 	}
 
 	handle := Handle{"foo", "bar"}
 
-	id1 := primitive.NewObjectID()
-	id2 := primitive.NewObjectID()
+	id1 := bson.NewObjectID()
+	id2 := bson.NewObjectID()
 
 	txn, err := engine.Begin(nil, true)
 	assert.NoError(t, err)
@@ -59,11 +59,13 @@ func TestFileStore(t *testing.T) {
 
 	engine.Close()
 
-	bytes, err := os.ReadFile("./test.bson")
+	data, err := os.ReadFile("./test.bson")
 	assert.NoError(t, err)
 
 	var out bson.M
-	err = bson.Unmarshal(bytes, &out)
+	dec := bson.NewDecoder(bson.NewDocumentReader(bytes.NewReader(data)))
+	dec.DefaultDocumentM()
+	err = dec.Decode(&out)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.M{
 		"namespaces": bson.M{

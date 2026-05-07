@@ -6,8 +6,30 @@ import (
 	"reflect"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
 	"github.com/256dpi/lungo/bsonkit"
 )
+
+// mergeOptions merges a slice of option listers into a single options struct
+// in a "last-one-wins" manner, ignoring nil entries.
+func mergeOptions[T any](opts ...options.Lister[T]) *T {
+	args := new(T)
+	for _, opt := range opts {
+		if opt == nil || reflect.ValueOf(opt).IsNil() {
+			continue
+		}
+		for _, set := range opt.List() {
+			if set == nil {
+				continue
+			}
+			if err := set(args); err != nil {
+				panic(fmt.Sprintf("lungo: option error: %s", err))
+			}
+		}
+	}
+	return args
+}
 
 const (
 	supported = "supported"
@@ -38,8 +60,19 @@ func assertOptions(opts interface{}, fields map[string]string) {
 			continue
 		}
 
+		// skip non-nilable fields (e.g. internal struct values added by the
+		// v2 driver that cannot represent "unset")
+		field := value.Field(i)
+		switch field.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface,
+			reflect.Map, reflect.Ptr, reflect.Slice:
+			// nilable — fall through to IsNil check
+		default:
+			continue
+		}
+
 		// otherwise, assert field is nil
-		if !value.Field(i).IsNil() {
+		if !field.IsNil() {
 			panic(fmt.Sprintf("lungo: unsupported option: %s", name))
 		}
 	}

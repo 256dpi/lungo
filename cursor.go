@@ -118,8 +118,8 @@ func (c *Cursor) SetBatchSize(int32) {}
 // SetComment implements the ICursor.SetComment method.
 func (c *Cursor) SetComment(interface{}) {}
 
-// SetMaxTime implements the ICursor.SetMaxTime method.
-func (c *Cursor) SetMaxTime(time.Duration) {}
+// SetMaxAwaitTime implements the ICursor.SetMaxAwaitTime method.
+func (c *Cursor) SetMaxAwaitTime(time.Duration) {}
 
 // TryNext implements the ICursor.TryNext method.
 func (c *Cursor) TryNext(ctx context.Context) bool {

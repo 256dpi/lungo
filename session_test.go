@@ -7,14 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestSessionManual(t *testing.T) {
 	// commit
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
@@ -28,7 +27,7 @@ func TestSessionManual(t *testing.T) {
 		err = sess.StartTransaction()
 		assert.NoError(t, err)
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 		err = WithSession(nil, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
@@ -81,7 +80,7 @@ func TestSessionManual(t *testing.T) {
 
 	// abort
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
@@ -95,7 +94,7 @@ func TestSessionManual(t *testing.T) {
 		err = sess.StartTransaction()
 		assert.NoError(t, err)
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 		err = WithSession(nil, sess, func(sc ISessionContext) error {
 			_, err := c.InsertOne(sc, bson.M{
 				"_id": id2,
@@ -146,13 +145,13 @@ func TestSessionManual(t *testing.T) {
 func TestSessionAutomatic(t *testing.T) {
 	// commit
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
 		})
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 
 		err = c.Database().Client().UseSession(nil, func(sc ISessionContext) error {
 			_, err = sc.WithTransaction(sc, func(sc ISessionContext) (interface{}, error) {
@@ -198,13 +197,13 @@ func TestSessionAutomatic(t *testing.T) {
 
 	// abort
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err := c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
 		})
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 
 		err = c.Database().Client().UseSession(nil, func(sc ISessionContext) error {
 			_, err = sc.WithTransaction(sc, func(sc ISessionContext) (interface{}, error) {

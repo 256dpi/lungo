@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"gopkg.in/tomb.v2"
 
 	"github.com/256dpi/lungo/bsonkit"
@@ -270,7 +270,7 @@ func (e *Engine) Abort(txn *Transaction) {
 }
 
 // Watch will return a stream that is able to consume events from the oplog.
-func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *primitive.Timestamp) (*Stream, error) {
+func (e *Engine) Watch(handle Handle, pipeline bsonkit.List, resumeAfter, startAfter bsonkit.Doc, startAt *bson.Timestamp) (*Stream, error) {
 	// acquire lock
 	e.mutex.Lock()
 	defer e.mutex.Unlock()

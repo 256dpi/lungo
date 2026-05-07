@@ -2,11 +2,10 @@ package lungo
 
 import (
 	"context"
-	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -36,15 +35,10 @@ func NewClient(engine *Engine) IClient {
 	}
 }
 
-// Connect implements the IClient.Connect method.
-func (c *Client) Connect(context.Context) error {
-	return nil
-}
-
 // Database implements the IClient.Database method.
-func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
+func (c *Client) Database(name string, opts ...options.Lister[options.DatabaseOptions]) IDatabase {
 	// merge options
-	opt := options.MergeDatabaseOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -65,7 +59,7 @@ func (c *Client) Disconnect(context.Context) error {
 }
 
 // ListDatabaseNames implements the IClient.ListDatabaseNames method.
-func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
+func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts ...options.Lister[options.ListDatabasesOptions]) ([]string, error) {
 	// list databases
 	res, err := c.ListDatabases(ctx, filter, opts...)
 	if err != nil {
@@ -82,9 +76,9 @@ func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts
 }
 
 // ListDatabases implements the IClient.ListDatabases method.
-func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error) {
+func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...options.Lister[options.ListDatabasesOptions]) (mongo.ListDatabasesResult, error) {
 	// merge options
-	opt := options.MergeListDatabasesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -138,9 +132,9 @@ func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 }
 
 // StartSession implements the IClient.StartSession method.
-func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error) {
+func (c *Client) StartSession(opts ...options.Lister[options.SessionOptions]) (ISession, error) {
 	// merge options
-	opt := options.MergeSessionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -156,18 +150,16 @@ func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error)
 	}, nil
 }
 
-// Timeout implements the IClient.Timeout method.
-func (c *Client) Timeout() *time.Duration {
-	return nil
-}
-
 // UseSession implements the IClient.UseSession method.
 func (c *Client) UseSession(ctx context.Context, fn func(ISessionContext) error) error {
 	return c.UseSessionWithOptions(ctx, options.Session(), fn)
 }
 
 // UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
-func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.SessionOptions, fn func(ISessionContext) error) error {
+func (c *Client) UseSessionWithOptions(ctx context.Context, opts options.Lister[options.SessionOptions], fn func(ISessionContext) error) error {
+	// merge options
+	opt := mergeOptions(opts)
+
 	// assert supported options
 	assertOptions(opt, map[string]string{
 		"CausalConsistency":     ignored,
@@ -201,9 +193,9 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.Session
 }
 
 // Watch implements the IClient.Watch method.
-func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
+func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...options.Lister[options.ChangeStreamOptions]) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
