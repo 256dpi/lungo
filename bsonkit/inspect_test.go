@@ -4,118 +4,116 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestInspect(t *testing.T) {
 	table := []struct {
 		in interface{}
 		vc Class
-		vt bsontype.Type
+		vt bson.Type
 		al string
 	}{
 		{
 			in: nil,
 			vc: Null,
-			vt: bsontype.Null,
+			vt: bson.TypeNull,
 			al: "null",
 		},
 		{
-			in: primitive.Null{},
+			in: bson.Null{},
 			vc: Null,
-			vt: bsontype.Null,
+			vt: bson.TypeNull,
 			al: "null",
 		},
 		{
 			in: int32(42),
 			vc: Number,
-			vt: bsontype.Int32,
+			vt: bson.TypeInt32,
 			al: "int",
 		},
 		{
 			in: int64(42),
 			vc: Number,
-			vt: bsontype.Int64,
+			vt: bson.TypeInt64,
 			al: "long",
 		},
 		{
 			in: 4.2,
 			vc: Number,
-			vt: bsontype.Double,
+			vt: bson.TypeDouble,
 			al: "double",
 		},
 		{
-			in: primitive.NewDecimal128(1, 1),
+			in: bson.NewDecimal128(1, 1),
 			vc: Number,
-			vt: bsontype.Decimal128,
+			vt: bson.TypeDecimal128,
 			al: "decimal",
 		},
 		{
 			in: "",
 			vc: String,
-			vt: bsontype.String,
+			vt: bson.TypeString,
 			al: "string",
 		},
 		{
 			in: "foo",
 			vc: String,
-			vt: bsontype.String,
+			vt: bson.TypeString,
 			al: "string",
 		},
 		{
 			in: bson.D{},
 			vc: Document,
-			vt: bsontype.EmbeddedDocument,
+			vt: bson.TypeEmbeddedDocument,
 			al: "object",
 		},
 		{
 			in: bson.A{},
 			vc: Array,
-			vt: bsontype.Array,
+			vt: bson.TypeArray,
 			al: "array",
 		},
 		{
-			in: primitive.Binary{},
+			in: bson.Binary{},
 			vc: Binary,
-			vt: bsontype.Binary,
+			vt: bson.TypeBinary,
 			al: "binData",
 		},
 		{
-			in: primitive.NewObjectID(),
+			in: bson.NewObjectID(),
 			vc: ObjectID,
-			vt: bsontype.ObjectID,
+			vt: bson.TypeObjectID,
 			al: "objectId",
 		},
 		{
 			in: true,
 			vc: Boolean,
-			vt: bsontype.Boolean,
+			vt: bson.TypeBoolean,
 			al: "bool",
 		},
 		{
 			in: false,
 			vc: Boolean,
-			vt: bsontype.Boolean,
+			vt: bson.TypeBoolean,
 			al: "bool",
 		},
 		{
-			in: primitive.DateTime(1570729020000),
+			in: bson.DateTime(1570729020000),
 			vc: Date,
-			vt: bsontype.DateTime,
+			vt: bson.TypeDateTime,
 			al: "date",
 		},
 		{
-			in: primitive.Timestamp{},
+			in: bson.Timestamp{},
 			vc: Timestamp,
-			vt: bsontype.Timestamp,
+			vt: bson.TypeTimestamp,
 			al: "timestamp",
 		},
 		{
-			in: primitive.Regex{},
+			in: bson.Regex{},
 			vc: Regex,
-			vt: bsontype.Regex,
+			vt: bson.TypeRegex,
 			al: "regex",
 		},
 	}

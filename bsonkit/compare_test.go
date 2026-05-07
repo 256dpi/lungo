@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestCompare(t *testing.T) {
@@ -20,28 +19,28 @@ func TestCompare(t *testing.T) {
 	assert.Equal(t, 1, Compare(false, "foo"))
 
 	// decimal
-	dec, err := primitive.ParseDecimal128("3.14")
+	dec, err := bson.ParseDecimal128("3.14")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, Compare(5.0, dec))
 
 	// regex pattern less / greater / equal
 	assert.Equal(t, -1, Compare(
-		primitive.Regex{Pattern: "abc"},
-		primitive.Regex{Pattern: "xyz"},
+		bson.Regex{Pattern: "abc"},
+		bson.Regex{Pattern: "xyz"},
 	))
 	assert.Equal(t, 1, Compare(
-		primitive.Regex{Pattern: "xyz"},
-		primitive.Regex{Pattern: "abc"},
+		bson.Regex{Pattern: "xyz"},
+		bson.Regex{Pattern: "abc"},
 	))
 	assert.Equal(t, 0, Compare(
-		primitive.Regex{Pattern: "abc", Options: "i"},
-		primitive.Regex{Pattern: "abc", Options: "i"},
+		bson.Regex{Pattern: "abc", Options: "i"},
+		bson.Regex{Pattern: "abc", Options: "i"},
 	))
 
 	// regex options break equality
 	assert.Equal(t, -1, Compare(
-		primitive.Regex{Pattern: "abc", Options: "i"},
-		primitive.Regex{Pattern: "abc", Options: "im"},
+		bson.Regex{Pattern: "abc", Options: "i"},
+		bson.Regex{Pattern: "abc", Options: "im"},
 	))
 
 	// a float at 2^63 is strictly greater than every int64 (max is 2^63-1).
@@ -54,7 +53,7 @@ func TestCompare(t *testing.T) {
 
 func TestCompareNonFiniteNumbersNoPanic(t *testing.T) {
 	floats := []float64{math.NaN(), math.Inf(1), math.Inf(-1)}
-	specials := []primitive.Decimal128{d128("NaN"), d128("Infinity"), d128("-Infinity")}
+	specials := []bson.Decimal128{d128("NaN"), d128("Infinity"), d128("-Infinity")}
 
 	for _, f := range floats {
 		for _, d := range specials {
