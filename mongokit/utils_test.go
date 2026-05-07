@@ -3,9 +3,11 @@ package mongokit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"github.com/256dpi/lungo/bsonkit"
 )
 
 const testDB = "test-lungo-mongokit"
@@ -15,7 +17,9 @@ var testMongoClient *mongo.Client
 var testCollCounter = 0
 
 func init() {
-	mongoClient, err := mongo.Connect(nil, options.Client().ApplyURI("mongodb://localhost"))
+	mongoClient, err := mongo.Connect(nil, options.Client().
+		ApplyURI("mongodb://localhost").
+		SetBSONOptions(&options.BSONOptions{DefaultDocumentM: true}))
 	if err != nil {
 		panic(err)
 	}
@@ -34,14 +38,10 @@ func testCollection() *mongo.Collection {
 	return testMongoClient.Database(testDB).Collection(name)
 }
 
-func convertArray(array []interface{}) bson.A {
-	a := make(bson.A, 0, len(array))
-	for _, item := range array {
-		if arr, ok := item.([]interface{}); ok {
-			item = convertArray(arr)
-		}
-
-		a = append(a, item)
+func toMap(d bsonkit.Doc) bson.M {
+	m := make(bson.M, len(*d))
+	for _, e := range *d {
+		m[e.Key] = e.Value
 	}
-	return a
+	return m
 }

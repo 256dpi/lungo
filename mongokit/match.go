@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -287,7 +285,7 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 
 	// resolve types
 	var matchNumberClass bool
-	var wantTypes []bsontype.Type
+	var wantTypes []bson.Type
 	for _, operand := range operands {
 		numberClass, typ, err := resolveType(name, operand)
 		if err != nil {
@@ -314,7 +312,7 @@ func matchType(_ Context, doc bsonkit.Doc, name, path string, v interface{}) err
 	})
 }
 
-func resolveType(name string, v interface{}) (bool, bsontype.Type, error) {
+func resolveType(name string, v interface{}) (bool, bson.Type, error) {
 	switch value := v.(type) {
 	case string:
 		if value == "number" {
@@ -665,7 +663,7 @@ func parseBitMask(name string, v interface{}) ([]uint, error) {
 			positions = append(positions, pos)
 		}
 		return positions, nil
-	case primitive.Binary:
+	case bson.Binary:
 		positions := make([]uint, 0)
 		for byteIdx, b := range m.Data {
 			for bitIdx := uint(0); bitIdx < 8; bitIdx++ {
@@ -750,7 +748,7 @@ func bitAccessor(field interface{}) (func(uint) bool, bool) {
 			}
 			return v&(1<<pos) != 0
 		}, true
-	case primitive.Binary:
+	case bson.Binary:
 		data := f.Data
 		return func(pos uint) bool {
 			byteIdx := pos / 8

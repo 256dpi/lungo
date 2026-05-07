@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -1046,7 +1045,7 @@ func TestMatchJSONSchema(t *testing.T) {
 
 	matchTest(t, bson.M{
 		"nil":      nil,
-		"null":     primitive.Null{},
+		"null":     bson.Null{},
 		"bool":     true,
 		"int":      int32(7),
 		"long":     int64(42),
@@ -1054,9 +1053,9 @@ func TestMatchJSONSchema(t *testing.T) {
 		"string":   "Hello World!",
 		"object":   bson.M{"foo": "bar"},
 		"array":    bson.A{"foo", "bar"},
-		"binary":   primitive.Binary{},
-		"objectId": primitive.NewObjectID(),
-		"date":     primitive.NewDateTimeFromTime(time.Now()),
+		"binary":   bson.Binary{},
+		"objectId": bson.NewObjectID(),
+		"date":     bson.NewDateTimeFromTime(time.Now()),
 	}, func(fn func(bson.M, interface{})) {
 		// json types
 		fn(bson.M{
@@ -1452,7 +1451,7 @@ func TestMatchBits(t *testing.T) {
 	// byte 0 = 0x36 = 0b00110110: bits 1,2,4,5 (absolute 1,2,4,5)
 	// byte 1 = 0x05 = 0b00000101: bits 0,2 (absolute 8,10)
 	matchTest(t, bson.M{
-		"foo": primitive.Binary{Data: []byte{0x36, 0x05}},
+		"foo": bson.Binary{Data: []byte{0x36, 0x05}},
 	}, func(fn func(bson.M, interface{})) {
 		// numeric mask within first byte
 		fn(bson.M{
@@ -1480,10 +1479,10 @@ func TestMatchBits(t *testing.T) {
 
 		// binary mask
 		fn(bson.M{
-			"foo": bson.M{"$bitsAllSet": primitive.Binary{Data: []byte{0x36, 0x05}}},
+			"foo": bson.M{"$bitsAllSet": bson.Binary{Data: []byte{0x36, 0x05}}},
 		}, true)
 		fn(bson.M{
-			"foo": bson.M{"$bitsAllSet": primitive.Binary{Data: []byte{0x36, 0x07}}},
+			"foo": bson.M{"$bitsAllSet": bson.Binary{Data: []byte{0x36, 0x07}}},
 		}, false)
 
 		// $bitsAnyClear across bytes
@@ -1498,13 +1497,13 @@ func TestMatchBits(t *testing.T) {
 	// binary field with binary mask longer than field — extra mask bytes
 	// reference clear bits in the field
 	matchTest(t, bson.M{
-		"foo": primitive.Binary{Data: []byte{0xFF}},
+		"foo": bson.Binary{Data: []byte{0xFF}},
 	}, func(fn func(bson.M, interface{})) {
 		fn(bson.M{
-			"foo": bson.M{"$bitsAllSet": primitive.Binary{Data: []byte{0xFF, 0x01}}},
+			"foo": bson.M{"$bitsAllSet": bson.Binary{Data: []byte{0xFF, 0x01}}},
 		}, false)
 		fn(bson.M{
-			"foo": bson.M{"$bitsAllClear": primitive.Binary{Data: []byte{0x00, 0xFF}}},
+			"foo": bson.M{"$bitsAllClear": bson.Binary{Data: []byte{0x00, 0xFF}}},
 		}, true)
 	})
 

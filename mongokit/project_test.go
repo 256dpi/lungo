@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -47,7 +46,7 @@ func projectTest(t *testing.T, doc bson.M, fn func(fn func(bson.M, interface{}))
 }
 
 func TestProject(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	// hide id
 	projectTest(t, bson.M{
@@ -171,7 +170,7 @@ func TestProject(t *testing.T) {
 }
 
 func TestProjectSlice(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	projectTest(t, bson.M{
 		"_id": id,
@@ -320,7 +319,7 @@ func TestProjectSlice(t *testing.T) {
 }
 
 func TestProjectSliceArray(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	projectTest(t, bson.M{
 		"_id": id,
@@ -375,7 +374,7 @@ func TestProjectSliceArray(t *testing.T) {
 }
 
 func TestProjectElemMatch(t *testing.T) {
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 
 	// match found: returns single-element array, only _id and field
 	projectTest(t, bson.M{
