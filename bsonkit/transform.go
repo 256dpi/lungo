@@ -1,6 +1,7 @@
 package bsonkit
 
 import (
+	"bytes"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -51,14 +52,26 @@ func TransformList(v interface{}) (List, error) {
 // and unmarshalling it again. This method is not very fast, but it ensures
 // compatibility with custom types that implement the bson.Marshaller interface.
 func Transfer(in, out interface{}) error {
+	return transfer(in, out, false)
+}
+
+func transfer(in, out interface{}, defaultDocumentM bool) error {
 	// marshal to bytes
-	bytes, err := bson.Marshal(in)
+	var buf bytes.Buffer
+	vw := bson.NewDocumentWriter(&buf)
+	enc := bson.NewEncoder(vw)
+	err := enc.Encode(in)
 	if err != nil {
 		return err
 	}
 
 	// unmarshal bytes
-	err = bson.Unmarshal(bytes, out)
+	vr := bson.NewDocumentReader(&buf)
+	dec := bson.NewDecoder(vr)
+	if defaultDocumentM {
+		dec.DefaultDocumentM()
+	}
+	err = dec.Decode(out)
 	if err != nil {
 		return err
 	}

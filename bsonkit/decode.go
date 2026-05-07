@@ -6,9 +6,10 @@ import (
 )
 
 // Decode will decode the specified document to an arbitrary value which may be
-// a struct with bson tags in most cases.
+// a struct with bson tags in most cases. Nested documents that decode into
+// "any" or "map[string]any" use bson.M to match driver behavior.
 func Decode(doc Doc, out interface{}) error {
-	return Transfer(doc, out)
+	return transfer(doc, out, true)
 }
 
 // DecodeList will decode a list of documents to an arbitrary value.
