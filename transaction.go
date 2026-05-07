@@ -5,8 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/256dpi/lungo/bsonkit"
 	"github.com/256dpi/lungo/mongokit"
@@ -1094,8 +1093,8 @@ func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) 
 
 	// derive age cutoffs with second precision
 	now := bsonkit.Now()
-	minTimestamp := primitive.Timestamp{T: now.T - uint32(minAge/time.Second)}
-	maxTimestamp := primitive.Timestamp{T: now.T - uint32(maxAge/time.Second), I: now.I}
+	minTimestamp := bson.Timestamp{T: now.T - uint32(minAge/time.Second)}
+	maxTimestamp := bson.Timestamp{T: now.T - uint32(maxAge/time.Second), I: now.I}
 
 	// determine indexes
 	minIndex := len(oplog.Documents.List) - minSize

@@ -1,8 +1,8 @@
 package lungo
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/256dpi/lungo/bsonkit"
 )
@@ -35,22 +35,6 @@ func (r *SingleResult) Decode(out interface{}) error {
 	return bsonkit.Decode(r.doc, out)
 }
 
-// DecodeBytes implements the ISingleResult.DecodeBytes method.
-func (r *SingleResult) DecodeBytes() (bson.Raw, error) {
-	// check error
-	if r.err != nil {
-		return nil, r.err
-	}
-
-	// check document
-	if r.doc == nil {
-		return nil, ErrNoDocuments
-	}
-
-	// marshal document
-	return bson.Marshal(r.doc)
-}
-
 // Err implements the ISingleResult.Err method.
 func (r *SingleResult) Err() error {
 	// check error
@@ -68,5 +52,16 @@ func (r *SingleResult) Err() error {
 
 // Raw implements the ISingleResult.Raw method.
 func (r *SingleResult) Raw() (bson.Raw, error) {
-	return r.DecodeBytes()
+	// check error
+	if r.err != nil {
+		return nil, r.err
+	}
+
+	// check document
+	if r.doc == nil {
+		return nil, ErrNoDocuments
+	}
+
+	// marshal document
+	return bson.Marshal(r.doc)
 }

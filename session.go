@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/session"
 )
 
 type sessionKey struct{}
@@ -21,6 +21,8 @@ type SessionContext struct {
 	context.Context
 	*Session
 }
+
+var _ ISession = &Session{}
 
 // Session provides a mongo compatible way to handle transactions.
 type Session struct {
@@ -62,7 +64,7 @@ func (s *Session) AdvanceClusterTime(bson.Raw) error {
 }
 
 // AdvanceOperationTime implements the ISession.AdvanceOperationTime method.
-func (s *Session) AdvanceOperationTime(*primitive.Timestamp) error {
+func (s *Session) AdvanceOperationTime(*bson.Timestamp) error {
 	panic("lungo: not implemented")
 }
 
@@ -129,21 +131,24 @@ func (s *Session) EndSession(context.Context) {
 }
 
 // OperationTime implements the ISession.OperationTime method.
-func (s *Session) OperationTime() *primitive.Timestamp {
+func (s *Session) OperationTime() *bson.Timestamp {
 	panic("lungo: not implemented")
 }
 
 // StartTransaction implements the ISession.StartTransaction method.
-func (s *Session) StartTransaction(opts ...*options.TransactionOptions) error {
+func (s *Session) StartTransaction(opts ...*options.Lister[options.TransactionOptions]) error {
 	return s.startTransaction(nil, opts...)
 }
 
-func (s *Session) startTransaction(ctx context.Context, opts ...*options.TransactionOptions) error {
+func (s *Session) startTransaction(ctx context.Context, opts ...*options.Lister[options.TransactionOptions]) error {
 	// merge options
-	opt := options.MergeTransactionOptions(opts...)
+	args, err := NewOptions[options.TransactionOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ReadConcern":    ignored,
 		"ReadPreference": ignored,
 		"WriteConcern":   ignored,
@@ -186,14 +191,17 @@ func (s *Session) startTransaction(ctx context.Context, opts ...*options.Transac
 }
 
 // WithTransaction implements the ISession.WithTransaction method.
-func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) (interface{}, error), opts ...*options.TransactionOptions) (interface{}, error) {
+func (s *Session) WithTransaction(ctx context.Context, fn func(ctx context.Context) (any, error), opts ...options.Lister[options.TransactionOptions]) (any, error) {
 	// do not take locks as we only use safe functions
 
 	// merge options
-	opt := options.MergeTransactionOptions(opts...)
+	args, err := NewOptions[options.TransactionOptions](opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// assert supported options
-	assertOptions(opt, map[string]string{
+	assertOptions(args, map[string]string{
 		"ReadConcern":    ignored,
 		"ReadPreference": ignored,
 		"WriteConcern":   ignored,
@@ -202,7 +210,7 @@ func (s *Session) WithTransaction(ctx context.Context, fn func(ISessionContext) 
 
 	// start transaction with the caller's context so a stuck token
 	// acquisition can be canceled
-	err := s.startTransaction(ctx, opt)
+	err = s.startTransaction(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -238,4 +246,8 @@ func (s *Session) Transaction() *Transaction {
 	defer s.mutex.Unlock()
 
 	return s.txn
+}
+
+func (s *Session) ClientSession() *session.Client {
+	panic("lungo: not implemented")
 }

@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestCompare(t *testing.T) {
@@ -20,7 +19,7 @@ func TestCompare(t *testing.T) {
 	assert.Equal(t, 1, Compare(false, "foo"))
 
 	// decimal
-	dec, err := primitive.ParseDecimal128("3.14")
+	dec, err := bson.ParseDecimal128("3.14")
 	assert.NoError(t, err)
 	assert.Equal(t, 1, Compare(5.0, dec))
 
