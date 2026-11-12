@@ -1,6 +1,6 @@
 package bsonkit
 
-import "go.mongodb.org/mongo-driver/bson"
+import "go.mongodb.org/mongo-driver/v2/bson"
 
 // Doc is a full document that may contain fields, arrays and embedded documents.
 // The pointer form is chosen to identify the document uniquely (pointer address).

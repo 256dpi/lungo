@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 func distinctTest(t *testing.T, list bsonkit.List, fn func(fn func(string, bson.A))) {
 	t.Run("Mongo", func(t *testing.T) {
+		skipUnlessMongo(t)
 		coll := testCollection()
 
 		_, err := coll.DeleteMany(nil, bson.M{})
@@ -26,8 +27,10 @@ func distinctTest(t *testing.T, list bsonkit.List, fn func(fn func(string, bson.
 		assert.Equal(t, len(list), len(res.InsertedIDs))
 
 		fn(func(path string, result bson.A) {
-			values, err := coll.Distinct(nil, path, bson.M{})
-			assert.NoError(t, err)
+			distinct := coll.Distinct(nil, path, bson.M{})
+			assert.NoError(t, distinct.Err())
+			var values []interface{}
+			assert.NoError(t, distinct.Decode(&values))
 			assert.Equal(t, result, convertArray(values))
 		})
 	})

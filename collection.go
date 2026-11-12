@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 var _ ICollection = &Collection{}
@@ -28,7 +28,7 @@ func (c *Collection) Aggregate(context.Context, interface{}, ...*options.Aggrega
 // BulkWrite implements the ICollection.BulkWrite method.
 func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, opts ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
 	// merge options
-	opt := options.MergeBulkWriteOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -36,8 +36,8 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 		"Ordered": supported,
 	})
 
-	// get ordered
-	var ordered bool
+	// get ordered (mongo defaults to true)
+	ordered := true
 	if opt.Ordered != nil {
 		ordered = *opt.Ordered
 	}
@@ -74,7 +74,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 			upsert = model.Upsert
 			limit = 1
 			if model.ArrayFilters != nil {
-				arrayFilters = model.ArrayFilters.Filters
+				arrayFilters = model.ArrayFilters
 			}
 		case *mongo.UpdateManyModel:
 			opcode = Update
@@ -83,7 +83,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 			upsert = model.Upsert
 			limit = 0
 			if model.ArrayFilters != nil {
-				arrayFilters = model.ArrayFilters.Filters
+				arrayFilters = model.ArrayFilters
 			}
 		case *mongo.DeleteOneModel:
 			opcode = Delete
@@ -215,7 +215,7 @@ func (c *Collection) BulkWrite(ctx context.Context, models []mongo.WriteModel, o
 // Clone implements the ICollection.Clone method.
 func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, error) {
 	// merge options
-	opt := options.MergeCollectionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -233,7 +233,7 @@ func (c *Collection) Clone(opts ...*options.CollectionOptions) (ICollection, err
 // CountDocuments implements the ICollection.CountDocuments method.
 func (c *Collection) CountDocuments(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
 	// merge options
-	opt := options.MergeCountOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -290,9 +290,9 @@ func (c *Collection) Database() IDatabase {
 }
 
 // DeleteMany implements the ICollection.DeleteMany method.
-func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ...*DeleteOptions) (*mongo.DeleteResult, error) {
 	// merge options
-	opt := options.MergeDeleteOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -328,9 +328,9 @@ func (c *Collection) DeleteMany(ctx context.Context, filter interface{}, opts ..
 }
 
 // DeleteOne implements the ICollection.DeleteOne method.
-func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...*DeleteOptions) (*mongo.DeleteResult, error) {
 	// merge options
-	opt := options.MergeDeleteOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -368,7 +368,7 @@ func (c *Collection) DeleteOne(ctx context.Context, filter interface{}, opts ...
 // Distinct implements the ICollection.Distinct method.
 func (c *Collection) Distinct(ctx context.Context, field string, filter interface{}, opts ...*options.DistinctOptions) ([]interface{}, error) {
 	// merge options
-	opt := options.MergeDistinctOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -438,7 +438,7 @@ func (c *Collection) Drop(ctx context.Context) error {
 // EstimatedDocumentCount implements the ICollection.EstimatedDocumentCount method.
 func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*options.EstimatedDocumentCountOptions) (int64, error) {
 	// merge options
-	opt := options.MergeEstimatedDocumentCountOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -460,7 +460,7 @@ func (c *Collection) EstimatedDocumentCount(ctx context.Context, opts ...*option
 // Find implements the ICollection.Find method.
 func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (ICursor, error) {
 	// merge options
-	opt := options.MergeFindOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -545,7 +545,7 @@ func (c *Collection) Find(ctx context.Context, filter interface{}, opts ...*opti
 // FindOne implements the ICollection.FindOne method.
 func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -627,7 +627,7 @@ func (c *Collection) FindOne(ctx context.Context, filter interface{}, opts ...*o
 // FindOneAndDelete implements the ICollection.FindOneAndDelete method.
 func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, opts ...*options.FindOneAndDeleteOptions) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndDeleteOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -697,7 +697,7 @@ func (c *Collection) FindOneAndDelete(ctx context.Context, filter interface{}, o
 // FindOneAndReplace implements the ICollection.FindOneAndReplace method.
 func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement interface{}, opts ...*options.FindOneAndReplaceOptions) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndReplaceOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -805,7 +805,7 @@ func (c *Collection) FindOneAndReplace(ctx context.Context, filter, replacement 
 // FindOneAndUpdate implements the ICollection.FindOneAndUpdate method.
 func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interface{}, opts ...*options.FindOneAndUpdateOptions) ISingleResult {
 	// merge options
-	opt := options.MergeFindOneAndUpdateOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -873,8 +873,8 @@ func (c *Collection) FindOneAndUpdate(ctx context.Context, filter, update interf
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if opt.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters)
 		if err != nil {
 			return &SingleResult{err: err}
 		}
@@ -926,7 +926,7 @@ func (c *Collection) Indexes() IIndexView {
 // InsertMany implements the ICollection.InsertMany method.
 func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
 	// merge options
-	opt := options.MergeInsertManyOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -954,8 +954,8 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 		list = append(list, doc)
 	}
 
-	// get ordered
-	var ordered bool
+	// get ordered (mongo defaults to true)
+	ordered := true
 	if opt.Ordered != nil {
 		ordered = *opt.Ordered
 	}
@@ -979,7 +979,7 @@ func (c *Collection) InsertMany(ctx context.Context, documents []interface{}, op
 // InsertOne implements the ICollection.InsertOne method.
 func (c *Collection) InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
 	// merge options
-	opt := options.MergeInsertOneOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -1032,7 +1032,7 @@ func (c *Collection) Name() string {
 // ReplaceOne implements the ICollection.ReplaceOne method.
 func (c *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeReplaceOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -1105,7 +1105,7 @@ func (c *Collection) SearchIndexes() mongo.SearchIndexView {
 }
 
 // UpdateByID implements the ICollection.UpdateByID method.
-func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*UpdateOptions) (*mongo.UpdateResult, error) {
 	// check id
 	if id == nil {
 		return nil, mongo.ErrNilValue
@@ -1115,9 +1115,9 @@ func (c *Collection) UpdateByID(ctx context.Context, id interface{}, update inte
 }
 
 // UpdateMany implements the ICollection.UpdateMany method.
-func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{}, opts ...*UpdateOptions) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeUpdateOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -1157,8 +1157,8 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if opt.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters)
 		if err != nil {
 			return nil, err
 		}
@@ -1190,9 +1190,9 @@ func (c *Collection) UpdateMany(ctx context.Context, filter, update interface{},
 }
 
 // UpdateOne implements the ICollection.UpdateOne method.
-func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, opts ...*UpdateOptions) (*mongo.UpdateResult, error) {
 	// merge options
-	opt := options.MergeUpdateOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -1232,8 +1232,8 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 
 	// get array filters
 	var arrayFilters bsonkit.List
-	if opt.ArrayFilters != nil && opt.ArrayFilters.Filters != nil {
-		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters.Filters)
+	if opt.ArrayFilters != nil {
+		arrayFilters, err = bsonkit.TransformList(opt.ArrayFilters)
 		if err != nil {
 			return nil, err
 		}
@@ -1267,7 +1267,7 @@ func (c *Collection) UpdateOne(ctx context.Context, filter, update interface{}, 
 // Watch implements the ICollection.Watch method.
 func (c *Collection) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{

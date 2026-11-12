@@ -3,7 +3,7 @@ package mongokit
 import (
 	"fmt"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // Columns will return columns from a MongoDB sort document.

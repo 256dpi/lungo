@@ -3,9 +3,9 @@ package mongokit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // TODO: Add support for positional operator `$` (apply and project).

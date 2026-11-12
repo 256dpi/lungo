@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 func TestFile(t *testing.T) {

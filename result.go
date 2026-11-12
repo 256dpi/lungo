@@ -1,10 +1,10 @@
 package lungo
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // ErrNoDocuments is returned by SingleResult if not document has been found.

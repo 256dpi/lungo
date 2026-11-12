@@ -4,7 +4,7 @@ import (
 	"sort"
 	"unsafe"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Column defines a column for ordering.

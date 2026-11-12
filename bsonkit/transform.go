@@ -3,7 +3,7 @@ package bsonkit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Transform will transform an arbitrary value into a document composed of known

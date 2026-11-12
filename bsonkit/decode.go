@@ -3,11 +3,21 @@ package bsonkit
 import (
 	"fmt"
 	"reflect"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Decode will decode the specified document to an arbitrary value which may be
 // a struct with bson tags in most cases.
 func Decode(doc Doc, out interface{}) error {
+	switch o := out.(type) {
+	case *bson.M:
+		*o = ToMap(doc)
+		return nil
+	case *map[string]interface{}:
+		*o = ToMap(doc)
+		return nil
+	}
 	return Transfer(doc, out)
 }
 

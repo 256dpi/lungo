@@ -1,7 +1,7 @@
 package mongokit
 
 import (
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // Filter will filter a list of documents based on the specified MongoDB query

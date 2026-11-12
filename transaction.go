@@ -5,11 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 // Opcode defines the type of operation.
@@ -695,7 +694,7 @@ func (t *Transaction) append(oplog *mongokit.Collection, handle Handle, op strin
 			"ts": now,
 		},
 		"clusterTime":   now,
-		"wallTime":      primitive.NewDateTimeFromTime(time.Now()),
+		"wallTime":      bson.NewDateTimeFromTime(time.Now()),
 		"operationType": op,
 	}
 
@@ -812,7 +811,7 @@ func (t *Transaction) ListCollections(handle Handle, query bsonkit.Doc) (bsonkit
 					bson.E{Key: "readOnly", Value: false},
 				}},
 				bson.E{Key: "idIndex", Value: bson.D{
-					bson.E{Key: "v", Value: 2},
+					bson.E{Key: "v", Value: int32(2)},
 					bson.E{Key: "key", Value: bson.D{
 						bson.E{Key: "_id", Value: 1},
 					}},
@@ -884,7 +883,7 @@ func (t *Transaction) ListIndexes(handle Handle) (bsonkit.List, error) {
 
 		// create spec
 		spec := bson.D{
-			bson.E{Key: "v", Value: 2},
+			bson.E{Key: "v", Value: int32(2)},
 			bson.E{Key: "key", Value: *config.Key},
 			bson.E{Key: "name", Value: name},
 		}
@@ -1095,8 +1094,8 @@ func (t *Transaction) Clean(minSize, maxSize int, minAge, maxAge time.Duration) 
 
 	// derive age cutoffs with second precision
 	now := bsonkit.Now()
-	minTimestamp := primitive.Timestamp{T: now.T - uint32(minAge/time.Second)}
-	maxTimestamp := primitive.Timestamp{T: now.T - uint32(maxAge/time.Second), I: now.I}
+	minTimestamp := bson.Timestamp{T: now.T - uint32(minAge/time.Second)}
+	maxTimestamp := bson.Timestamp{T: now.T - uint32(maxAge/time.Second), I: now.I}
 
 	// determine indexes
 	minIndex := len(oplog.Documents.List) - minSize

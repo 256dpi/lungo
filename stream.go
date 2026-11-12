@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // ErrLostOplogPosition may be returned by a stream when the oplog position has
@@ -159,7 +158,7 @@ func (s *Stream) next(ctx context.Context, block bool) bool {
 				"_id":           bson.M{"ts": "drop"},
 				"operationType": "invalidate",
 				"clusterTime":   bsonkit.Now(),
-				"wallTime":      primitive.NewDateTimeFromTime(time.Now()),
+				"wallTime":      bson.NewDateTimeFromTime(time.Now()),
 			})
 			s.token = bsonkit.Get(s.event, "_id")
 			s.cancel()

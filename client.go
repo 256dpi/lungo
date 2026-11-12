@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 var _ IClient = &Client{}
@@ -44,7 +44,7 @@ func (c *Client) Connect(context.Context) error {
 // Database implements the IClient.Database method.
 func (c *Client) Database(name string, opts ...*options.DatabaseOptions) IDatabase {
 	// merge options
-	opt := options.MergeDatabaseOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -84,7 +84,7 @@ func (c *Client) ListDatabaseNames(ctx context.Context, filter interface{}, opts
 // ListDatabases implements the IClient.ListDatabases method.
 func (c *Client) ListDatabases(ctx context.Context, filter interface{}, opts ...*options.ListDatabasesOptions) (mongo.ListDatabasesResult, error) {
 	// merge options
-	opt := options.MergeListDatabasesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -140,7 +140,7 @@ func (c *Client) Ping(context.Context, *readpref.ReadPref) error {
 // StartSession implements the IClient.StartSession method.
 func (c *Client) StartSession(opts ...*options.SessionOptions) (ISession, error) {
 	// merge options
-	opt := options.MergeSessionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -163,7 +163,7 @@ func (c *Client) Timeout() *time.Duration {
 
 // UseSession implements the IClient.UseSession method.
 func (c *Client) UseSession(ctx context.Context, fn func(ISessionContext) error) error {
-	return c.UseSessionWithOptions(ctx, options.Session(), fn)
+	return c.UseSessionWithOptions(ctx, nil, fn)
 }
 
 // UseSessionWithOptions implements the IClient.UseSessionWithOptions method.
@@ -203,7 +203,7 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opt *options.Session
 // Watch implements the IClient.Watch method.
 func (c *Client) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{

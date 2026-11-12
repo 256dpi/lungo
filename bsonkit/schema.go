@@ -5,9 +5,7 @@ import (
 	"regexp"
 	"unicode/utf8"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 var jsonTypeClass = map[string]Class{
@@ -86,7 +84,7 @@ func (s *Schema) Evaluate(value interface{}) error {
 	return nil
 }
 
-func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType bsontype.Type) error {
+func (s *Schema) evaluateGeneric(value interface{}, valueClass Class, valueType bson.Type) error {
 	// pre-check exclusion
 	if Get(&s.Doc, "type") != Missing && Get(&s.Doc, "bsonType") != Missing {
 		return fmt.Errorf("schema cannot contain type and bsonType")
@@ -318,7 +316,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 		switch keyword.Key {
 		case "multipleOf":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64, primitive.Decimal128:
+			case int32, int64, float64, bson.Decimal128:
 				if Compare(kv, int32(0)) <= 0 {
 					return fmt.Errorf("invalid multipleOf value: %v", kv)
 				}
@@ -330,7 +328,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 			}
 		case "minimum":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64, primitive.Decimal128:
+			case int32, int64, float64, bson.Decimal128:
 				res := Compare(num, kv)
 				if exclusiveMinimum && res <= 0 {
 					return ErrValidationFailed
@@ -342,7 +340,7 @@ func (s *Schema) evaluateNumber(num interface{}) error {
 			}
 		case "maximum":
 			switch kv := keyword.Value.(type) {
-			case int32, int64, float64, primitive.Decimal128:
+			case int32, int64, float64, bson.Decimal128:
 				res := Compare(num, kv)
 				if exclusiveMaximum && res >= 0 {
 					return ErrValidationFailed

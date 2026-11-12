@@ -3,7 +3,7 @@ package mongokit
 import (
 	"strings"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 // SplitDynamicPath will split the provided path on the first positional

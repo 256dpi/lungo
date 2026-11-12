@@ -10,10 +10,12 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/SaveliiYam/lungo/bsonkit"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 const testDB = "test-lungo"
@@ -25,17 +27,17 @@ var testLungoEngine *Engine
 var testCollCounter = 0
 
 func init() {
-	mongoClient, err := Connect(nil, options.Client().ApplyURI("mongodb://localhost"))
-	if err != nil {
-		panic(err)
+	clientOpt := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongoClient, err := Connect(nil, clientOpt)
+	if err == nil {
+		pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		err = mongoClient.Ping(pingCtx, readpref.Primary())
+		cancel()
+		if err == nil {
+			_ = mongoClient.Database(testDB).Drop(nil)
+			testMongoClient = mongoClient
+		}
 	}
-
-	err = mongoClient.Database(testDB).Drop(nil)
-	if err != nil {
-		panic(err)
-	}
-
-	testMongoClient = mongoClient
 
 	lungoClient, lungoEngine, err := Open(nil, Options{
 		Store:          NewMemoryStore(),
@@ -54,6 +56,9 @@ func init() {
 
 func clientTest(t *testing.T, fn func(t *testing.T, c IClient)) {
 	t.Run("Mongo", func(t *testing.T) {
+		if testMongoClient == nil {
+			t.Skip("mongodb not available")
+		}
 		fn(t, testMongoClient)
 	})
 
@@ -81,22 +86,68 @@ func collectionTest(t *testing.T, fn func(t *testing.T, c ICollection)) {
 
 func bucketTest(t *testing.T, chunkSize int32, fn func(t *testing.T, b *Bucket)) {
 	if chunkSize == 0 {
-		chunkSize = gridfs.DefaultChunkSize
+		chunkSize = options.DefaultChunkSize
 	}
 	clientTest(t, func(t *testing.T, client IClient) {
-		fn(t, NewBucket(client.Database(testDB), options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize)))
+		fn(t, NewBucket(client.Database(testDB), mat(options.GridFSBucket().SetName(collectionName()).SetChunkSizeBytes(chunkSize))))
 	})
 }
 
-func gridfsTest(t *testing.T, fn func(t *testing.T, b *gridfs.Bucket)) {
-	db := testMongoClient.Database(testDB).(*MongoDatabase).Database
+func gridfsTest(t *testing.T, fn func(t *testing.T, b *mongo.GridFSBucket)) {
+	if testMongoClient == nil {
+		t.Skip("mongodb not available")
+	}
+	mc := testMongoClient.(*MongoClient)
 	name := collectionName()
-	b, err := gridfs.NewBucket(db, options.GridFSBucket().SetName(name))
-	assert.NoError(t, err)
+	b := mc.client.Database(testDB).GridFSBucket(options.GridFSBucket().SetName(name))
 
 	t.Run("GridFS", func(t *testing.T) {
 		fn(t, b)
 	})
+}
+
+func mat[T any](l options.Lister[T]) *T {
+	o, _ := materialize(l)
+	return o
+}
+
+func matCount(b *options.CountOptionsBuilder) *options.CountOptions { return mat(b) }
+func matFind(b *options.FindOptionsBuilder) *options.FindOptions    { return mat(b) }
+
+func withoutAckBulk(r *mongo.BulkWriteResult) *mongo.BulkWriteResult {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	c.Acknowledged = false
+	return &c
+}
+
+func withoutAckDelete(r *mongo.DeleteResult) *mongo.DeleteResult {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	c.Acknowledged = false
+	return &c
+}
+
+func withoutAckUpdate(r *mongo.UpdateResult) *mongo.UpdateResult {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	c.Acknowledged = false
+	return &c
+}
+
+func decodeChangeEvent(stream IChangeStream, event *bson.M) error {
+	err := stream.Decode(event)
+	if err != nil {
+		return err
+	}
+	*event = bsonkit.ToMapValue(*event).(bson.M)
+	return nil
 }
 
 func readAll(csr ICursor) []bson.M {
@@ -108,6 +159,10 @@ func readAll(csr ICursor) []bson.M {
 	err := csr.All(nil, &out)
 	if err != nil {
 		panic(err)
+	}
+
+	for i := range out {
+		out[i] = bsonkit.ToMapValue(out[i]).(bson.M)
 	}
 
 	return out
@@ -192,6 +247,10 @@ func methods(t reflect.Type, replacements map[string]string, skip ...string) []s
 			r := regexp.MustCompile("([\\(\\s])" + regexp.QuoteMeta(a) + "([\\,\\)]|$)")
 			f = r.ReplaceAllString(f, "${1}"+b+"${2}")
 		}
+
+		// v2 driver surfaces variadic options as options.Lister[T]; lungo uses *T.
+		lister := regexp.MustCompile(`\.\.\.options\.Lister\[go\.mongodb\.org/mongo-driver/v2/mongo/options\.(\w+)\]`)
+		f = lister.ReplaceAllString(f, "...*options.$1")
 
 		// add method
 		list = append(list, m.Name+f)

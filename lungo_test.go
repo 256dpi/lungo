@@ -4,8 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 var mongoReplacements = map[string]string{
@@ -21,49 +20,94 @@ var mongoReplacements = map[string]string{
 }
 
 func TestClientInterface(t *testing.T) {
-	a := reflect.TypeOf((*IClient)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.Client{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*IClient)(nil)).Elem(),
+		reflect.TypeOf(&mongo.Client{}),
+		mongoReplacements,
+		[]string{"AppendDriverInfo", "BulkWrite"},
+		[]string{"Connect(context.Context) error", "Timeout() *time.Duration"},
+	)
 }
 
 func TestDatabaseInterface(t *testing.T) {
-	a := reflect.TypeOf((*IDatabase)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.Database{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*IDatabase)(nil)).Elem(),
+		reflect.TypeOf(&mongo.Database{}),
+		mongoReplacements,
+		[]string{"AggregateRaw", "GridFSBucket", "ListCollectionSpecifications", "WithReadOnlyIntegrationMode"},
+		[]string{
+			"ListCollectionSpecifications(context.Context, any, ...*options.ListCollectionsOptions) ([]*mongo.CollectionSpecification, error)",
+			"ReadConcern() *readconcern.ReadConcern",
+			"ReadPreference() *readpref.ReadPref",
+			"WriteConcern() *writeconcern.WriteConcern",
+		},
+	)
 }
 
 func TestCollectionInterface(t *testing.T) {
-	a := reflect.TypeOf((*ICollection)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.Collection{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*ICollection)(nil)).Elem(),
+		reflect.TypeOf(&mongo.Collection{}),
+		mongoReplacements,
+		[]string{"BulkWrite", "Clone", "FindRaw"},
+		[]string{
+			"BulkWrite(context.Context, []mongo.WriteModel, ...*options.BulkWriteOptions) (*mongo.BulkWriteResult, error)",
+			"Clone(...*options.CollectionOptions) (ICollection, error)",
+		},
+	)
 }
 
 func TestCursorInterface(t *testing.T) {
-	a := reflect.TypeOf((*ICursor)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.Cursor{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*ICursor)(nil)).Elem(),
+		reflect.TypeOf(&mongo.Cursor{}),
+		mongoReplacements,
+		[]string{"SetComment", "SetCommentThreadingSafe", "SetMaxAwaitTime", "SetSession"},
+		[]string{"SetComment(any)", "SetMaxTime(time.Duration)", "Stream(context.Context) (*mongo.Cursor, error)"},
+	)
 }
 
 func TestSingleResultInterface(t *testing.T) {
-	a := reflect.TypeOf((*ISingleResult)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.SingleResult{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*ISingleResult)(nil)).Elem(),
+		reflect.TypeOf(&mongo.SingleResult{}),
+		mongoReplacements,
+		nil,
+		[]string{"DecodeBytes() (bson.Raw, error)"},
+	)
 }
 
 func TestIndexViewInterface(t *testing.T) {
-	a := reflect.TypeOf((*IIndexView)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.IndexView{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*IIndexView)(nil)).Elem(),
+		reflect.TypeOf(&mongo.IndexView{}),
+		mongoReplacements,
+		[]string{"DropAll", "DropOne", "DropWithKey", "ListSpecifications"},
+		[]string{
+			"DropAll(context.Context, ...*options.DropIndexesOptions) (bson.Raw, error)",
+			"DropOne(context.Context, string, ...*options.DropIndexesOptions) (bson.Raw, error)",
+			"DropOneWithKey(context.Context, any, ...*options.DropIndexesOptions) (bson.Raw, error)",
+			"ListSpecifications(context.Context, ...*options.ListIndexesOptions) ([]*mongo.IndexSpecification, error)",
+		},
+	)
 }
 
 func TestChangeStreamInterface(t *testing.T) {
-	a := reflect.TypeOf((*IChangeStream)(nil)).Elem()
-	b := reflect.TypeOf(&mongo.ChangeStream{})
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*IChangeStream)(nil)).Elem(),
+		reflect.TypeOf(&mongo.ChangeStream{}),
+		mongoReplacements,
+		[]string{"SetComment", "SetCommentThreadingSafe", "SetSession"},
+		nil,
+	)
 }
 
 func TestSessionInterface(t *testing.T) {
-	a := reflect.TypeOf((*ISession)(nil)).Elem()
-	b := reflect.TypeOf((*mongo.Session)(nil)).Elem()
-	assert.Equal(t, methods(a, nil), methods(b, mongoReplacements))
+	assertDriverInterfaceParity(t,
+		reflect.TypeOf((*ISession)(nil)).Elem(),
+		reflect.TypeOf(&mongo.Session{}),
+		mongoReplacements,
+		[]string{"SnapshotTime", "TransactionRunning", "WithTransactionContext"},
+		nil,
+	)
 }
