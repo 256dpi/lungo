@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 var _ ICursor = &Cursor{}

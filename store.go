@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"os"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/dbkit"
+	"github.com/SaveliiYam/lungo/dbkit"
 )
 
 // Store is the interface that describes storage adapters.

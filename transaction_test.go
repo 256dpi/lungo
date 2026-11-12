@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 func TestTransactionOplogCleaningBySize(t *testing.T) {
@@ -16,7 +15,7 @@ func TestTransactionOplogCleaningBySize(t *testing.T) {
 
 	/* prepare */
 
-	id1 := primitive.NewObjectID()
+	id1 := bson.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
 		bsonkit.MustConvert(bson.M{
 			"_id": id1,
@@ -65,7 +64,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 
 	/* prepare */
 
-	id1 := primitive.NewObjectID()
+	id1 := bson.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
 		bsonkit.MustConvert(bson.M{
 			"_id": id1,
@@ -119,7 +118,7 @@ func TestTransactionOplogCleaningByTime(t *testing.T) {
 func TestTransactionOplogCleaningMultiDrop(t *testing.T) {
 	txn := NewTransaction(NewCatalog())
 
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 	_, err := txn.Insert(Handle{"foo", "bar"}, bsonkit.List{
 		bsonkit.MustConvert(bson.M{"_id": id, "n": 0}),
 	}, true)

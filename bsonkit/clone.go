@@ -3,13 +3,12 @@ package bsonkit
 import (
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Clone will clone the specified document. The returned document can be safely
 // mutated without mutating the original document with one exception: the content
-// of primitive.Binary values is not cloned and references the same byte slice
+// of bson.Binary values is not cloned and references the same byte slice
 // as the original.
 //
 // The function may panic if the doc is not obtained using Convert or Transform
@@ -52,10 +51,10 @@ func cloneValue(v interface{}) interface{} {
 	case nil, int32, int64, float64, string, bool:
 		// primitives do not need cloning
 		return value
-	case primitive.Null, primitive.ObjectID, primitive.DateTime, primitive.Timestamp, primitive.Regex, primitive.Decimal128:
+	case bson.Null, bson.ObjectID, bson.DateTime, bson.Timestamp, bson.Regex, bson.Decimal128:
 		// structures of primitives do not need cloning
 		return value
-	case primitive.Binary:
+	case bson.Binary:
 		// do not clone binary data as they do not get mutated themselves
 		return value
 	case bson.D:

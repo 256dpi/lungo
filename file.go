@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 // File is a format for storing catalogs in a single structure.

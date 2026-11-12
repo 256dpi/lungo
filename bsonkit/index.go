@@ -4,7 +4,7 @@ import (
 	"unsafe"
 
 	"github.com/tidwall/btree"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // indexEntry is one (key tuple, doc) pair stored in the index btree. A document

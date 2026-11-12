@@ -4,8 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func newSchema(m bson.M) *Schema {
@@ -35,7 +34,7 @@ func TestSchemaEvaluateGeneric(t *testing.T) {
 	evaluateSchema(t, schema, true, "")
 	evaluateSchema(t, schema, true, bson.D{})
 	evaluateSchema(t, schema, true, bson.A{})
-	evaluateSchema(t, schema, true, primitive.NewObjectID())
+	evaluateSchema(t, schema, true, bson.NewObjectID())
 
 	// invalid type
 	validateSchema(t, bson.M{"type": 2}, "", "invalid type value: 2")

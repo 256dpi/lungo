@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func TestStream(t *testing.T) {
@@ -19,7 +18,7 @@ func TestStream(t *testing.T) {
 		_, err := c.InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		stream, err := c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetFullDocument(options.UpdateLookup)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
@@ -30,10 +29,10 @@ func TestStream(t *testing.T) {
 		assert.NoError(t, err)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.True(t, errors.Is(io.EOF, err))
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 
 		/* insert */
 
@@ -48,7 +47,7 @@ func TestStream(t *testing.T) {
 		ret = stream.Next(nil)
 		assert.True(t, ret)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -80,7 +79,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		/* replace */
@@ -101,7 +100,7 @@ func TestStream(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -132,7 +131,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		/* update (change field) */
@@ -150,7 +149,7 @@ func TestStream(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -188,7 +187,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		/* update (remove field) */
@@ -208,7 +207,7 @@ func TestStream(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -244,7 +243,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		/* delete */
@@ -258,7 +257,7 @@ func TestStream(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -283,7 +282,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		/* close */
@@ -302,7 +301,7 @@ func TestStream(t *testing.T) {
 		err = stream.Err()
 		assert.NoError(t, err)
 
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.True(t, errors.Is(err, mongo.ErrNilCursor))
 
 		err = stream.Close(nil)
@@ -388,14 +387,14 @@ func TestStreamArrayChanges(t *testing.T) {
 		_, err := c.InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		stream, err := c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetFullDocument(options.UpdateLookup)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
 		ret := stream.TryNext(nil)
 		assert.False(t, ret)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 
 		/* insert */
 
@@ -413,7 +412,7 @@ func TestStreamArrayChanges(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -460,7 +459,7 @@ func TestStreamArrayChanges(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -517,7 +516,7 @@ func TestStreamArrayChanges(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -576,7 +575,7 @@ func TestStreamArrayChanges(t *testing.T) {
 
 func TestStreamAsync(t *testing.T) {
 	collectionTest(t, func(t *testing.T, c ICollection) {
-		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+		stream, err := c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetFullDocument(options.UpdateLookup)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
@@ -643,12 +642,12 @@ func TestStreamResumption(t *testing.T) {
 		/* invalid token and time */
 
 		// invalid resume token (resume after)
-		stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetResumeAfter(bson.M{}))
+		stream, err := c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetResumeAfter(bson.M{})))
 		assert.Error(t, err)
 		assert.Nil(t, stream)
 
 		// invalid resume token (start after)
-		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAfter(bson.M{}))
+		stream, err = c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetStartAfter(bson.M{})))
 		assert.Error(t, err)
 		assert.Nil(t, stream)
 
@@ -661,14 +660,14 @@ func TestStreamResumption(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
 		})
 		assert.NoError(t, err)
 
-		id2 := primitive.NewObjectID()
+		id2 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id2,
 			"foo": "bar",
@@ -679,11 +678,11 @@ func TestStreamResumption(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 
 		token := event["_id"]
-		timestamp := event["clusterTime"].(primitive.Timestamp)
+		timestamp := event["clusterTime"].(bson.Timestamp)
 		assert.NotEmpty(t, token)
 		assert.NotEmpty(t, timestamp)
 
@@ -693,7 +692,7 @@ func TestStreamResumption(t *testing.T) {
 
 		/* resume after */
 
-		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetResumeAfter(token))
+		stream, err = c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetResumeAfter(token)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
@@ -701,7 +700,7 @@ func TestStreamResumption(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -730,7 +729,7 @@ func TestStreamResumption(t *testing.T) {
 
 		/* start after */
 
-		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAfter(token))
+		stream, err = c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetStartAfter(token)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
@@ -738,7 +737,7 @@ func TestStreamResumption(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -767,7 +766,7 @@ func TestStreamResumption(t *testing.T) {
 
 		/* start at */
 
-		stream, err = c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&timestamp))
+		stream, err = c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetStartAtOperationTime(&timestamp)))
 		assert.NoError(t, err)
 		assert.NotNil(t, stream)
 
@@ -775,7 +774,7 @@ func TestStreamResumption(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -815,9 +814,9 @@ func TestStreamStartAtNonMatchingTimestamp(t *testing.T) {
 	assert.NoError(t, err)
 
 	// pick a timestamp far in the past that does not match any oplog entry
-	ancient := primitive.Timestamp{T: 1, I: 1}
+	ancient := bson.Timestamp{T: 1, I: 1}
 
-	stream, err := c.Watch(nil, bson.A{}, options.ChangeStream().SetStartAtOperationTime(&ancient))
+	stream, err := c.Watch(nil, bson.A{}, mat(options.ChangeStream().SetStartAtOperationTime(&ancient)))
 	assert.NoError(t, err)
 	assert.NotNil(t, stream)
 
@@ -825,7 +824,7 @@ func TestStreamStartAtNonMatchingTimestamp(t *testing.T) {
 	assert.True(t, ret)
 
 	var event bson.M
-	err = stream.Decode(&event)
+	err = decodeChangeEvent(stream, &event)
 	assert.NoError(t, err)
 	assert.Equal(t, "insert", event["operationType"])
 
@@ -851,7 +850,7 @@ func TestStreamInvalidationCollection(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -873,7 +872,7 @@ func TestStreamInvalidationCollection(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -937,7 +936,7 @@ func TestStreamCollectionInvalidationViaDatabaseDrop(t *testing.T) {
 			}
 
 			var event bson.M
-			err = stream.Decode(&event)
+			err = decodeChangeEvent(stream, &event)
 			assert.NoError(t, err)
 			if event["operationType"] == "invalidate" {
 				sawInvalidate = true
@@ -974,7 +973,7 @@ func TestStreamInvalidationDatabase(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -994,7 +993,7 @@ func TestStreamInvalidationDatabase(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -1015,7 +1014,7 @@ func TestStreamInvalidationDatabase(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -1061,7 +1060,7 @@ func TestStreamInvalidationClient(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -1081,7 +1080,7 @@ func TestStreamInvalidationClient(t *testing.T) {
 		assert.True(t, ret)
 
 		event = nil
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -1122,7 +1121,7 @@ func TestStreamIsolationCollection(t *testing.T) {
 		_, err = c.Database().Collection("foo").InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
@@ -1133,7 +1132,7 @@ func TestStreamIsolationCollection(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])
@@ -1176,7 +1175,7 @@ func TestStreamIsolationDatabase(t *testing.T) {
 		_, err = c.Database().Client().Database("test-lungo-stream").Collection("foo").InsertOne(nil, bson.M{})
 		assert.NoError(t, err)
 
-		id1 := primitive.NewObjectID()
+		id1 := bson.NewObjectID()
 		_, err = c.InsertOne(nil, bson.M{
 			"_id": id1,
 			"foo": "bar",
@@ -1187,7 +1186,7 @@ func TestStreamIsolationDatabase(t *testing.T) {
 		assert.True(t, ret)
 
 		var event bson.M
-		err = stream.Decode(&event)
+		err = decodeChangeEvent(stream, &event)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, event["_id"])
 		assert.NotEmpty(t, event["clusterTime"])

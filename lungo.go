@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
 // IClient defines a generic client.
@@ -57,8 +56,8 @@ type ICollection interface {
 	Clone(...*options.CollectionOptions) (ICollection, error)
 	CountDocuments(context.Context, interface{}, ...*options.CountOptions) (int64, error)
 	Database() IDatabase
-	DeleteMany(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error)
-	DeleteOne(context.Context, interface{}, ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	DeleteMany(context.Context, interface{}, ...*DeleteOptions) (*mongo.DeleteResult, error)
+	DeleteOne(context.Context, interface{}, ...*DeleteOptions) (*mongo.DeleteResult, error)
 	Distinct(context.Context, string, interface{}, ...*options.DistinctOptions) ([]interface{}, error)
 	Drop(context.Context) error
 	EstimatedDocumentCount(context.Context, ...*options.EstimatedDocumentCountOptions) (int64, error)
@@ -73,9 +72,9 @@ type ICollection interface {
 	Name() string
 	ReplaceOne(context.Context, interface{}, interface{}, ...*options.ReplaceOptions) (*mongo.UpdateResult, error)
 	SearchIndexes() mongo.SearchIndexView
-	UpdateByID(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	UpdateMany(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
-	UpdateOne(context.Context, interface{}, interface{}, ...*options.UpdateOptions) (*mongo.UpdateResult, error)
+	UpdateByID(context.Context, interface{}, interface{}, ...*UpdateOptions) (*mongo.UpdateResult, error)
+	UpdateMany(context.Context, interface{}, interface{}, ...*UpdateOptions) (*mongo.UpdateResult, error)
+	UpdateOne(context.Context, interface{}, interface{}, ...*UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(context.Context, interface{}, ...*options.ChangeStreamOptions) (IChangeStream, error)
 }
 
@@ -131,12 +130,12 @@ type ISession interface {
 	ID() bson.Raw
 	AbortTransaction(context.Context) error
 	AdvanceClusterTime(bson.Raw) error
-	AdvanceOperationTime(*primitive.Timestamp) error
+	AdvanceOperationTime(*bson.Timestamp) error
 	Client() IClient
 	ClusterTime() bson.Raw
 	CommitTransaction(context.Context) error
 	EndSession(context.Context)
-	OperationTime() *primitive.Timestamp
+	OperationTime() *bson.Timestamp
 	StartTransaction(...*options.TransactionOptions) error
 	WithTransaction(context.Context, func(ISessionContext) (interface{}, error), ...*options.TransactionOptions) (interface{}, error)
 }
@@ -152,12 +151,12 @@ type ISessionContext interface {
 func WithSession(ctx context.Context, session ISession, fn func(ISessionContext) error) error {
 	switch ses := session.(type) {
 	case *MongoSession:
-		return mongo.WithSession(ensureContext(ctx), ses.Session, func(sc mongo.SessionContext) error {
+		return mongo.WithSession(ensureContext(ctx), ses.sess, func(sc context.Context) error {
 			return fn(&MongoSessionContext{
 				Context: sc,
 				MongoSession: &MongoSession{
-					Session: sc,
-					client:  ses.client,
+					sess:   mongo.SessionFromContext(sc),
+					client: ses.client,
 				},
 			})
 		})

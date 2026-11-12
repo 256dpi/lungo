@@ -4,14 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 func extractTest(t *testing.T, fn func(fn func(bson.M, interface{}))) {
 	t.Run("Mongo", func(t *testing.T) {
+		skipUnlessMongo(t)
 		coll := testCollection()
 
 		fn(func(query bson.M, result interface{}) {
@@ -43,7 +44,7 @@ func extractTest(t *testing.T, fn func(fn func(bson.M, interface{}))) {
 				assert.Nil(t, doc, query)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, result, doc.Map(), query)
+				assert.Equal(t, result, bsonkit.ToMap(doc), query)
 			}
 		})
 	})

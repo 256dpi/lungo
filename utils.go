@@ -6,13 +6,22 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 const (
 	supported = "supported"
 	ignored   = "ignored"
 )
+
+func optionFieldUnset(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Interface, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func:
+		return v.IsNil()
+	default:
+		return v.IsZero()
+	}
+}
 
 func ensureContext(ctx context.Context) context.Context {
 	// check context
@@ -24,8 +33,16 @@ func ensureContext(ctx context.Context) context.Context {
 }
 
 func assertOptions(opts interface{}, fields map[string]string) {
+	if opts == nil {
+		return
+	}
+	val := reflect.ValueOf(opts)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
+		return
+	}
+
 	// get value
-	value := reflect.ValueOf(opts).Elem()
+	value := val.Elem()
 
 	// check fields
 	for i := 0; i < value.NumField(); i++ {
@@ -38,8 +55,8 @@ func assertOptions(opts interface{}, fields map[string]string) {
 			continue
 		}
 
-		// otherwise, assert field is nil
-		if !value.Field(i).IsNil() {
+		// otherwise, assert field is unset (v2 options may use struct fields, not only pointers)
+		if !optionFieldUnset(value.Field(i)) {
 			panic(fmt.Sprintf("lungo: unsupported option: %s", name))
 		}
 	}

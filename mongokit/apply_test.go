@@ -4,15 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []bson.M, interface{}))) {
 	t.Run("Mongo", func(t *testing.T) {
+		skipUnlessMongo(t)
 		coll := testCollection()
 
 		fn(func(update bson.M, arrayFilters []bson.M, result interface{}) {
@@ -25,15 +25,14 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				}
 			}
 
-			opts := options.Update().SetUpsert(upsert)
+			opts := options.UpdateOne().SetUpsert(upsert)
 
 			if arrayFilters != nil {
-				list := make([]interface{}, 0, len(arrayFilters))
+				list := make([]any, 0, len(arrayFilters))
 				for _, af := range arrayFilters {
 					list = append(list, af)
 				}
-
-				opts.SetArrayFilters(options.ArrayFilters{Filters: list})
+				opts.SetArrayFilters(list)
 			}
 
 			res, err := coll.UpdateOne(nil, query, update, opts)
@@ -63,7 +62,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				return
 			}
 
-			assert.Equal(t, result, d, update)
+			assertBSONEqual(t, result, *d, update)
 		})
 	})
 
@@ -87,7 +86,7 @@ func applyTest(t *testing.T, upsert bool, doc bson.M, fn func(fn func(bson.M, []
 				return
 			}
 
-			assert.Equal(t, result, d, update)
+			assertBSONEqual(t, result, *d, update)
 		})
 	})
 }
@@ -949,7 +948,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.DateTime(0), d[0].Value)
+			assert.IsType(t, bson.DateTime(0), d[0].Value)
 		})
 
 		// set date using type
@@ -962,7 +961,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.DateTime(0), d[0].Value)
+			assert.IsType(t, bson.DateTime(0), d[0].Value)
 		})
 
 		// set timestamp using type
@@ -975,7 +974,7 @@ func TestApplyCurrentDate(t *testing.T) {
 		}, nil, func(t *testing.T, d bson.D) {
 			assert.Len(t, d, 1)
 			assert.Equal(t, "foo", d[0].Key)
-			assert.IsType(t, primitive.Timestamp{}, d[0].Value)
+			assert.IsType(t, bson.Timestamp{}, d[0].Value)
 		})
 	})
 

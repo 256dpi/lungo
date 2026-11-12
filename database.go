@@ -3,13 +3,13 @@ package lungo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 
-	"github.com/256dpi/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/bsonkit"
 )
 
 var _ IDatabase = &Database{}
@@ -35,7 +35,7 @@ func (d *Database) Client() IClient {
 // Collection implements the IDatabase.Collection method.
 func (d *Database) Collection(name string, opts ...*options.CollectionOptions) ICollection {
 	// merge options
-	opt := options.MergeCollectionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -53,7 +53,7 @@ func (d *Database) Collection(name string, opts ...*options.CollectionOptions) I
 // CreateCollection implements the IDatabase.CreateCollection method.
 func (d *Database) CreateCollection(ctx context.Context, name string, opts ...*options.CreateCollectionOptions) error {
 	// merge options
-	opt := options.MergeCreateCollectionOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -142,7 +142,7 @@ func (d *Database) ListCollectionSpecifications(context.Context, interface{}, ..
 // ListCollections implements the IDatabase.ListCollections method.
 func (d *Database) ListCollections(ctx context.Context, filter interface{}, opts ...*options.ListCollectionsOptions) (ICursor, error) {
 	// merge options
-	opt := options.MergeListCollectionsOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{})
@@ -172,7 +172,7 @@ func (d *Database) Name() string {
 
 // ReadConcern implements the IDatabase.ReadConcern method.
 func (d *Database) ReadConcern() *readconcern.ReadConcern {
-	return readconcern.New()
+	return readconcern.Local()
 }
 
 // ReadPreference implements the IDatabase.ReadPreference method.
@@ -193,7 +193,7 @@ func (d *Database) RunCommandCursor(context.Context, interface{}, ...*options.Ru
 // Watch implements the IDatabase.Watch method.
 func (d *Database) Watch(_ context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (IChangeStream, error) {
 	// merge options
-	opt := options.MergeChangeStreamOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{

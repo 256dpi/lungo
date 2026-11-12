@@ -1,6 +1,6 @@
 package mongokit
 
-import "github.com/256dpi/lungo/bsonkit"
+import "github.com/SaveliiYam/lungo/bsonkit"
 
 // Update will apply a MongoDB update document to a list of documents.
 func Update(list bsonkit.List, query, update bsonkit.Doc, upsert bool, arrayFilters bsonkit.List) ([]*Changes, error) {

@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 var _ IIndexView = &IndexView{}
@@ -23,7 +23,7 @@ type IndexView struct {
 // CreateMany implements the IIndexView.CreateMany method.
 func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, opts ...*options.CreateIndexesOptions) ([]string, error) {
 	// merge options
-	opt := options.MergeCreateIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -51,16 +51,21 @@ func (v *IndexView) CreateMany(ctx context.Context, indexes []mongo.IndexModel, 
 // CreateOne implements the IIndexView.CreateOne method.
 func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts ...*options.CreateIndexesOptions) (string, error) {
 	// merge options
-	opt := options.MergeCreateIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
 		"MaxTime": ignored,
 	})
 
-	// assert supported index options
+	var idxOpts *options.IndexOptions
 	if index.Options != nil {
-		assertOptions(index.Options, map[string]string{
+		var err error
+		idxOpts, err = materialize(index.Options)
+		if err != nil {
+			return "", err
+		}
+		assertOptions(idxOpts, map[string]string{
 			"Background":              ignored,
 			"ExpireAfterSeconds":      supported,
 			"Name":                    supported,
@@ -78,30 +83,30 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 
 	// get expiry
 	var expiry time.Duration
-	if index.Options != nil && index.Options.ExpireAfterSeconds != nil {
-		if *index.Options.ExpireAfterSeconds == 0 {
+	if idxOpts != nil && idxOpts.ExpireAfterSeconds != nil {
+		if *idxOpts.ExpireAfterSeconds == 0 {
 			expiry = time.Nanosecond
 		} else {
-			expiry = time.Duration(*index.Options.ExpireAfterSeconds) * time.Second
+			expiry = time.Duration(*idxOpts.ExpireAfterSeconds) * time.Second
 		}
 	}
 
 	// get name
 	var name string
-	if index.Options != nil && index.Options.Name != nil {
-		name = *index.Options.Name
+	if idxOpts != nil && idxOpts.Name != nil {
+		name = *idxOpts.Name
 	}
 
 	// get unique
 	var unique bool
-	if index.Options != nil && index.Options.Unique != nil {
-		unique = *index.Options.Unique
+	if idxOpts != nil && idxOpts.Unique != nil {
+		unique = *idxOpts.Unique
 	}
 
 	// get partial
 	var partial bsonkit.Doc
-	if index.Options != nil && index.Options.PartialFilterExpression != nil {
-		partial, err = bsonkit.Transform(index.Options.PartialFilterExpression)
+	if idxOpts != nil && idxOpts.PartialFilterExpression != nil {
+		partial, err = bsonkit.Transform(idxOpts.PartialFilterExpression)
 		if err != nil {
 			return "", err
 		}
@@ -139,7 +144,7 @@ func (v *IndexView) CreateOne(ctx context.Context, index mongo.IndexModel, opts 
 // DropAll implements the IIndexView.DropAll method.
 func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
 	// merge options
-	opt := options.MergeDropIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -173,7 +178,7 @@ func (v *IndexView) DropAll(ctx context.Context, opts ...*options.DropIndexesOpt
 // DropOne implements the IIndexView.DropOne method.
 func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
 	// merge options
-	opt := options.MergeDropIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -212,7 +217,7 @@ func (v *IndexView) DropOne(ctx context.Context, name string, opts ...*options.D
 // DropOneWithKey implements the IIndexView.DropOneWithKey method.
 func (v *IndexView) DropOneWithKey(ctx context.Context, keySpec interface{}, opts ...*options.DropIndexesOptions) (bson.Raw, error) {
 	// merge options
-	opt := options.MergeDropIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{
@@ -252,7 +257,7 @@ func (v *IndexView) DropOneWithKey(ctx context.Context, keySpec interface{}, opt
 // List implements the IIndexView.List method.
 func (v *IndexView) List(ctx context.Context, opts ...*options.ListIndexesOptions) (ICursor, error) {
 	// merge options
-	opt := options.MergeListIndexesOptions(opts...)
+	opt := mergeOptions(opts...)
 
 	// assert supported options
 	assertOptions(opt, map[string]string{

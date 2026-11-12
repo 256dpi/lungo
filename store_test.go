@@ -5,11 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/256dpi/lungo/bsonkit"
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/bsonkit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 func TestFileStore(t *testing.T) {
@@ -27,8 +26,8 @@ func TestFileStore(t *testing.T) {
 
 	handle := Handle{"foo", "bar"}
 
-	id1 := primitive.NewObjectID()
-	id2 := primitive.NewObjectID()
+	id1 := bson.NewObjectID()
+	id2 := bson.NewObjectID()
 
 	txn, err := engine.Begin(nil, true)
 	assert.NoError(t, err)
@@ -65,6 +64,7 @@ func TestFileStore(t *testing.T) {
 	var out bson.M
 	err = bson.Unmarshal(bytes, &out)
 	assert.NoError(t, err)
+	out = bsonkit.ToMapValue(out).(bson.M)
 	assert.Equal(t, bson.M{
 		"namespaces": bson.M{
 			"foo.bar": bson.M{

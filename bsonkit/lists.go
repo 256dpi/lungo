@@ -3,7 +3,7 @@ package bsonkit
 import (
 	"sort"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Select will return a list of documents selected by the specified selector.

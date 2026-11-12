@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/256dpi/lungo/mongokit"
+	"github.com/SaveliiYam/lungo/mongokit"
 )
 
 // Handle is a two component identifier for namespaces where the first part is

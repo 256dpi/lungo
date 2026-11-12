@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
 func TestDatabaseClient(t *testing.T) {
@@ -109,7 +110,7 @@ func TestDatabaseName(t *testing.T) {
 
 func TestDatabaseReadConcern(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
-		assert.Equal(t, readconcern.New(), d.ReadConcern())
+		assert.Equal(t, readconcern.Local(), d.ReadConcern())
 	})
 }
 
@@ -121,6 +122,10 @@ func TestDatabaseReadPreference(t *testing.T) {
 
 func TestDatabaseWriteConcern(t *testing.T) {
 	databaseTest(t, func(t *testing.T, d IDatabase) {
+		if _, ok := d.(*MongoDatabase); ok {
+			assert.Equal(t, writeconcern.Majority(), d.WriteConcern())
+			return
+		}
 		assert.Nil(t, d.WriteConcern())
 	})
 }

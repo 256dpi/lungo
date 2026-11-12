@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func d128(str string) primitive.Decimal128 {
-	d, err := primitive.ParseDecimal128(str)
+func d128(str string) bson.Decimal128 {
+	d, err := bson.ParseDecimal128(str)
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +95,7 @@ func TestMod(t *testing.T) {
 }
 
 func TestArithmeticNonFiniteDecimal128(t *testing.T) {
-	for _, special := range []primitive.Decimal128{d128("NaN"), d128("Infinity"), d128("-Infinity")} {
+	for _, special := range []bson.Decimal128{d128("NaN"), d128("Infinity"), d128("-Infinity")} {
 		assert.NotPanics(t, func() { Add(int32(1), special) })
 		assert.NotPanics(t, func() { Add(special, d128("1")) })
 		assert.NotPanics(t, func() { Mul(int32(2), special) })
